@@ -1,0 +1,128 @@
+[
+  {
+    "file": "src/backend/emitter.cpp",
+    "arguments": [
+      "g++",
+      "-std=c++23",
+      "-march=native",
+      "-Iinclude",
+      "-O3",
+      "-fno-rtti",
+      "-fomit-frame-pointer",
+      "-c",
+      "src/backend/emitter.cpp",
+      "-o",
+      "obj/backend/emitter.o"
+    ],
+    "directory": "/home/zick9510/cosas/coding/Arcana",
+    "output": "obj/backend/emitter.o"
+  },
+  {
+    "file": "src/frontend/parser.cpp",
+    "arguments": [
+      "g++",
+      "-std=c++23",
+      "-march=native",
+      "-Iinclude",
+      "-O3",
+      "-fno-rtti",
+      "-fomit-frame-pointer",
+      "-c",
+      "src/frontend/parser.cpp",
+      "-o",
+      "obj/frontend/parser.o"
+    ],
+    "directory": "/home/zick9510/cosas/coding/Arcana",
+    "output": "obj/frontend/parser.o"
+  },
+  {
+    "file": "src/frontend/check.cpp",
+    "arguments": [
+      "g++",
+      "-std=c++23",
+      "-march=native",
+      "-Iinclude",
+      "-O3",
+      "-fno-rtti",
+      "-fomit-frame-pointer",
+      "-c",
+      "src/frontend/check.cpp",
+      "-o",
+      "obj/frontend/check.o"
+    ],
+    "directory": "/home/zick9510/cosas/coding/Arcana",
+    "output": "obj/frontend/check.o"
+  },
+  {
+    "file": "src/frontend/lexer.cpp",
+    "arguments": [
+      "g++",
+      "-std=c++23",
+      "-march=native",
+      "-Iinclude",
+      "-O3",
+      "-fno-rtti",
+      "-fomit-frame-pointer",
+      "-c",
+      "src/frontend/lexer.cpp",
+      "-o",
+      "obj/frontend/lexer.o"
+    ],
+    "directory": "/home/zick9510/cosas/coding/Arcana",
+    "output": "obj/frontend/lexer.o"
+  },
+  {
+    "file": "src/common/common.cpp",
+    "arguments": [
+      "g++",
+      "-std=c++23",
+      "-march=native",
+      "-Iinclude",
+      "-O3",
+      "-fno-rtti",
+      "-fomit-frame-pointer",
+      "-c",
+      "src/common/common.cpp",
+      "-o",
+      "obj/common/common.o"
+    ],
+    "directory": "/home/zick9510/cosas/coding/Arcana",
+    "output": "obj/common/common.o"
+  },
+  {
+    "file": "src/driver/driver.cpp",
+    "arguments": [
+      "g++",
+      "-std=c++23",
+      "-march=native",
+      "-Iinclude",
+      "-O3",
+      "-fno-rtti",
+      "-fomit-frame-pointer",
+      "-c",
+      "src/driver/driver.cpp",
+      "-o",
+      "obj/driver/driver.o"
+    ],
+    "directory": "/home/zick9510/cosas/coding/Arcana",
+    "output": "obj/driver/driver.o"
+  },
+  {
+    "file": "src/main.cpp",
+    "arguments": [
+      "g++",
+      "-std=c++23",
+      "-march=native",
+      "-Iinclude",
+      "-O3",
+      "-fno-rtti",
+      "-fomit-frame-pointer",
+      "-c",
+      "src/main.cpp",
+      "-o",
+      "obj/main.o"
+    ],
+    "directory": "/home/zick9510/cosas/coding/Arcana",
+    "output": "obj/main.o"
+  }
+]
