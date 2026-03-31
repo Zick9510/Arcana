@@ -113,6 +113,18 @@ void Lexer::leerNumero() {
 
     }
 
+    // Scientific notation: e.g. 3e11 or 9e-3
+    if (actual() == 'e' || actual() == 'E') {
+      get(); // consume 'e'
+      if (actual() == '+' || actual() == '-') {
+          get(); // consume optional sign
+      }
+      while (std::isdigit(actual())) {
+          get(); // consume exponent digits
+      }
+      es_float = true;
+    }
+
   }
  
   std::string valor(source.substr(inicio, cursor - inicio));
