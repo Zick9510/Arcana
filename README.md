@@ -16,8 +16,8 @@ and the Semantic Checker is currently being implemented. **Not suitable for prod
 Most languages force you to wait for a committee to add a new feature. Arcana gives you the **"Arcano"** system:
 a way to expand the compiler's Abstract Syntax Tree (AST) directly from your source code.
 
--- **Side-Effect Clarity:** Strict visual separation between code blocks '{}' (actions/effects) and expressions '()' (values).
---
+### **Side-Effect Clarity:** Strict visual separation between code blocks '{}' (actions/effects) and expressions '()' (values).
+
 
 
 ## Example: The "Arcano" System
