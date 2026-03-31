@@ -1,0 +1,22 @@
+# --- Carpetas de Compilación y Sistema ---
+
+bin/
+obj/
+.cache/
+.directory
+
+# --- Archivos de Herramientas y Editores ---
+compile_commands.json
+Session.vim
+
+# --- Archivos Temporales ---
+salida.cpp
+notas.bu
+*.arc
+!tests/*.arc
+
+# --- Binarios Comunes (por si acaso) ---
+*.o
+*.out
+*.exe
+
