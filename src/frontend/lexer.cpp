@@ -96,7 +96,7 @@ void Lexer::leerNumero() {
     }
 
   } else {
-    while (std::isdigit(actual()) || actual() == '.' || actual() == '_' || esSufijoNum()) {
+    while (std::isdigit(actual()) || actual() == '.' || actual() == '_' || actual() == 'e' || actual() == 'E' || esSufijoNum()) {
 
       if (esSufijoNum()) {
         consumirSufijoNum();

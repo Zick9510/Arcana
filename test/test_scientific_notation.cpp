@@ -22,31 +22,37 @@ void test(const std::string& description, bool condition) {
 int main() {
     std::cout << "=== Scientific Notation Tests ===\n\n";
 
-    Lexer lexer;
-
     // Test 1: Positive exponent (3e11)
-    lexer.setSource("3e11");
-    auto tokens1 = lexer.tokenize();
-    test("Positive exponent: 3e11 is tokenized as a number",
-         tokens1.size() >= 1 && tokens1[0].tipo == Tt::NUMERO && tokens1[0].valor == "3e11");
+    {
+        Lexer lexer("3e11");
+        auto tokens = lexer.tokenize();
+        test("Positive exponent: 3e11 is tokenized as a number",
+             tokens.size() >= 1 && tokens[0].tipo == Tt::NUMERO && tokens[0].valor == "3e11");
+    }
 
     // Test 2: Negative exponent (9e-3)
-    lexer.setSource("9e-3");
-    auto tokens2 = lexer.tokenize();
-    test("Negative exponent: 9e-3 is tokenized as a number",
-         tokens2.size() >= 1 && tokens2[0].tipo == Tt::NUMERO && tokens2[0].valor == "9e-3");
+    {
+        Lexer lexer("9e-3");
+        auto tokens = lexer.tokenize();
+        test("Negative exponent: 9e-3 is tokenized as a number",
+             tokens.size() >= 1 && tokens[0].tipo == Tt::NUMERO && tokens[0].valor == "9e-3");
+    }
 
     // Test 3: Uppercase E (2E10)
-    lexer.setSource("2E10");
-    auto tokens3 = lexer.tokenize();
-    test("Uppercase E: 2E10 is tokenized as a number",
-         tokens3.size() >= 1 && tokens3[0].tipo == Tt::NUMERO && tokens3[0].valor == "2E10");
+    {
+        Lexer lexer("2E10");
+        auto tokens = lexer.tokenize();
+        test("Uppercase E: 2E10 is tokenized as a number",
+             tokens.size() >= 1 && tokens[0].tipo == Tt::NUMERO && tokens[0].valor == "2E10");
+    }
 
     // Test 4: Float with exponent (1.5e3)
-    lexer.setSource("1.5e3");
-    auto tokens4 = lexer.tokenize();
-    test("Float with exponent: 1.5e3 is tokenized as a number",
-         tokens4.size() >= 1 && tokens4[0].tipo == Tt::NUMERO && tokens4[0].valor == "1.5e3");
+    {
+        Lexer lexer("1.5e3");
+        auto tokens = lexer.tokenize();
+        test("Float with exponent: 1.5e3 is tokenized as a number",
+             tokens.size() >= 1 && tokens[0].tipo == Tt::NUMERO && tokens[0].valor == "1.5e3");
+    }
 
     std::cout << "\n=== Results ===\n";
     std::cout << "Passed: " << tests_passed << "\n";
