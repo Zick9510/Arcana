@@ -24,7 +24,7 @@ a way to expand the compiler's Abstract Syntax Tree (AST) directly from your sou
 ```
 ```
 
-```cpp
+```arc
 arcano Maybe(maybe: key, name: string, code: cod) {
 
   rules {
