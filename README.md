@@ -28,7 +28,8 @@ a way to expand the compiler's Abstract Syntax Tree (AST) directly from your sou
 arcano Maybe(maybe: key, name: string, code: cod) {
 
   rules {
-    maybe [ name? { code } ] // After the 'maybe' keyword, the syntax might have a string and then a block of code
+    maybe [ name? { code } ] // After the 'maybe' keyword, the syntax
+                             // might have a string and then a block of code
   };
 
   maybe <=> {
