@@ -32,10 +32,12 @@ class Emitter : public ASTVisitor {
       if (nodo->es_prefijo) {
         codigo += operadorString(nodo->operador);
         nodo->operando->accept(this);
+
       } else {
         nodo->operando->accept(this);
         codigo += operadorString(nodo->operador);
       }
+
       codigo += ")";
     }
 
