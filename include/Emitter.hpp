@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Common.hpp"
+
 #include <string>
 
 class Emitter : public ASTVisitor {
@@ -13,7 +14,7 @@ class Emitter : public ASTVisitor {
     std::string obtenerCodigo() const { return codigo; }
 
     // --- Expresiones --- //
-
+ 
     void visitar(ExprNumero* nodo) override {
       codigo += nodo->valor;
     }
@@ -22,14 +23,18 @@ class Emitter : public ASTVisitor {
       codigo += nodo->nombre;
     }
 
+    void visitar(ExprArray* nodo) override { //... Array
+
+    }
+
     void visitar(ExprUnaria* nodo) override { //...
       codigo += "(";
-      if (nodo->esPrefijo) {
-        codigo += nodo->operador;
+      if (nodo->es_prefijo) {
+        codigo += operadorString(nodo->operador);
         nodo->operando->accept(this);
       } else {
         nodo->operando->accept(this);
-        codigo += nodo->operador;
+        codigo += operadorString(nodo->operador);
       }
       codigo += ")";
     }
@@ -37,24 +42,25 @@ class Emitter : public ASTVisitor {
     void visitar(ExprBinaria* nodo) override {
       codigo += "(";
       nodo->izquierda->accept(this);
-      codigo += " " + nodo->operador + " ";
+      codigo += " " + operadorString(nodo->operador) + " ";
       nodo->derecha->accept(this);
       codigo += ")";
     }
 
+    void visitar(ExprCasteo* nodo) override {
+      std::cerr << "Error: No implementado (ExprCasteo)\n";
+    }
+
     void visitar(ExprRango* nodo) override {
       std::cerr << "Error: No implementado (ExprRango)\n";
-      exit(1);
     }
 
     void visitar(ExprAcceso* nodo) override {
       std::cerr << "Error: No implementado (ExprAcceso)\n";
-      exit(1);
     }
 
     void visitar(ExprLlamadaArcano* nodo) override {
       std::cerr << "Error: No implementado (ExprLlamadaArcano)\n";
-      exit(1);
     }
 
     // --- Sentencias --- //
@@ -115,16 +121,13 @@ class Emitter : public ASTVisitor {
 
     void visitar(SentenciaEscritura* nodo) override {
       std::cerr << "Error: No implementado (SentenciaEscritura)\n";
-      exit(1);
     }
 
     void visitar(SentenciaArcano* nodo) override {
       std::cerr << "Error: No implementado (SentenciaArcano)\n";
-      exit(1);
     }
 
     void visitar(SentenciaLlamadaArcano* nodo) override {
       std::cerr << "Error: No implementado (SentenciaLlamadaArcano)\n";
-      exit(1);
     }
 };

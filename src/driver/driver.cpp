@@ -1,21 +1,17 @@
 // driver.cpp
 
 #include "Driver.hpp"
+
 #include "Lexer.hpp"
 #include "Parser.hpp"
 #include "Checker.hpp"
 #include "Emitter.hpp"
 #include "Common.hpp"
-
-#include <optional>
-#include <filesystem>
-#include <iostream>
-#include <fstream>
-#include <sstream>
+#include "Includes.hpp"
 
 bool Driver::compile(const CompilerConfig& config) {
 
-  std::filesystem::path file_path = config.archivoEntrada.value();
+  std::filesystem::path file_path = config.archivo_entrada.value();
 
   // 1. Leer el archivo
   auto source = read_source_file(file_path);
@@ -23,6 +19,9 @@ bool Driver::compile(const CompilerConfig& config) {
     std::cerr << "Error: No se pudo abrir el archivo " << file_path << '\n';
     return false;
   }
+
+  std::vector<Error> errores;
+  ErrorHandler errHandler(errores);
 
   // 2. Análisis Léxico (Código -> Tokens)
   Lexer lexer(*source);
@@ -33,17 +32,17 @@ bool Driver::compile(const CompilerConfig& config) {
   std::vector<std::unique_ptr<Sentencia>> ast = std::move(parser.parsearPrograma());
 
   // 4. Análisis Semántico (AST Check)
-  Checker checker(ast);
+  std::vector<Scope> scopes;
+  GestorTablas tablas(errHandler, scopes);
+  Checker checker(tablas, ast, errHandler);
   checker.verificarPrograma();
 
-  // 5. Errores y Advertencias
-  std::vector<Error> errores;
-  ErrorHandler errHandler(errores);
   if (errHandler.notificar()) { // Hay al menos un error
-    return 1;
+    std::cerr << "[45 driver.cpp]: Error\n";
+    return false;
   }
 
-  // 6. Generación de Código (AST -> Source)
+  // 5. Generación de Código (AST -> Source)
   Emitter emitter;
   for (auto& nodo : ast) {
     nodo->accept(&emitter);
@@ -52,7 +51,7 @@ bool Driver::compile(const CompilerConfig& config) {
   std::string codigo = emitter.obtenerCodigo();
 
   //... Debug
-
+  /*
   std::cout << "\n --- TOKENS --- \n\n";
   for (const auto& t : tokens) {
     std::cout << "< Token: '" << t.lexema << "' | "
@@ -62,10 +61,11 @@ bool Driver::compile(const CompilerConfig& config) {
 
   std::cout << "\n --- ARBOL DE SINTAXIS ABSTRACTA (AST) ---\n\n";
   for (const auto& nodo : ast) {
-    nodo->imprimir();
+    if (nodo) { nodo->imprimir(); }
+    else      { std::cout << "[Nodo Nulo]\n"; }
     std::cout << "---------------------------\n";
   }
-
+  */
 
   std::ofstream outFile("salida.cpp"); //... Cambiar
   if (outFile.is_open()) {

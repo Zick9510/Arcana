@@ -23,9 +23,13 @@ class Parser {
 
     InfoTipo parsearTipo();
 
+    std::unique_ptr<Expresion> parsearRangoOArray();
+
     std::unique_ptr<Expresion> parsearRango();
     std::unique_ptr<Expresion> parsearAcceso(std::unique_ptr<Expresion> contenedor);
+    std::pair<std::string, std::string> partirLexemaNum(std::string lexema);
     std::unique_ptr<Expresion> parsearPrefijo();
+    std::unique_ptr<Expresion> parsearCasteo();
 
     std::unique_ptr<Sentencia> parsearEscritura();
     std::unique_ptr<Sentencia> parsearDeclaracionVar();
@@ -36,12 +40,16 @@ class Parser {
     std::unique_ptr<Sentencia> parsearSi();
     std::unique_ptr<Sentencia> parsearSino();
     std::unique_ptr<Sentencia> parsearMientras();
+
+    std::pair<std::string, Regla> parsearReglaArcano();
+    std::map<std::string, Regla> parsearReglasArcano();
+    std::map<std::string, std::unique_ptr<Sentencia>> parsearCuerpoArcano();
     std::unique_ptr<Sentencia> parsearArcano();
     std::unique_ptr<Sentencia> parsearLlamadaArcano();
 
-    int obtenerPrecedencia(Tt tipo);
+    Pr obtenerPrecedencia(Tt tipo);
 
-    std::unique_ptr<Expresion> parsearExpresion(int precedenciaMinima);
+    std::unique_ptr<Expresion> parsearExpresion(Pr precedenciaMinima);
 
     std::vector<std::unique_ptr<Sentencia>> parsearPrograma();
 };
