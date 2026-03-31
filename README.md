@@ -50,4 +50,6 @@ maybe {
 
 ```
 
-
+## Contact:
+- **Discord** `zick9510`
+- **Email** salastomasalejandro1@gmail.com
