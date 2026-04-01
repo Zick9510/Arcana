@@ -6,6 +6,7 @@ obj/
 .directory
 
 # --- Archivos de Herramientas y Editores ---
+.vscode
 compile_commands.json
 Session.vim
 
