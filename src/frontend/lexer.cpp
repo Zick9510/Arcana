@@ -5,22 +5,28 @@
 #include "Lexer.hpp"
 
 /* --- Lexer --- */
+
+// Checks if we have reached the end of the source string
 bool Lexer::esFin() const {
   return cursor >= source.size();
 
 }
 
+// Returns the character at the current position without advancing
 char Lexer::actual() const {
   return esFin() ? '\0' : source[cursor];
 
 }
 
+// Returns the next character (lookahead) withouth advaincing the cursor
 char Lexer::peek() const {
   if (cursor + 1 >= source.size()) { return '\0'; }
   return source[cursor + 1];
 
 }
 
+// Consumes and returns the current character, advaincing the cursor
+// Also increments the line counter if a newline is found
 char Lexer::get() {
   char c = source[cursor++];
   if (c == '\n') { linea++; }
@@ -28,20 +34,25 @@ char Lexer::get() {
 
 }
 
-bool Lexer::match(char esp) { // Esperado
+// "Conditional consume": If the current char matches 'esp', advence and return true
+bool Lexer::match(char esp) { // Expected
   if (esFin() || source[cursor] != esp) { return false; }
   cursor++;
   return true;
 
 }
 
+/* --- Numerical Parsing Logic --- */
+
+// Checks if the current char indicates a numeric base (b, o, x)
 bool Lexer::validarBase() {
   if (actual() == 'b' || actual() == 'o' || actual() == 'x') { return true; }
-  //... Si es BOX, reportar error
+  // If it detectes B, O, X we should raise an error: They are not allowed
   return false;
 
 }
 
+// Validates if 'caracter' is a valid digit for the given base (binary, octal, hex)
 bool Lexer::validarCaracterBase(char caracter, char base) {
   switch (base) {
 
@@ -54,7 +65,7 @@ bool Lexer::validarCaracterBase(char caracter, char base) {
     }
 
     case 'x': {
-      return ((caracter >= '0' && caracter <= '7') ||
+      return ((caracter >= '0' && caracter <= '9') ||
               (caracter >= 'A' && caracter <= 'F') || caracter == '_'
       );
     }
@@ -66,11 +77,13 @@ bool Lexer::validarCaracterBase(char caracter, char base) {
   }
 }
 
+// Checks for numeric suffixes (like 'u' for unsigned, 'f' for float, etc.)
 bool Lexer::esSufijoNum() {
   return (actual() == 's' || actual() == 'u' ||
           actual() == 'f' || actual() == 'i' );
 }
 
+// Consumes suffixes and any trailing digits (e.g., f32, i64)
 void Lexer::consumirSufijoNum() {
   if (!esSufijoNum()) {
     return;
@@ -82,12 +95,12 @@ void Lexer::consumirSufijoNum() {
 
 void Lexer::leerNumero() {
 
-  size_t inicio = cursor - 1; // El primer dígito lo consumió el get() en tokenize
+  size_t inicio = cursor - 1; // get() was already called in tokenize()
   bool es_float = false;
 
-  // 1. Base? (0b, 0o, 0x)
+  // Handle non-decimal bases: 0b..., 0o..., 0x...
   if (source[inicio] == '0' && validarBase()) {
-    char base = get();
+    char base = get(); // Consume the 'b', 'o', or 'x'
     std::cout << base << '\n';
 
     while (validarCaracterBase(actual(), base)) {
@@ -95,18 +108,21 @@ void Lexer::leerNumero() {
 
     }
 
-  } else {
+  } else { // Handle stander decimals and floating point
     while (std::isdigit(actual()) || actual() == '.' || actual() == '_' || esSufijoNum()) {
+      //... Add scientific notation support
 
       if (esSufijoNum()) {
         consumirSufijoNum();
         get();
         break;
+
       }
 
       if (actual() == '.') {
-        if (es_float) { break; }
+        if (es_float) { break; } // Don't allow two dots
         es_float = true;
+
       }
 
       get();
@@ -121,10 +137,13 @@ void Lexer::leerNumero() {
 
 }
 
-void Lexer::leerStringChar() {
+void Lexer::leerStringChar() { //...
   bool comillas_dobles = (actual() == '"');
+  // Logic to consume until closing quote would go here
 
 }
+
+/* --- Main Tokenization Loop --- */
 
 std::vector<Token> Lexer::tokenize() {
 
@@ -135,10 +154,12 @@ std::vector<Token> Lexer::tokenize() {
     size_t inicio = cursor;
     char c = get();
 
+    // Ignore whitespace
     if (std::isspace(c)) { continue; }
 
-    // --- Identificadores y Keywords ---
-    if (std::isalpha(c) || c == '_') {
+    // --- Identifiers and Keywords ---
+    if (std::isalpha(c) || c == '_') { // Must start with alpha or _
+
       while (std::isalnum(actual()) || actual() == '_') { get(); }
 
       std::string_view texto = source.substr(inicio, cursor - inicio);
@@ -154,21 +175,21 @@ std::vector<Token> Lexer::tokenize() {
       continue;
     }
 
-    // --- Números ---
+    // --- Numbers ---
     if (std::isdigit(c)) {
       leerNumero();
       continue;
     }
 
-    // --- Strings y Chars ---
+    // --- Strings and Characters ---
     if (c == '"' || c == '\'') {
       leerStringChar();
       continue;
 
     }
 
-    // --- Operadores y Símbolos ---
-    switch (c) {
+    // --- Symbols ---
+    switch (c) { // Greedy matching
       case '(': { tokens.push_back( {Tt::PAREN_L, "(", linea} ); break; }
       case ')': { tokens.push_back( {Tt::PAREN_R, ")", linea} ); break; }
       case '{': { tokens.push_back( {Tt::LLAVE_L, "{", linea} ); break; }
@@ -218,19 +239,25 @@ std::vector<Token> Lexer::tokenize() {
       }
 
       case '/': {
-        if        (match('/')) {
+        if        (match('/')) { // Single-line comment: //
           char temp = peek();
           while ((temp = get()) != '\n' && !esFin()) {}
 
-        } else if (match('-')) {
+        } else if (match('-')) { // Multi-line comment: /- ... -/
 
-          char temp = peek();
+          bool comment_closed = false;
+
           while (!esFin()) {
 
-            if (temp == '-' && match('/')) {
-                break;
+            if (actual() == '-' && peek() == '/') {
+              get(); get(); // Consume - and /
+              comment_closed = true;
+              break;
+
             }
-            temp = get();
+          }
+          if (!comment_closed) {
+            //... Call ErrorHandler
           }
 
         } else if (match('=')) {
@@ -364,6 +391,7 @@ std::vector<Token> Lexer::tokenize() {
     }
   }
 
+  // EOF Token at the end
   tokens.push_back( {Tt::FIN_ARCHIVO, "", linea} );
  
   return tokens;
