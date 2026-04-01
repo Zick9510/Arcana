@@ -12,9 +12,10 @@ Session.vim
 
 # --- Archivos Temporales ---
 salida.cpp
-notas.bu
-*.arc
-!tests/*.arc
+
+# --- Archivos Arcana ---
+*.arcn
+!tests/*.arcn
 
 # --- Binarios Comunes (por si acaso) ---
 *.o
