@@ -87,7 +87,7 @@ int main(int argc, const char *argv[]) { //... I am still translating the code t
       archivo_entrada = *config.archivo_entrada;
 
     } else {
-      std::cerr << "Error: La ruta '" << archivo_entrada << "' no existe.\n";
+      std::cerr << "Error: La ruta '" << *config.archivo_entrada << "' no existe.\n";
 
     }
   }
