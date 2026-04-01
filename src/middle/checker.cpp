@@ -110,6 +110,61 @@ Dt Checker::verificarMult(const Dt& izq, const Dt& der) {
   return Dt(TipoPrimitivo::DESCONOCIDO);
 }
 
+Dt Checker::verificarDiv(const Dt& izq, const Dt& der) {
+
+  if (izq.esPrimitivo() && der.esPrimitivo()) {
+    TipoPrimitivo pIzq = std::get<TipoPrimitivo>(izq.valor);
+    TipoPrimitivo pDer = std::get<TipoPrimitivo>(der.valor);
+
+    // Regla 1: División de números
+    if (esNum(pIzq) && esNum(pDer)) { //... Ajustar esto para que retorne como mínimo, float64
+      return promoverTipos(pIzq, pDer);
+    }
+
+  }
+
+  //... Reportar al errHandler
+  return Dt(TipoPrimitivo::DESCONOCIDO);
+}
+
+Dt Checker::verificarPotencia(const Dt& izq, const Dt& der) {
+  if (izq.esPrimitivo() && der.esPrimitivo()) {
+    TipoPrimitivo pIzq = std::get<TipoPrimitivo>(izq.valor);
+    TipoPrimitivo pDer = std::get<TipoPrimitivo>(der.valor);
+
+    // Regla 1: Potenciación de números
+    if (esNum(pIzq) && esNum(pDer)) { //... Ojo con (-x) ** ( 1 / (2n) )
+      // Obtenemos el tipo más preciso de los dos
+      Dt promovido = promoverTipos(pIzq, pDer);
+      TipoPrimitivo pProm = std::get<TipoPrimitivo>(promovido.valor);
+
+      if (esFloat(pProm)) {
+        // Si es flotante, el piso es double 
+        if (obtenerRangoNum(pProm) < obtenerRangoNum(TipoPrimitivo::DOUBLE)) {
+          return Dt(TipoPrimitivo::DOUBLE);
+
+        }
+
+      } else {
+        // Si es entero, el piso es long
+        if (obtenerRangoNum(pProm) < obtenerRangoNum(TipoPrimitivo::LONG)) {
+          return Dt(TipoPrimitivo::LONG);
+
+        }
+
+      }
+
+      // El tipo promovido ya era más preciso que long o double
+      return promovido;
+
+    }
+
+  }
+
+  //... Reportar al errHandler
+  return Dt(TipoPrimitivo::DESCONOCIDO);
+}
+
 Dt Checker::verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador op) { //...
 
   if ( izq.es(TipoPrimitivo::DESCONOCIDO) ||
@@ -117,7 +172,7 @@ Dt Checker::verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador 
     return Dt(TipoPrimitivo::DESCONOCIDO);
   }
 
-  switch(op) { //...
+  switch(op) { //... Añadir más casos
 
     case TipoOperador::A_SUMA: {
       return verificarSuma(izq, der);
@@ -129,6 +184,14 @@ Dt Checker::verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador 
 
     case TipoOperador::A_MULT: {
       return verificarMult(izq, der);
+    }
+
+    case TipoOperador::A_DIV: {
+        return verificarDiv(izq, der);
+    }
+
+    case TipoOperador::A_POT: {
+        return verificarPotencia(izq, der);
     }
 
     default: {

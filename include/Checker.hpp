@@ -21,6 +21,8 @@ class Checker : public ASTVisitor {
     Dt verificarSuma(const Dt& izq, const Dt& der);
     Dt verificarResta(const Dt& izq, const Dt& der);
     Dt verificarMult(const Dt& izq, const Dt& der);
+    Dt verificarDiv(const Dt& izq, const Dt& der);
+    Dt verificarPotencia(const Dt& izq, const Dt& der);
 
     bool esCasteoValido(const Dt& tipo_original, const Dt& tipo_destino);
 
@@ -128,8 +130,6 @@ class Checker : public ASTVisitor {
 
       return ;
 
-      nodo->tipo_resuelto = TipoPrimitivo::DESCONOCIDO;
-
     }
 
     void visitar(ExprBinaria* nodo) override {
@@ -159,12 +159,16 @@ class Checker : public ASTVisitor {
     }
 
     void visitar(ExprVariable* nodo) override { //...
-      nodo->tipo_resuelto = Dt(TipoPrimitivo::INT);
+ 
     }
 
     void visitar(ExprArray* nodo) override {
-
+      for (const auto& elemento : nodo->elementos) {
+        elemento->accept(this);
+      }
     }
+    //... Asignar el tipo de dato al array y comprobar que todos los tipos de datos dentro sean iguales
+
 
     void visitar(ExprUnaria* nodo) override {
 

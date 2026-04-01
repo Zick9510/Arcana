@@ -257,7 +257,7 @@ std::vector<Token> Lexer::tokenize() {
             }
 
             get();
-            
+
           }
 
           if (!comment_closed) {

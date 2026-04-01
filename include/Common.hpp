@@ -165,7 +165,17 @@ inline int obtenerRangoNum(TipoPrimitivo p) {
   }
 }
 
-inline bool esNum(TipoPrimitivo p) { return obtenerRangoNum(p) > 0; }
+inline int obtenerRangoFloat(TipoPrimitivo p) {
+  switch (p) {                                     // BITS
+    case TipoPrimitivo::FLOAT      : { return 1; } // 32
+    case TipoPrimitivo::DOUBLE     : { return 2; } // 64
+    case TipoPrimitivo::LONG_DOUBLE: { return 3; } // 128
+    default                        : { return 0; } // No es un float
+  }
+}
+
+inline bool esNum  (TipoPrimitivo p) { return obtenerRangoNum  (p) > 0; }
+inline bool esFloat(TipoPrimitivo p) { return obtenerRangoFloat(p) > 0; }
 
 
 struct TipoUsuario {
@@ -275,11 +285,12 @@ enum class TipoOperador {
 
 inline std::string operadorString(TipoOperador op) { //... Agregar los demás casos
   switch (op) {
-    case TipoOperador::A_SUMA: { return "+"; }
-    case TipoOperador::A_RESTA: { return "-"; }
-    case TipoOperador::A_MULT: { return "*"; }
-    case TipoOperador::A_DIV: { return "/"; }
-    default: { return "Operador desconocido"; }
+    case TipoOperador::A_SUMA : { return "+"      ; }
+    case TipoOperador::A_RESTA: { return "-"      ; }
+    case TipoOperador::A_MULT : { return "*"      ; }
+    case TipoOperador::A_DIV  : { return "/"      ; }
+    case TipoOperador::A_POT  : { return "**"     ; }
+    default                   : { return "unknown"; }
   }
 }
 
@@ -288,6 +299,8 @@ inline TipoOperador convertirEnTipoOperador(Tt op) { //... Agregar los demás ca
     case Tt::MAS: { return TipoOperador::A_SUMA; }
     case Tt::MENOS: { return TipoOperador::A_RESTA; }
     case Tt::ASTERISCO: { return TipoOperador::A_MULT; }
+    case Tt::POTENCIA: { return TipoOperador::A_POT; }
+
     default: { return TipoOperador::DESCONOCIDO; }
   }
 }
