@@ -216,10 +216,13 @@ class Checker : public ASTVisitor {
     }
 
     void visitar(SentenciaAsignacion* nodo) override {
+      nodo->izquierda->accept(this);
+      nodo->derecha  ->accept(this);
 
+      //... Check if the left side and right side have the same type
     }
 
-    void visitar(SentenciaSi* nodo) override {
+    void visitar(SentenciaSi* nodo) override { //...
 
     }
 

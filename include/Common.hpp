@@ -676,20 +676,27 @@ class ExprRango : public Expresion {
 
       if (inicio) {
         inicio->imprimir(nivel + 1);
+
       } else {
         std::cout << sangria << "| +-\n";
+
       }
 
-      if (fin) {
+      if (fin   ) {
         fin->imprimir(nivel + 1);
+
       } else {
         std::cout << sangria << "| +-\n";
+
       }
 
-      if (paso) {
+      if (paso  ) {
         paso->imprimir(nivel + 1);
+
       } else {
+
         std::cout << sangria << "| +-\n";
+
       }
 
     }
