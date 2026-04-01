@@ -7,7 +7,7 @@
 #include <chrono>
 
 /*
- * Convención:
+ * Style Guide:
  *
  * Soruce : camelCase.cpp
  * Haeders: PascalCase.hpp
@@ -118,7 +118,7 @@ int main(int argc, const char *argv[]) { //... I am still translating the code t
 
   }
 
-  if (driver.compile(config)) {
+  if (resultado) {
     return 0;
 
   } else {
