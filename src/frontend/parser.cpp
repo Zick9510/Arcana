@@ -49,12 +49,11 @@ Token Parser::check(Tt tipoEsperado) {
   exit(1);
 }
 
-// Constructor
 Parser::Parser(std::vector<Token> t)
   : tokens(std::move(t)), pos(0) {}
 
-// Parsing types
-InfoTipo Parser::parsearTipo() {
+
+InfoTipo Parser::parsearTipo() { //... Add pointer/references (int*, struct&)
   InfoTipo info;
   Token t = peek();
 

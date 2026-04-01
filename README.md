@@ -17,7 +17,7 @@ Most languages force you to wait for a committee to add a new feature. Arcana gi
 a way to expand the compiler's Abstract Syntax Tree (AST) directly from your source code.
 
 ### Side-Effect Clarity: Strict visual separation between code blocks '{}' (actions) and expressions '()' (values).
-### Note: An expression can change and/or assign the value of a variable (e.g., i++, (j = 2), etc. )
+#### Note: An expression can change and/or assign the value of a variable (e.g., i++, (j = 2), etc. )
 
 
 ## Example: The "Arcano" System
