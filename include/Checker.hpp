@@ -171,7 +171,6 @@ class Checker : public ASTVisitor {
 
 
     void visitar(ExprUnaria* nodo) override {
-
     }
 
     void visitar(ExprLlamadaArcano* nodo) override {
@@ -180,9 +179,26 @@ class Checker : public ASTVisitor {
 
     void visitar(ExprRango* nodo) override {
 
+      if (nodo->inicio) {
+        nodo->inicio->accept(this);
+
+      }
+
+      if (nodo->fin    ) {
+        nodo->fin   ->accept(this);
+ 
+      }
+
+      if (nodo->paso   ) {
+        nodo->paso  ->accept(this);
+
+      }
+
     }
 
     void visitar(ExprAcceso* nodo) override {
+      nodo->contenedor->accept(this);
+      nodo->rango->accept(this);
 
     }
 

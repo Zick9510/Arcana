@@ -672,7 +672,7 @@ class ExprRango : public Expresion {
     void imprimir(int nivel = 0) const override {
       std::string sangria = "";
       for (int i = 0; i < nivel; ++i) { sangria += "| "; }
-      std::cout << sangria << "+- Op ([])\n";
+      std::cout << sangria << "+- Op (Slice)\n";
 
       if (inicio) {
         inicio->imprimir(nivel + 1);
@@ -710,7 +710,7 @@ class ExprAcceso : public Expresion {
     void imprimir(int nivel = 0) const override {
       std::string sangria = "";
       for (int i = 0; i < nivel; ++i) { sangria += "| "; }
-      std::cout << sangria << "+- Op ([])\n";
+      std::cout << sangria << "+- Op (Index)\n";
       contenedor->imprimir(nivel + 1);
       rango->imprimir(nivel + 1);
     }
@@ -763,10 +763,10 @@ class SentenciaExpr : public Sentencia {
       : expresion(std::move(expr)) {}
 
     void imprimir(int nivel = 0) const override {
-      std::string sangria = "";
+      std::string sangria = "| ";
       for (int i = 0; i < nivel; ++i) { sangria += "| "; }
       std::cout << sangria << "Expresión:\n";
-      expresion->imprimir(nivel + 2);
+      expresion->imprimir(nivel + 1);
     }
 
     void accept(ASTVisitor* visitor) override {
@@ -810,12 +810,12 @@ class SentenciaSi : public Sentencia {
       for (int i = 0; i < nivel; ++i) { sangria += "| "; }
       std::cout << sangria << "+- Si\n";
       std::cout << sangria << "| +- Condición:\n";
-      condicion->imprimir(nivel + 2);
+      condicion->imprimir(nivel + 1);
       std::cout << sangria << "| +- Entonces:\n";
-      rama_si->imprimir(nivel + 2);
+      rama_si->imprimir(nivel + 1);
       if (rama_sino) {
         std::cout << sangria << "| +- Sino:\n";
-        rama_sino->imprimir(nivel + 2);
+        rama_sino->imprimir(nivel + 1);
       }
     }
 
@@ -859,12 +859,12 @@ class SentenciaMientras : public Sentencia {
       for (int i = 0; i < nivel; ++i) { sangria += "| "; }
       std::cout << sangria << "+- Mientras\n";
       std::cout << sangria << "| +- Condición:\n";
-      condicion->imprimir(nivel + 2);
+      condicion->imprimir(nivel + 1);
       std::cout << sangria << "| +- Cuerpo:\n";
-      rama_while->imprimir(nivel + 2);
+      rama_while->imprimir(nivel + 1);
       if (rama_sino) {
         std::cout << sangria << "| +- Sino:\n";
-        rama_sino->imprimir(nivel + 2);
+        rama_sino->imprimir(nivel + 1);
       }
     }
 
@@ -931,7 +931,7 @@ class SentenciaArcano : public Sentencia {
       for (const auto& par : ramas) {
           std::cout << sangria << "|   +- Rama contextual: '" << par.first << "'\n";
           if (par.second) {
-              par.second->imprimir(nivel + 2);
+              par.second->imprimir(nivel + 1);
           }
       }
     }
@@ -956,7 +956,7 @@ class SentenciaLlamadaArcano : public Sentencia {
       for (const auto& par : argumentos) {
         std::cout << sangria << "| +- Param: " << par.first << "\n";
         if (par.second) {
-          par.second->imprimir(nivel + 2);
+          par.second->imprimir(nivel + 1);
         } else {
           std::cout << sangria << "|    (vacío/ no provisto)\n";
         }
