@@ -26,6 +26,8 @@
  *
  * Variables: snake_case
  *
+ * //... Means "There is somehting that in this line that should be checked out later" or "This is for debugging"
+ *
  * */
 
 CompilerConfig parsearArgumentos(int argc, const char *argv[]) {
@@ -70,8 +72,9 @@ CompilerConfig parsearArgumentos(int argc, const char *argv[]) {
   return config;
 }
 
-int main(int argc, const char *argv[]) {
+int main(int argc, const char *argv[]) { //... I am still translating the code to english
 
+  //... Debug. Just measuring speed
   auto inicio = std::chrono::high_resolution_clock::now();
 
   CompilerConfig config = parsearArgumentos(argc, argv);
@@ -101,8 +104,8 @@ int main(int argc, const char *argv[]) {
 
   bool resultado = driver.compile(config);
 
+  //... Debug
   auto fin = std::chrono::high_resolution_clock::now();
-
   std::chrono::duration<double, std::milli> tiempo = fin - inicio;
 
   std::cout << "En " << tiempo.count() << " ms.\n";

@@ -12,20 +12,20 @@ Token Parser::resolverAlias(Token t) {
   return t;
 }
 
-// Mira el token actual sin consumirlo
+// Look the next token and return it. If its the EOF, give me the last token
 Token Parser::peek() {
   if (pos >= tokens.size()) { return tokens.back(); } // EOF
   return resolverAlias(tokens[pos]);
 }
 
-// Consume el token actual y avanza
+// Consume the next token and return it
 Token Parser::get() {
   Token actual = peek();
   pos++;
   return actual;
 }
 
-// Chequea si el token actual es de ciertos tipos y avanza, sino, Error
+// Same use as Token check(Tt) function from this file, but it expects anya of the options
 bool Parser::coincide(std::initializer_list<Tt> tipos) {
   for (Tt tipo : tipos) {
     if (peek().tipo == tipo) {
@@ -36,38 +36,50 @@ bool Parser::coincide(std::initializer_list<Tt> tipos) {
   return false;
 }
 
+// We expect the next token to be exactly this one, if its not, then error
 Token Parser::check(Tt tipoEsperado) {
   if (peek().tipo == tipoEsperado) {
     return get();
   }
+
+  //... We have to report this error and call the not implemented yet error recovery function
   std::cerr << "Error: Se esperaba " << nombreTipo(tipoEsperado)
             << " pero se encontró " << nombreTipo(peek().tipo)
             << " ('" << peek().lexema << "') en linea " << peek().linea << std::endl;
   exit(1);
 }
 
+// Constructor
 Parser::Parser(std::vector<Token> t)
   : tokens(std::move(t)), pos(0) {}
 
+// Parsing types
 InfoTipo Parser::parsearTipo() {
   InfoTipo info;
   Token t = peek();
+
   if (esInfiere(t.tipo) || esTipo(t.tipo)) {
     info.base_tipo = get().tipo;
-  } else { //...
+
+  } else { //... Report to the error handler, recover from this, and keep executing
     std::cerr << "Error: Se esperaba un tipo de dato, pero se encontró '"
               << t.lexema << "'\n";
     exit(1);
+
   }
 
   if (esTipoComp(info.base_tipo)) {
-    check(Tt::MENOR); // <
+
+    check(Tt::MENOR);   // <
     info.subtipos.push_back(parsearTipo());
+
     while (peek().tipo == Tt::COMA) { // ,
       get();
-      info.subtipos.push_back(parsearTipo()); // [TIPO]
+      info.subtipos.push_back(parsearTipo()); // [Type]
+
     }
-    check(Tt::MAYOR); // >
+
+    check(Tt::MAYOR);   // >
   }
 
   while (esModificador(peek().tipo)) {
@@ -87,16 +99,20 @@ InfoTipo Parser::parsearTipo() {
   //  Var no puede tener modificadores de tamaño o signo
   //  Lo mismo para float y short
   //  Double no puede tener modificadores de signo
-  if (((info.base_tipo == Tt::VAR  ||
-    info.base_tipo == Tt::FLOAT ||
-    info.base_tipo == Tt::SHORT) &&
+  if (((info.base_tipo == Tt::VAR    || //... I think this should be in a function
+        info.base_tipo == Tt::FLOAT  ||
+        info.base_tipo == Tt::SHORT) &&
     (info.multiplicador > 1 || info.es_nat)) ||
     ((info.base_tipo == Tt::DOUBLE) && (info.es_nat))) {
+
     std::cerr //...
     << "Error: No podés usar modificadores de tamaño o signo con inferencia de tipos\n";
     exit(1);
+
     }
+
     return info;
+
 }
 
 std::unique_ptr<Expresion> Parser::parsearCasteo() {
@@ -108,7 +124,8 @@ std::unique_ptr<Expresion> Parser::parsearCasteo() {
 
 std::unique_ptr<Expresion> Parser::parsearRangoOArray() {
 
-  if (peek().tipo == Tt::CORCH_R) { // Un array vacío
+  if (peek().tipo == Tt::CORCH_R) { // "[]" An empty array
+
     get();
     std::vector<std::unique_ptr<Expresion>> elementos;
     return std::make_unique<ExprArray>(std::move(elementos));
@@ -122,14 +139,16 @@ std::unique_ptr<Expresion> Parser::parsearRangoOArray() {
 
   }
 
-  if (peek().tipo == Tt::CORCH_R) { // [a] Es un rango de un elemento
+  if (peek().tipo == Tt::CORCH_R) { // [a] Index
     get();
+
     return std::make_unique<ExprRango>(
       std::move(primer_elemento), std::move(nullptr), std::move(nullptr)
+
     );
   }
 
-  if (peek().tipo == Tt::DOS_PUNTOS) { // Un rango
+  if (peek().tipo == Tt::DOS_PUNTOS) { // A range
     std::unique_ptr<Expresion> fin  = nullptr;
     std::unique_ptr<Expresion> paso = nullptr;
 
@@ -187,39 +206,55 @@ std::unique_ptr<Expresion> Parser::parsearRango() {
   // 1. Hay inicio? [A:]
   if (peek().tipo != Tt::DOS_PUNTOS) {
     inicio = parsearExpresion(Pr::MINIMA);
+
   }
+
   if (peek().tipo == Tt::DOS_PUNTOS) {
     get();
+
   }
+
   // 2. Hay fin? [a:B]
   if (peek().tipo != Tt::DOS_PUNTOS && peek().tipo != Tt::CORCH_R) {
     fin = parsearExpresion(Pr::MINIMA);
+
   }
+
   if (peek().tipo == Tt::DOS_PUNTOS) {
     get();
+
   }
+
   // 3. Hay paso? [a:b:C]
   if (peek().tipo != Tt::DOS_PUNTOS && peek().tipo != Tt::CORCH_R) {
     paso = parsearExpresion(Pr::MINIMA);
+
   }
-  // 4. Es un rango? [a:b:c .]
+
+  // 4. What use could we assign to the "." at the end of a range? Maybe "Access the value elements from the map"?
   if (peek().tipo == Tt::PUNTO) {
     get();
     obtener_valores = true;
+
   }
 
   check(Tt::CORCH_R);
   return std::make_unique<ExprRango>(
     std::move(inicio), std::move(fin), std::move(paso)
+
   );
+
 }
 
 std::unique_ptr<Expresion> Parser::parsearAcceso(std::unique_ptr<Expresion> contenedor) {
+
   std::unique_ptr<Expresion> indice_o_rango = parsearRango();
+
   return std::make_unique<ExprAcceso>(
     std::move(contenedor),
     std::move(indice_o_rango)
   );
+
 }
 
 std::unique_ptr<Sentencia> Parser::parsearEscritura() {
@@ -766,3 +801,5 @@ std::vector<std::unique_ptr<Sentencia>> Parser::parsearPrograma() {
   }
   return programa;
 }
+
+// --- Error Recovery Functions ---
