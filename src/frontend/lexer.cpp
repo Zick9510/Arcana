@@ -255,7 +255,11 @@ std::vector<Token> Lexer::tokenize() {
               break;
 
             }
+
+            get();
+            
           }
+
           if (!comment_closed) {
             //... Call ErrorHandler
           }
