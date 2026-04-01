@@ -1108,3 +1108,13 @@ class GestorTablas {
     bool añadirVariable(const std::string& nombre, InfoVariable info, int linea);
     InfoVariable* buscarVariable(const std::string& nombre, int linea);
 };
+
+
+/* --- Colors --- */
+extern const std::string COLOR_RESET  ;
+extern const std::string COLOR_RED    ;
+extern const std::string COLOR_GREEN  ;
+extern const std::string COLOR_YELLOW ;
+extern const std::string COLOR_BLUE   ;
+extern const std::string COLOR_MAGENTA;
+extern const std::string COLOR_CYAN   ;

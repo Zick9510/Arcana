@@ -38,8 +38,6 @@ CompilerConfig parsearArgumentos(int argc, const char *argv[]) {
   for (size_t i = 0; i < args.size(); ++i) {
     const std::string arg = args[i];
 
-    std::cout << "Arg " << i << ": " << arg << " Size: " << args.size() << '\n';
-
     if (arg == "-help") {
       config.ayuda = true;
 
@@ -48,7 +46,7 @@ CompilerConfig parsearArgumentos(int argc, const char *argv[]) {
         config.archivo_salida = args[++i];
 
       } else {
-        std::cerr << "Error: Se esperaba un archivo de salida después de '-o'.\n";
+        std::cerr << COLOR_RED << "[Error] " << COLOR_RESET << "Se esperaba un archivo de salida después de '-o'.\n";
         exit(1);
       }
 
@@ -116,14 +114,6 @@ int main(int argc, const char *argv[]) { //... I am still translating the code t
   } else {
     return 1;
 
-  }
-
-  if (resultado) {
-    return 0;
-
-  } else {
-    return 1;
-
-  }
+  } 
 
 }

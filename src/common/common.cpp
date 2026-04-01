@@ -2,6 +2,8 @@
 
 #include "Common.hpp"
 
+#include "Includes.hpp"
+
 /* --- Manejo de Tipos --- */
 
 std::string nombreTipo(Tt tipo) {
@@ -95,11 +97,11 @@ std::string tipoString(const Dt& tipo) {
 
 /* --- Colores para la terminal --- */
 
-const std::string RESET = "\033[0m";
-const std::string RED = "\033[1;31m";
-const std::string GREEN = "\033[1;32m";
-const std::string YELLOW = "\033[1;33m";
-const std::string BLUE = "\033[1;34m";
-const std::string MAG = "\033[1;35m";
-const std::string CYAN = "\033[1;36m";
+inline const std::string COLOR_RESET   = "\033[0m"   ;
+inline const std::string COLOR_RED     = "\033[1;31m";
+inline const std::string COLOR_GREEN   = "\033[1;32m";
+inline const std::string COLOR_YELLOW  = "\033[1;33m";
+inline const std::string COLOR_BLUE    = "\033[1;34m";
+inline const std::string COLOR_MAGENTA = "\033[1;35m";
+inline const std::string COLOR_CYAN    = "\033[1;36m";
 
