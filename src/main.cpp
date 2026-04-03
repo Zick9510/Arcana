@@ -15,7 +15,8 @@
  * Clases     : PascalCase
  * Estructuras: PascalCase
  *
- * Argumentos (Clases): snake_case
+ * Argumentos (Clases, privados): camelCase
+ * Argumentos (Clases, publicos): snake_case
  *
  * Funciones : camelCase
  * Métodos   : camelCase

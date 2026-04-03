@@ -6,8 +6,8 @@
 
 /* --- Parser --- */
 Token Parser::resolverAlias(Token t) {
-  if (t.tipo == Tt::IDENTIFICADOR && alias_lexicos.count(t.lexema)) {
-    t.tipo = alias_lexicos[t.lexema];
+  if (t.tipo == Tt::IDENTIFICADOR && aliasLexicos.count(t.lexema)) {
+    t.tipo = aliasLexicos[t.lexema];
   }
   return t;
 }
@@ -277,7 +277,7 @@ std::unique_ptr<Sentencia> Parser::parsearEscritura() {
   Token original = get();
   check(Tt::PUNTO_COMA);
  
-  alias_lexicos[alias.lexema] = original.tipo;
+  aliasLexicos[alias.lexema] = original.tipo;
  
   return std::make_unique<SentenciaEscritura>(alias.lexema, original.tipo);
 }
@@ -465,7 +465,7 @@ std::unique_ptr<Sentencia> Parser::parsearSentencia() {
  
   // Manejo de arcanos
   if (actual == Tt::IDENTIFICADOR) {
-    if (arcanos_activos.count(peek().lexema)) {
+    if (arcanosActivos.count(peek().lexema)) {
       return parsearLlamadaArcano();
 
     }
@@ -643,7 +643,7 @@ std::unique_ptr<Sentencia> Parser::parsearArcano() {
 
   check(Tt::LLAVE_R);
 
-  arcanos_activos[nombre_arcano.lexema] = def;
+  arcanosActivos[nombre_arcano.lexema] = def;
 
   return std::make_unique<SentenciaArcano>(
     nombre_arcano.lexema, std::move(def), std::move(ramas)
@@ -653,7 +653,7 @@ std::unique_ptr<Sentencia> Parser::parsearArcano() {
 
 std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() {
   Token nombre_arcano = get();
-  DefinicionArcano& def = arcanos_activos[nombre_arcano.lexema];
+  DefinicionArcano& def = arcanosActivos[nombre_arcano.lexema];
   std::map<std::string, std::unique_ptr<Sentencia>> argumentos;
 
   // Recorremos el esqueleto para saber qué esperar
