@@ -34,7 +34,7 @@ class ArcanaType {
     ArcanaType(TypeKind k)
       : kind(k) {}
 
-    virtual ~ArcanaType()                             ;
+    virtual ~ArcanaType()                                 ;
     virtual std::string toString()               const = 0;
     virtual int getBitSize()                     const = 0;
     virtual bool esIgual(const ArcanaType* otro) const = 0;
