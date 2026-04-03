@@ -40,37 +40,47 @@ class ArcanaType {
     virtual bool esIgual(const ArcanaType* otro) const;
 };
 
-class VoidType : public ArcanaType {
-  public:
-    VoidType();
+class UnkownType : public ArcanaType {
+public:
+  UnkownType();
+  std::string toString()               const override;
+  int getBitSize()                     const override;
+  bool esIgual(const ArcanaType* otro) const override;
 
-    std::string toString()               const override;
-    int getBitSize()                     const override;
-    bool esIgual(const ArcanaType* otro) const override;
+};
+
+class VoidType : public ArcanaType {
+public:
+  VoidType();
+
+  std::string toString()               const override;
+  int getBitSize()                     const override;
+  bool esIgual(const ArcanaType* otro) const override;
+
 };
 
 class IntegerType : public ArcanaType {
-  public:
-    int bits; // 8, 16, 32, 64, ...
-    bool is_unsigned;
- 
-    IntegerType(int b, bool u);
- 
-    std::string toString()               const override;
-    int getBitSize()                     const override;
-    bool esIgual(const ArcanaType* otro) const override;
+public:
+  int bits; // 8, 16, 32, 64, ...
+  bool is_unsigned;
+
+  IntegerType(int b, bool u);
+
+  std::string toString()               const override;
+  int getBitSize()                     const override;
+  bool esIgual(const ArcanaType* otro) const override;
 
 };
 
 class FloatType : public ArcanaType {
-  public:
-    int bits; // 32, 64, ...
+public:
+  int bits; // 32, 64, ...
 
-    FloatType(int b);
+  FloatType(int b);
 
-    std::string toString()               const override;
-    int getBitSize()                     const override;
-    bool esIgual(const ArcanaType* otro) const override;
+  std::string toString()               const override;
+  int getBitSize()                     const override;
+  bool esIgual(const ArcanaType* otro) const override;
 
 };
 
@@ -78,10 +88,14 @@ class FloatType : public ArcanaType {
 
 class TypeFactory { //...
 private:
+  std::shared_ptr<UnkownType> cacheUnknown;
+  std::shared_ptr<VoidType> cacheVoid;
   std::map<std::tuple<int, bool>, std::shared_ptr<IntegerType>> cacheInteger;
   std::map<float, std::shared_ptr<FloatType>> cacheFloat;
 
 public:
+  std::shared_ptr<UnkownType>  getUnknown();
+  std::shared_ptr<VoidType>    getVoid();
   std::shared_ptr<IntegerType> getInteger(int bits, bool is_unsigned);
   std::shared_ptr<FloatType>   getFloat  (int bits);
 

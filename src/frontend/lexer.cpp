@@ -79,8 +79,7 @@ bool Lexer::validarCaracterBase(char caracter, char base) {
 
 // Checks for numeric suffixes (like 'u' for unsigned, 'f' for float, etc.)
 bool Lexer::esSufijoNum() {
-  return (actual() == 's' || actual() == 'u' ||
-          actual() == 'f' || actual() == 'i' );
+  return (actual() == 'f' || actual() == 'u' || actual() == 'i');
 }
 
 // Consumes suffixes and any trailing digits (e.g., f32, i64)

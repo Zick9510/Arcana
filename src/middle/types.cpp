@@ -6,6 +6,18 @@
 
 /* --- Arcana Types --- */
 
+// --- UnkownType ---
+UnkownType::UnkownType()
+  : ArcanaType(TypeKind::DESCONOCIDO) {}
+
+std::string UnkownType::toString() const { return "unkown"; }
+
+int UnkownType::getBitSize()       const { return 0       ; }
+
+bool UnkownType::esIgual(const ArcanaType* otro) const {
+  return (otro->kind == TypeKind::DESCONOCIDO);
+}
+
 // --- VoidType ---
 
 VoidType::VoidType()
@@ -62,6 +74,34 @@ bool FloatType::esIgual(const ArcanaType* otro) const {
 
 /* --- Factory --- */
 
+std::shared_ptr<UnkownType> TypeFactory::getUnknown() {
+
+  if (cacheUnknown != nullptr) {
+    return cacheUnknown;
+
+  }
+
+  auto nueva_instancia = std::make_shared<UnkownType>();
+  cacheUnknown = nueva_instancia;
+
+  return nueva_instancia;
+
+}
+
+std::shared_ptr<VoidType> TypeFactory::getVoid() {
+
+  if (cacheVoid != nullptr) {
+    return cacheVoid;
+
+  }
+
+  auto nueva_instancia = std::make_shared<VoidType>();
+  cacheVoid = nueva_instancia;
+
+  return nueva_instancia;
+
+}
+
 std::shared_ptr<IntegerType> TypeFactory::getInteger(int bits, bool is_unsigned) {
   auto key = std::make_tuple(bits, is_unsigned);
 
@@ -74,6 +114,7 @@ std::shared_ptr<IntegerType> TypeFactory::getInteger(int bits, bool is_unsigned)
   cacheInteger[key]    = nueva_instancia;
 
   return nueva_instancia;
+
 }
 
 std::shared_ptr<FloatType> TypeFactory::getFloat(int bits) {

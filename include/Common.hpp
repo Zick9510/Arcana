@@ -148,7 +148,7 @@ inline bool esFloat(TypeKind t) { return t == TypeKind::FLOAT; }
 
 struct Dt {
   std::shared_ptr<ArcanaType> valor;
-  bool es_const;
+  bool es_const = false;
 
   Dt(std::shared_ptr<ArcanaType> v)
     : valor(v) {}
@@ -1053,7 +1053,7 @@ public:
 
 
 /* --- Extra --- */
-inline bool isPowerOf2(int num) { return (num > 0) && (((num + 1) & num) == 0); }
+inline bool isPowerOf2(int num) { return (num > 0) && ((num & (num - 1)) == 0); }
 
 
 /* --- Colors --- */

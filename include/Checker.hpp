@@ -37,101 +37,54 @@ public:
     char suf = ' ';
     int suf_num   ;
 
-    if (!nodo->sufijo.empty() && nodo->sufijo.size() > 1) {
+    if (!nodo->sufijo.empty() && nodo->sufijo.size() > 1) { // [char][num]
       suf     = nodo->sufijo[0];
       suf_num = std::stoi(nodo->sufijo.substr(1));
     }
 
     if (!tiene_punto && suf == 'f') {
-      //... Error, se esperaba que un float tenga decimal
+      //... Error, se esperaba que un float tenga decimal o ".0"
     }
 
-    //...
+    if (!isPowerOf2(suf_num) || suf_num < 8) {
+      //... Error, el sufijo tiene que tener una potencia de 2 mayor o igual a 8
+    }
 
-    switch (suf) { //... Cambiar para comprobar que sea potencia de 2 y simplificar el enum para poder
-                   // construir literales tan grandes como C++ permita
+    if (suf_num <= 8 && !(suf == 'b' || suf == 'c')) {
+      //... Error, solo los bytes y los chars peuden tener sufijos tan chiquitos
+    }
 
-      case 'i': {
-        if        (nodo->sufijo == "i32" ) {
-          tipo.valor    = typeFactory.getInteger(32 , false);
-          tipo.es_const = false;
-
-        } else if (nodo->sufijo == "i64" ) {
-          tipo.valor    = typeFactory.getInteger(64 , false);
-          tipo.es_const = false;
-
-        } else if (nodo->sufijo == "i128") {
-          tipo.valor    = typeFactory.getInteger(128, false);
-          tipo.es_const = false;
-
-        } else if (nodo->sufijo == "i256") {
-          tipo.valor    = typeFactory.getInteger(256, false);
-          tipo.es_const = false;
-
-        } else                             {
-          //... Sufijo inexistente
-
-        }
-
+    switch (suf) {
+      case 'i':
+      case 'u': {
+        tipo.valor = typeFactory.getInteger(suf_num, (suf == 'u'));
         break;
       }
 
       case 'f': {
-        if        (nodo->sufijo == "f32" ) {
-          tipo = TipoPrimitivo::FLOAT      ;
-
-        } else if (nodo->sufijo == "f64" ) {
-          tipo = TipoPrimitivo::DOUBLE     ;
-
-        } else if (nodo->sufijo == "f128") {
-          tipo = TipoPrimitivo::LONG_DOUBLE;
-
-        } else                             {
-          //... Sufijo inexistente
-
-        }
-
+        tipo.valor = typeFactory.getFloat(suf_num);
         break;
       }
 
-      case 's': {
-        if (nodo->sufijo != "s16") {
-          //... Sufijo inexistente
-
-        } else                     {
-          tipo = TipoPrimitivo::SHORT;
-
-        }
-
+      case ' ': { // No tenía sufijo
         break;
       }
 
-      case 'u': { //... Parsear sufijo u
-
-        break;
-      }
-
-      case ' ': { break; } // No tenía sufijo
-
-      default: {
-        //... Sufijo inexistente
-        break;
-      }
     }
 
-    if (tipo != TipoPrimitivo::DESCONOCIDO) {
-      nodo->tipo_resuelto = tipo;
-      return ;
+    //... Añadir comprobaciones de nulidad. Si tiene algo, return ;
+    //if (tipo != TipoPrimitivo::DESCONOCIDO) {
+    //  nodo->tipo_resuelto = tipo;
+    //  return ;
 
-    }
+    //}
 
     //... Añadir comprobaciones de tamaño
-
     if (tiene_punto) {
-      tipo = TipoPrimitivo::DOUBLE;
+      tipo.valor = typeFactory.getFloat(64);
 
     } else {
-      tipo = TipoPrimitivo::INT;
+      tipo.valor = typeFactory.getInteger(32, false);
 
     }
 
@@ -162,7 +115,7 @@ public:
 
     } else {
       errHandler.reportar(CE::ERR_CASTEO_INVALIDO, nodo->linea, {});
-      nodo->tipo_resuelto = Dt(TipoPrimitivo::DESCONOCIDO);
+      nodo->tipo_resuelto = Dt(typeFactory.getUnknown());
 
     }
   }
@@ -174,7 +127,9 @@ public:
   void visitar(ExprArray* nodo) override {
     for (const auto& elemento : nodo->elementos) {
       elemento->accept(this);
+
     }
+    
   }
   //... Asignar el tipo de dato al array y comprobar que todos los tipos de datos dentro sean iguales
 
