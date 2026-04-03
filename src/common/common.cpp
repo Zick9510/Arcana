@@ -59,6 +59,15 @@ bool esTipo(Tt tipo) {
          esTipoComp(tipo);
 }
 
+bool Dt::operator==(const Dt& otro) const { //... Comparar this.es_const
+  // Si ambos son nulos, son iguales
+  if (!this->valor && !otro.valor) { return true;  }
+  // Si uno es uno y el otro no, son distintos
+  if (!this->valor || !otro.valor) { return false; }
+
+  return this->valor->esIgual(otro.valor.get());
+}
+
 bool Dt::esPrimitivo() const { //...
   switch(valor->kind) {
     case TypeKind::VOID:
@@ -72,6 +81,10 @@ bool Dt::esPrimitivo() const { //...
     }
 
   }
+}
+
+std::string Dt::tipoString() const {
+  return (es_const? "const": "") + valor->toString();
 }
 
 /* --- Colores para la terminal --- */

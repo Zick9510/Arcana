@@ -129,7 +129,7 @@ public:
       elemento->accept(this);
 
     }
-    
+
   }
   //... Asignar el tipo de dato al array y comprobar que todos los tipos de datos dentro sean iguales
 

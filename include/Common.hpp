@@ -158,6 +158,8 @@ struct Dt {
   bool operator==(const Dt& otro) const;
 
   bool esPrimitivo() const;
+
+  std::string tipoString() const;
 };
 
 inline std::shared_ptr<ArcanaType> promoverTipos(std::shared_ptr<ArcanaType> izq, std::shared_ptr<ArcanaType> der) {
@@ -169,8 +171,6 @@ inline std::shared_ptr<ArcanaType> promoverTipos(std::shared_ptr<ArcanaType> izq
 }
 
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-
-std::string tipoString(const Dt& tipo);
 
 
 // --- Tipo Operador ---
@@ -348,7 +348,7 @@ bool esInfiere(Tt);
 bool esTipoComp(Tt);
 bool esTipo(Tt);
 
-struct InfoVariable {
+struct InfoVariable { //... Borrar e implementar por Dt
   Dt tipo;
   bool es_const = false;
 };
@@ -474,7 +474,7 @@ public:
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
-    std::cout << sangria << "+- " << valor << sufijo << " [" << tipoString(tipo_resuelto) << "]\n";
+    std::cout << sangria << "+- " << valor << sufijo << " [" << tipo_resuelto.tipoString() << "]\n";
   }
 
   void accept(ASTVisitor* visitor) override {
@@ -555,7 +555,7 @@ public:
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
-    std::cout << sangria << "+- Op (" << operadorString(operador) << ") [" << tipoString(tipo_resuelto) << "]\n";
+    std::cout << sangria << "+- Op (" << operadorString(operador) << ") [" << tipo_resuelto.tipoString() << "]\n";
     izquierda->imprimir(nivel + 1);
     derecha->imprimir(nivel + 1);
   }
@@ -576,7 +576,7 @@ public:
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
-    std::cout << sangria << "+- Cast (" << tipoString(tipo_casteo) << ")\n";
+    std::cout << sangria << "+- Cast (" << tipo_casteo.tipoString() << ")\n";
   }
 
   void accept(ASTVisitor* visitor) override {
@@ -678,7 +678,7 @@ public:
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
     std::cout << sangria
-              << "Sentencia Variable: " << nombre << " [Tipo: " << tipoString(tipo_explicito.tipo) << "]\n";
+              << "Sentencia Variable: " << nombre << " [Tipo: " << tipo_explicito.tipo.tipoString() << "]\n";
     if (valor_inicial) {
       valor_inicial->imprimir(nivel + 1);
     } else {

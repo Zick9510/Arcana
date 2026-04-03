@@ -6,15 +6,18 @@
 
 /* --- Arcana Types --- */
 
+ArcanaType::~ArcanaType() = default;
+
 // --- UnkownType ---
-UnkownType::UnkownType()
+
+UnknownType::UnknownType()
   : ArcanaType(TypeKind::DESCONOCIDO) {}
 
-std::string UnkownType::toString() const { return "unkown"; }
+std::string UnknownType::toString() const { return "unkown"; }
 
-int UnkownType::getBitSize()       const { return 0       ; }
+int UnknownType::getBitSize()       const { return 0       ; }
 
-bool UnkownType::esIgual(const ArcanaType* otro) const {
+bool UnknownType::esIgual(const ArcanaType* otro) const {
   return (otro->kind == TypeKind::DESCONOCIDO);
 }
 
@@ -74,14 +77,14 @@ bool FloatType::esIgual(const ArcanaType* otro) const {
 
 /* --- Factory --- */
 
-std::shared_ptr<UnkownType> TypeFactory::getUnknown() {
+std::shared_ptr<UnknownType> TypeFactory::getUnknown() {
 
   if (cacheUnknown != nullptr) {
     return cacheUnknown;
 
   }
 
-  auto nueva_instancia = std::make_shared<UnkownType>();
+  auto nueva_instancia = std::make_shared<UnknownType>();
   cacheUnknown = nueva_instancia;
 
   return nueva_instancia;
