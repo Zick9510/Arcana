@@ -826,7 +826,7 @@ public:
   void accept(ASTVisitor* visitor) override {
     visitor->visitar(this);
   }
-
+};
 
 class SentenciaArcano : public Sentencia {
 public:
