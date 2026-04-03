@@ -24,7 +24,7 @@ a way to expand the compiler's Abstract Syntax Tree (AST) directly from your sou
 ### Example: The Arcano System
 
 ```arc
-arcano Maybe(maybe: key, name: string, code: cod) {
+arcano Maybe(maybe: key, name: string, code: code) {
 
   rules {
     maybe [ name? { code } ] // After the 'maybe' keyword, the syntax
@@ -51,7 +51,7 @@ maybe {
 
 ### Example: The Spell System
 ```arc
-spell AddOne([#]: preffix, expr1: expr) {
+spell AddOne([#]: prefix, expr1: expr) {
 	rules {
 		[[#] expr1]
 	};
@@ -90,8 +90,6 @@ null  ?? true; // Will return true
 false ?? true; // false
 false ?? null; // false
 
-```
-```
 ```
 
 ## Contact:
