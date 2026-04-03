@@ -46,12 +46,11 @@ InfoVariable* GestorTablas::buscarVariable(const std::string& nombre, int linea)
 
 /* --- Checker --- */
 
-Checker::Checker(GestorTablas t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e, Factory f)
-  : tablas(t), ast(a), errHandler(e) {}
+Checker::Checker(GestorTablas t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e, Factory tf)
+  : tablas(t), ast(a), errHandler(e), typeFactory(tf) {}
 
 // --- Verificar Expresiones ---
-//... Nota: Estas funciones deberían retornar
-Dt Checker::verificarSuma(const Dt& izq, const Dt& der) {
+std::shared_ptr<ArcanaType> Checker::verificarSuma(const Dt& izq, const Dt& der) {
 
   if (izq.esPrimitivo() && der.esPrimitivo()) {
     TypeKind pIzq = izq.valor->kind;
@@ -70,9 +69,11 @@ Dt Checker::verificarSuma(const Dt& izq, const Dt& der) {
 
   // Si el código llega acá, se intentó sumar cosas inválidas
   //... Reportar al errHandler
+  return nullptr; //... Quizás retornar un tipo error?
+
 }
 
-Dt Checker::verificarResta(const Dt& izq, const Dt& der) {
+std::shared_ptr<ArcanaType> Checker::verificarResta(const Dt& izq, const Dt& der) {
   if (izq.esPrimitivo() && der.esPrimitivo()) {
     TypeKind pIzq = izq.valor->kind;
     TypeKind pDer = der.valor->kind;
@@ -85,9 +86,11 @@ Dt Checker::verificarResta(const Dt& izq, const Dt& der) {
   }
 
   //... Reportar al errHandler
+  return nullptr;
+
 }
 
-Dt Checker::verificarMult(const Dt& izq, const Dt& der) {
+std::shared_ptr<ArcanaType> Checker::verificarMult(const Dt& izq, const Dt& der) {
 
   if (izq.esPrimitivo() && der.esPrimitivo()) {
     TypeKind pIzq = izq.valor->kind;
@@ -104,9 +107,11 @@ Dt Checker::verificarMult(const Dt& izq, const Dt& der) {
   }
 
   //... Reportar al errHandler
+  return nullptr;
+
 }
 
-Dt Checker::verificarDiv(const Dt& izq, const Dt& der) {
+std::shared_ptr<ArcanaType> Checker::verificarDiv(const Dt& izq, const Dt& der) {
 
   if (izq.esPrimitivo() && der.esPrimitivo()) {
     TypeKind pIzq = izq.valor->kind;
@@ -120,9 +125,11 @@ Dt Checker::verificarDiv(const Dt& izq, const Dt& der) {
   }
 
   //... Reportar al errHandler
+  return nullptr;
+
 }
 
-Dt Checker::verificarPotencia(const Dt& izq, const Dt& der) {
+std::shared_ptr<ArcanaType> Checker::verificarPotencia(const Dt& izq, const Dt& der) {
   if (izq.esPrimitivo() && der.esPrimitivo()) {
     TypeKind pIzq = izq.valor->kind;
     TypeKind pDer = der.valor->kind;
@@ -130,23 +137,19 @@ Dt Checker::verificarPotencia(const Dt& izq, const Dt& der) {
     // Regla 1: Potenciación de números
     if (esNum(pIzq) && esNum(pDer)) { //... Ojo con (-x) ** ( 1 / (2n) )
       // Obtenemos el tipo más preciso de los dos
-      Dt promovido = promoverTipos(izq.valor, der.valor);
-      TypeKind pProm = promovido.valor->kind;
+      std::shared_ptr<ArcanaType> promovido = promoverTipos(izq.valor, der.valor);
+      TypeKind pProm = promovido->kind;
 
       if (esFloat(pProm)) {
-        // Si es flotante, el piso es double 
+        // Si es flotante, el piso es double
         if (obtenerRangoNum(pProm) < obtenerRangoNum(TypeKind::FLOAT)) {
-          return Dt(); //...
-          return Dt(ArcanaType(TypeKind::FLOAT, 64));
-          return Dt(FloatType(TypeKind::FLOAT, 64));
-          return Dt(FloatType(64));
-
+          return typeFactory.getFloat(64);
         }
 
       } else {
         // Si es entero, el piso es long
         if (obtenerRangoNum(pProm) < obtenerRangoNum(TypeKind::INTEGER)) {
-          return FloatType(64);
+          return typeFactory.getInteger(64, false);
 
         }
 

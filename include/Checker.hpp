@@ -9,21 +9,21 @@ private:
   GestorTablas tablas;
   std::vector<std::unique_ptr<Sentencia>>& ast;
   ErrorHandler& errHandler;
-  Factory factory;
+  Factory typeFactory;
 
 public:
-  Checker(GestorTablas t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e, Factory f);
+  Checker(GestorTablas t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e, Factory tf);
 
   void verificarNodo(std::unique_ptr<Sentencia>& nodo);
   Dt verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador op);
   void verificarPrograma();
 
   // --- Verificadores ---
-  Dt verificarSuma(const Dt& izq, const Dt& der);
-  Dt verificarResta(const Dt& izq, const Dt& der);
-  Dt verificarMult(const Dt& izq, const Dt& der);
-  Dt verificarDiv(const Dt& izq, const Dt& der);
-  Dt verificarPotencia(const Dt& izq, const Dt& der);
+  std::shared_ptr<ArcanaType> verificarSuma(const Dt& izq, const Dt& der);
+  std::shared_ptr<ArcanaType> verificarResta(const Dt& izq, const Dt& der);
+  std::shared_ptr<ArcanaType> verificarMult(const Dt& izq, const Dt& der);
+  std::shared_ptr<ArcanaType> verificarDiv(const Dt& izq, const Dt& der);
+  std::shared_ptr<ArcanaType> verificarPotencia(const Dt& izq, const Dt& der);
 
   bool esCasteoValido(const Dt& tipo_original, const Dt& tipo_destino);
 

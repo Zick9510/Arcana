@@ -59,42 +59,6 @@ bool esTipo(Tt tipo) {
          esTipoComp(tipo);
 }
 
-std::string tipoString(const Dt& tipo) {
-  return std::visit(overloaded{
-    [](TipoPrimitivo p) -> std::string {
-      switch (p) {
-        case TipoPrimitivo::SHORT      : { return "short"   ; }
-        case TipoPrimitivo::INT        : { return "int32"   ; }
-        case TipoPrimitivo::LONG       : { return "int64"   ; }
-        case TipoPrimitivo::VERY_LONG  : { return "int128"  ; }
-        case TipoPrimitivo::FULL_LONG  : { return "int256"  ; }
-
-        case TipoPrimitivo::FLOAT      : { return "float32" ; }
-        case TipoPrimitivo::DOUBLE     : { return "float64" ; }
-        case TipoPrimitivo::LONG_DOUBLE: { return "float128"; }
-
-        case TipoPrimitivo::BOOL       : { return "bool"    ; }
-        case TipoPrimitivo::BYTE       : { return "byte"    ; }
-        case TipoPrimitivo::CHAR       : { return "char"    ; }
-
-        case TipoPrimitivo::RANGO      : { return "slice"   ; }
-
-        case TipoPrimitivo::DESCONOCIDO: { return "unknown" ; }
-        //...
-        default                        : { return "type"    ; }
-      }
-    },
-    [](const TipoUsuario& u) {
-      return u.nombre;
-    },
-    [](const std::shared_ptr<TipoPuntero>& ptr) {
-      if (!ptr) { return std::string("null_ptr"); }
-      return tipoString(ptr->tipo_base) + "*";
-    }
-
-  }, tipo.valor);
-}
-
 bool Dt::esPrimitivo() const { //...
   switch(valor->kind) {
     case TypeKind::VOID:

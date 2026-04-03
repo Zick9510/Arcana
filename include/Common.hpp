@@ -148,6 +148,7 @@ inline bool esFloat(TypeKind t) { return t == TypeKind::FLOAT; }
 
 struct Dt {
   std::shared_ptr<ArcanaType> valor;
+  bool es_const;
 
   Dt(std::shared_ptr<ArcanaType> v)
     : valor(v) {}
@@ -159,15 +160,13 @@ struct Dt {
   bool esPrimitivo() const;
 };
 
-//... Esto debería usar Dt en vez de std::shared_ptr<ArcanaType>
-inline Dt promoverTipos(std::shared_ptr<ArcanaType> izq, std::shared_ptr<ArcanaType> der) {
+inline std::shared_ptr<ArcanaType> promoverTipos(std::shared_ptr<ArcanaType> izq, std::shared_ptr<ArcanaType> der) {
   int tipoIzq = obtenerRangoNum(izq->kind);
   int tipoDer = obtenerRangoNum(der->kind);
 
-  if (tipoDer >= tipoIzq) { return Dt(der); }
-  return Dt(izq);
+  if (tipoDer >= tipoIzq) { return der; }
+  return izq;
 }
-
 
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 

@@ -30,6 +30,7 @@ enum class TypeKind { //...
 class ArcanaType {
   public:
     TypeKind kind;
+
     ArcanaType(TypeKind k)
       : kind(k) {}
 
@@ -75,14 +76,13 @@ class FloatType : public ArcanaType {
 
 /* --- Factory --- */
 
-class Factory { //...
+class TypeFactory { //...
 private:
-  std::map<std::tuple<int, bool>, std::unique_ptr<IntegerType>> cacheInteger;
-  std::map<std::tuple<float>, std::unique_ptr<FloatType>> cacheFloat;
+  std::map<std::tuple<int, bool>, std::shared_ptr<IntegerType>> cacheInteger;
+  std::map<float, std::shared_ptr<FloatType>> cacheFloat;
 
 public:
-
-  IntegerType* getInteger(int bits, bool is_unsigned);
-  FloatType* getFloat(int bits);
+  std::shared_ptr<IntegerType> getInteger(int bits, bool is_unsigned);
+  std::shared_ptr<FloatType>   getFloat  (int bits);
 
 };
