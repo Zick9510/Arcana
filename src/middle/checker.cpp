@@ -136,6 +136,9 @@ Dt Checker::verificarPotencia(const Dt& izq, const Dt& der) {
       if (esFloat(pProm)) {
         // Si es flotante, el piso es double 
         if (obtenerRangoNum(pProm) < obtenerRangoNum(TypeKind::FLOAT)) {
+          return Dt();
+          return Dt(ArcanaType(TypeKind::FLOAT, 64));
+          return Dt(FloatType(TypeKind::FLOAT, 64));
           return Dt(FloatType(64));
 
         }
