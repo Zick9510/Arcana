@@ -159,6 +159,7 @@ struct Dt {
   bool esPrimitivo() const;
 };
 
+//... Esto debería usar Dt en vez de std::shared_ptr<ArcanaType>
 inline Dt promoverTipos(std::shared_ptr<ArcanaType> izq, std::shared_ptr<ArcanaType> der) {
   int tipoIzq = obtenerRangoNum(izq->kind);
   int tipoDer = obtenerRangoNum(der->kind);

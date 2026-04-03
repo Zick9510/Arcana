@@ -81,39 +81,8 @@ private:
   std::map<std::tuple<float>, std::unique_ptr<FloatType>> cacheFloat;
 
 public:
-  IntegerType* getInteger(int bits, bool is_unsigned) {
-    auto key = std::make_tuple(bits, is_unsigned);
-    auto it = cacheInteger.find(key);
 
-    if (it != cacheInteger.end()) {
-      return it->second.get();
-
-    }
-
-    auto nueva_instancia = std::make_unique<IntegerType>(bits, is_unsigned);
-    IntegerType* ptr = nueva_instancia.get();
-    cacheInteger[key] = std::move(nueva_instancia);
-
-    return ptr;
-
-  }
-
-  FloatType* getFloat(int bits) {
-    auto key = std::make_tuple(bits);
-    auto it = cacheFloat.find(key);
-
-    if (it != cacheFloat.end()) {
-      return it->second.get();
-
-    }
-
-    auto nueva_instancia = std::make_unique<FloatType>(bits);
-    FloatType* ptr = nueva_instancia.get();
-    cacheFloat[key] = std::move(nueva_instancia);
-
-    return ptr;
-
-  }
-
+  IntegerType* getInteger(int bits, bool is_unsigned);
+  FloatType* getFloat(int bits);
 
 };

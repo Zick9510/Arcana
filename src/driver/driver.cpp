@@ -35,7 +35,8 @@ bool Driver::compile(const CompilerConfig& config) {
   // 5. Semántic Analysis (AST Check)
   std::vector<Scope> scopes;
   GestorTablas tablas(errHandler, scopes);
-  Checker checker(tablas, ast, errHandler);
+  Factory factory;
+  Checker checker(tablas, ast, errHandler, factory);
   checker.verificarPrograma();
 
   if (errHandler.notificar()) { // Hay al menos un error

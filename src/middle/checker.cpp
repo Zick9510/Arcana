@@ -46,7 +46,7 @@ InfoVariable* GestorTablas::buscarVariable(const std::string& nombre, int linea)
 
 /* --- Checker --- */
 
-Checker::Checker(GestorTablas t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e)
+Checker::Checker(GestorTablas t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e, Factory f)
   : tablas(t), ast(a), errHandler(e) {}
 
 // --- Verificar Expresiones ---
@@ -136,7 +136,7 @@ Dt Checker::verificarPotencia(const Dt& izq, const Dt& der) {
       if (esFloat(pProm)) {
         // Si es flotante, el piso es double 
         if (obtenerRangoNum(pProm) < obtenerRangoNum(TypeKind::FLOAT)) {
-          return Dt();
+          return Dt(); //...
           return Dt(ArcanaType(TypeKind::FLOAT, 64));
           return Dt(FloatType(TypeKind::FLOAT, 64));
           return Dt(FloatType(64));
@@ -193,7 +193,7 @@ Dt Checker::verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador 
 
     default: {
       std::cout << "[77 checker.cpp] Operador desconocido: " << operadorString(op) << "\n";
-      return Dt(TipoPrimitivo::DESCONOCIDO);
+      //... Retornar algo
     }
   }
 }
@@ -207,18 +207,16 @@ bool Checker::esCasteoValido(const Dt& origen, const Dt& destino) {
 
   // Regla 2: Numérico
   if (origen.esPrimitivo() && destino.esPrimitivo()) {
-    TipoPrimitivo pO = std::get<TipoPrimitivo>(origen.valor);
-    TipoPrimitivo pD = std::get<TipoPrimitivo>(destino.valor);
+    TypeKind pO = origen.valor->kind;
+    TypeKind pD = destino.valor->kind;
 
     if (esNum(pO) && esNum(pD)) {
       //... Comprobar pérdida de precisión
       return true;
     }
 
-    // Char -> int
-    if (pO == TipoPrimitivo::CHAR && pD == TipoPrimitivo::INT) {
-      return true;
-    }
+    //... Char -> int
+ 
   }
 
   //... Relga 3: Punteros

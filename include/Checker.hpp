@@ -9,9 +9,10 @@ private:
   GestorTablas tablas;
   std::vector<std::unique_ptr<Sentencia>>& ast;
   ErrorHandler& errHandler;
+  Factory factory;
 
 public:
-  Checker(GestorTablas t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e);
+  Checker(GestorTablas t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e, Factory f);
 
   void verificarNodo(std::unique_ptr<Sentencia>& nodo);
   Dt verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador op);
