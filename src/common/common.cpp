@@ -59,6 +59,10 @@ bool esTipo(Tt tipo) {
          esTipoComp(tipo);
 }
 
+Dt covnertirTtaDt(const Tt& tipo) {
+
+}
+
 std::string tipoString(const Dt& tipo) {
   return std::visit(overloaded{
     [](TipoPrimitivo p) -> std::string {

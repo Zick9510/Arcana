@@ -21,7 +21,7 @@ class Parser {
   public:
     Parser(std::vector<Token> t);
 
-    InfoTipo parsearTipo();
+    InfoVariable parsearTipo();
 
     std::unique_ptr<Expresion> parsearRangoOArray();
 

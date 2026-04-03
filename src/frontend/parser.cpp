@@ -53,11 +53,22 @@ Parser::Parser(std::vector<Token> t)
   : tokens(std::move(t)), pos(0) {}
 
 
-InfoTipo Parser::parsearTipo() { //... Add pointer/references (int*, struct&)
-  InfoTipo info;
+InfoVariable Parser::parsearTipo() {
+  InfoVariable info;
   Token t = peek();
 
-  if (esInfiere(t.tipo) || esTipo(t.tipo)) {
+  switch (t.tipo) { //...
+    case Tt::INT: {
+
+      break;
+    }
+
+    default: {
+      break;
+    }
+  }
+
+  /*if (esInfiere(t.tipo) || esTipo(t.tipo)) {
     info.base_tipo = get().tipo;
 
   } else { //... Report to the error handler, recover from this, and keep executing
@@ -85,7 +96,7 @@ InfoTipo Parser::parsearTipo() { //... Add pointer/references (int*, struct&)
     Tt mod = get().tipo;
     switch (mod) {
       case Tt::UNSIGNED : { info.es_nat         = true; break; }
-      case Tt::CONST    : { info.es_eterno      = true; break; }
+      case Tt::CONST    : { info.es_const       = true; break; }
       case Tt::LONG     : { info.multiplicador *= 2   ; break; }
       case Tt::VERY_LONG: { info.multiplicador *= 4   ; break; }
       case Tt::FULL_LONG: { info.multiplicador *= 8   ; break; }
@@ -109,7 +120,7 @@ InfoTipo Parser::parsearTipo() { //... Add pointer/references (int*, struct&)
     exit(1);
 
     }
-
+*/
     return info;
 
 }
@@ -365,9 +376,33 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
   }
 }
 
+/*InfoVariable Parser::resolverTipo(const InfoTipo& tipoSintactico) {
+  InfoVariable resultado;
+  resultado.es_const = tipoSintactico.es_const;
+
+  // Mapear el TokenType (Tt) a DataType (Dt)
+  Dt tipo_semantico = Dt(TipoPrimitivo::DESCONOCIDO);
+
+  switch (tipoSintactico.base_tipo) {
+    case Tt::INT: {
+      tipo_semantico = TipoPrimitivo::INT;
+      break;
+    }
+
+    case Tt::LONG: {
+      tipo_semantico = TipoPrimitivo::LONG;
+      break;
+    }
+
+
+
+  }
+
+}*/
+
 std::unique_ptr<Sentencia> Parser::parsearDeclaracionVar() {
 
-  InfoTipo tipo = parsearTipo();
+  InfoVariable tipo = parsearTipo();
 
   Token nombre = check(Tt::IDENTIFICADOR);
 
@@ -382,7 +417,7 @@ std::unique_ptr<Sentencia> Parser::parsearDeclaracionVar() {
 
   check(Tt::PUNTO_COMA);
 
-  return std::make_unique<SentenciaVar>(nombre.lexema, "", std::move(valor));
+  return std::make_unique<SentenciaVar>(nombre.lexema, tipo, std::move(valor));
 
 }
 
@@ -605,10 +640,10 @@ std::unique_ptr<Sentencia> Parser::parsearArcano() {
   while (peek().tipo != Tt::PAREN_R && peek().tipo != Tt::FIN_ARCHIVO) { // Argumentos
     Token nombre_param = check(Tt::IDENTIFICADOR);
     check(Tt::DOS_PUNTOS);
-    Token t_tipo = get();  // cod, expr, key
+    Token t_tipo = get();  // code, expr, key
 
     TPA tipo = TPA::NULO;
-    if      (t_tipo.lexema == "cod" ) { tipo = TPA::COD ; }
+    if      (t_tipo.lexema == "code") { tipo = TPA::CODE; }
     else if (t_tipo.lexema == "expr") { tipo = TPA::EXPR; }
     else if (t_tipo.lexema == "key" ) { tipo = TPA::KEY ; }
 
@@ -647,8 +682,8 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() {
 
   // Recorremos el esqueleto para saber qué esperar
   for (const auto& parte : def.esqueleto) {
-    if (parte.tipo_parte == TipoParte::PARAMETRO) {
-      if (parte.tipo_dato == TPA::COD) {
+    if (parte.tipo_parte == TipoParte::PARAMETRO) { //... Sacar este condicional
+      if (parte.tipo_dato == TPA::CODE) {
         if (!parte.es_opcional || ultima_key) {
           argumentos[parte.contenido] = parsearBloqSent();
 

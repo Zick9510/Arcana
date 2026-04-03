@@ -82,12 +82,7 @@ class Emitter : public ASTVisitor {
     }
 
     void visitar(SentenciaVar* nodo) override {
-      codigo += nodo->tipo_explicito + " " + nodo->nombre;
-      if (nodo->valor_inicial) {
-        codigo += " = ";
-        nodo->valor_inicial->accept(this);
-      }
-      codigo += ";\n";
+
     }
 
     void visitar(SentenciaAsignacion* nodo) override {

@@ -4,6 +4,7 @@
 
 #include "Includes.hpp"
 
+#include "Types.hpp"
 
 // --- Precedencia --- 
 enum class Precedencia : int {
@@ -31,6 +32,8 @@ enum class Precedencia : int {
   UNARIO_DEBIL, // - + ~ (Ej: - 2 ** 3 se evalúa cómo - (2 ** 3))
 
   POTENCIA,     // ** */
+
+  //USER_OPERATORS, //... Operadores del usuario
 
   PREFIJO,      // ++ -- *expr &expr !expr
   SUFIJO,       // ++ --
@@ -346,12 +349,12 @@ inline std::map<std::string, Tt> keywords = {
   {"quid", Tt::COMPLEJO},
 
   // --- Estructuras ---
-  // Arcano
+  // Arcanos
   {"arcano", Tt::ARCANO},
   {"arcanito", Tt::ARCANITO},
   {"reglas", Tt::REGLAS},
 
-  {"cod", Tt::COD},
+  {"code", Tt::COD},
   {"expr", Tt::EXPR},
   {"key", Tt::KEY},
 
@@ -394,7 +397,7 @@ struct DatosPesados {
 };
 
 enum class TipoParte { PARAMETRO, SEPARADOR };
-enum class TPA { NULO, COD, EXPR, KEY };
+enum class TPA { NULO, CODE, EXPR, KEY };
 
 struct ParteArcano {
   TipoParte tipo_parte; //... Sacar esto
@@ -421,10 +424,17 @@ struct InfoTipo {
   bool es_nat = false;
   int multiplicador = 1;
   bool es_complejo = false;
-  bool es_eterno = false;
+  bool es_const = false;
 
   std::vector<InfoTipo> subtipos;
 };
+
+struct InfoVariable {
+  Dt tipo;
+  bool es_const = false;
+};
+
+Dt convertirTtaDt(const Tt& tipo);
 
 // Declaraciones previas
 class ExprNumero;
@@ -506,6 +516,7 @@ class Expresion : public NodoAST {
 
     virtual void accept(ASTVisitor* visitor) = 0;
 };
+
 class Sentencia : public NodoAST {};
 
 // Bloque
@@ -740,17 +751,17 @@ class ExprLlamadaArcano : public Expresion {
 class SentenciaVar : public Sentencia {
   public:
     std::string nombre;
-    std::string tipo_explicito; //... Esto debería ser InfoVariable
+    InfoVariable tipo_explicito;
     std::unique_ptr<Expresion> valor_inicial;
 
-    SentenciaVar(std::string nom, std::string tipo, std::unique_ptr<Expresion> val)
+    SentenciaVar(std::string nom, InfoVariable tipo, std::unique_ptr<Expresion> val)
       : nombre(nom), tipo_explicito(tipo), valor_inicial(std::move(val)) {}
 
     void imprimir(int nivel = 0) const override {
       std::string sangria = "";
       for (int i = 0; i < nivel; ++i) { sangria += "| "; }
       std::cout << sangria
-                << "Declarar Variable: " << nombre << " [Tipo: " << tipo_explicito << "]\n";
+                << "Sentencia Variable: " << nombre << " [Tipo: " << tipoString(tipo_explicito.tipo) << "]\n";
       if (valor_inicial) {
         valor_inicial->imprimir(nivel + 1);
       } else {
@@ -924,8 +935,9 @@ class SentenciaArcano : public Sentencia {
       for (const auto& parte : esqueleto.esqueleto) {
           std::cout << sangria << "|   +- ";
           if (parte.tipo_parte == TipoParte::PARAMETRO) {
-              std::string t_str = (parte.tipo_dato == TPA::COD ? "cod" :
-                                   parte.tipo_dato == TPA::EXPR ? "expr" : "key");
+              std::string t_str = (parte.tipo_dato == TPA::CODE ? "code" :
+                                   parte.tipo_dato == TPA::EXPR ? "expr" :
+                                   parte.tipo_dato == TPA::KEY  ? "key"  : "unknown");
               std::cout << (parte.es_opcional ? "Opcional: " : "Requerido: ");
               std::cout << parte.contenido << " <" << t_str << ">";
           }
@@ -1005,10 +1017,6 @@ struct CompilerConfig {
 
 };
 
-struct InfoVariable {
-  Dt tipo;
-  bool es_const = false;
-};
 
 /* --- Errores y Warnings --- */
 enum class CodigoError { // Codigo Error

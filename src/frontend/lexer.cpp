@@ -101,7 +101,6 @@ void Lexer::leerNumero() {
   // Handle non-decimal bases: 0b..., 0o..., 0x...
   if (source[inicio] == '0' && validarBase()) {
     char base = get(); // Consume the 'b', 'o', or 'x'
-    std::cout << base << '\n';
 
     while (validarCaracterBase(actual(), base)) {
       get();

@@ -39,11 +39,11 @@ fast: CXXFLAGS += -O0 -pipe
 fast: $(TARGET)
 
 # Perfil Deploy: Optimizado, sin aserciones (NDEBUG) y "strippeado" (sin símbolos para que pese menos)
-deploy: CXXFLAGS += -O3 -fno-rtti -fomit-frame-pointer
+deploy: CXXFLAGS += -O3 -fomit-frame-pointer
 deploy: $(TARGET)
 
 # Perfil Shy: Optimizado para tamaño
-shy: CXXFLAGS += -Oz -s -fno-asynchronous-unwind-tables -fno-plt -fno-rtti -ffunction-sections -fdata-sections -fno-stack-protector -fno-ident -fvisibility=hidden -fvisibility-inlines-hidden -Wl,--gc-sections -Wl,--build-id=none
+shy: CXXFLAGS += -Oz -s -fno-asynchronous-unwind-tables -fno-plt -ffunction-sections -fdata-sections -fno-stack-protector -fno-ident -fvisibility=hidden -fvisibility-inlines-hidden -Wl,--gc-sections -Wl,--build-id=none
 shy: $(TARGET)
 	@echo "🗜️ Aplicando post-procesado agresivo en $(TARGET)..."
 	@strip --strip-all --remove-section=.comment --remove-section=.note $(TARGET)
