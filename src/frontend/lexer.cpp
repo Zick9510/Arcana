@@ -107,7 +107,7 @@ void Lexer::leerNumero() {
 
     }
 
-  } else { // Handle stander decimals and floating point
+  } else { // Handle standar decimals and floating point
     while (std::isdigit(actual()) || actual() == '.' || actual() == '_' || esSufijoNum()) {
       //... Add scientific notation support
 

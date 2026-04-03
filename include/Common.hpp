@@ -323,8 +323,7 @@ struct Token {
 inline std::map<std::string, Tt> keywords = {
 
   // Tipos Inferibles
-  {"var"   , Tt::VAR  },
-  {"eterno", Tt::CONST}, // const
+  {"var", Tt::VAR}, // auto
 
   // Tipos explícitos
   {"wyn", Tt::SHORT}, // int16_t
@@ -347,6 +346,7 @@ inline std::map<std::string, Tt> keywords = {
   {"enum", Tt::ENUM}, // Enums
 
   // Modificadores de Tipos
+  {"eterno", Tt::CONST}, // const
   {"exo", Tt::LONG},
   {"magno", Tt::VERY_LONG},
   {"magna", Tt::VERY_LONG},
