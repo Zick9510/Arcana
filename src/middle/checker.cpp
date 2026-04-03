@@ -46,7 +46,7 @@ InfoVariable* GestorTablas::buscarVariable(const std::string& nombre, int linea)
 
 /* --- Checker --- */
 
-Checker::Checker(GestorTablas t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e, Factory tf)
+Checker::Checker(GestorTablas t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e, TypeFactory tf)
   : tablas(t), ast(a), errHandler(e), typeFactory(tf) {}
 
 // --- Verificar Expresiones ---
@@ -163,14 +163,13 @@ std::shared_ptr<ArcanaType> Checker::verificarPotencia(const Dt& izq, const Dt& 
   }
 
   //... Reportar al errHandler
+  return nullptr;
+
 }
 
 Dt Checker::verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador op) { //...
 
-  if ( izq.es(TipoPrimitivo::DESCONOCIDO) ||
-       der.es(TipoPrimitivo::DESCONOCIDO) ) {
-    return Dt(TipoPrimitivo::DESCONOCIDO);
-  }
+  //... Añadir comprobación de error o desconocido en izq y der
 
   switch(op) { //... Añadir más casos
 
