@@ -66,6 +66,8 @@ enum class Tt {
 
   UMBRAL,
 
+  ENUM,
+
   // Modificadores
   UNSIGNED, LONG, VERY_LONG, FULL_LONG, COMPLEJO,
 
@@ -341,6 +343,8 @@ inline std::map<std::string, Tt> keywords = {
   {"acervo", Tt::SET}, // Set
 
   {"umbral", Tt::UMBRAL},  // Slice
+
+  {"enum", Tt::ENUM}, // Enums
 
   // Modificadores de Tipos
   {"exo", Tt::LONG},
