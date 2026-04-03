@@ -132,6 +132,7 @@ enum class Tt {
 };
 
 /* --- Tipos --- */
+
 enum class TipoPrimitivo {
 
   INFERIDO,
@@ -781,7 +782,7 @@ class SentenciaExpr : public Sentencia {
       : expresion(std::move(expr)) {}
 
     void imprimir(int nivel = 0) const override {
-      std::string sangria = "| ";
+      std::string sangria = "";
       for (int i = 0; i < nivel; ++i) { sangria += "| "; }
       std::cout << sangria << "Expresión:\n";
       expresion->imprimir(nivel + 1);

@@ -48,3 +48,9 @@ bool FloatType::esIgual(const ArcanaType* otro) const {
   return (this->bits == otroFloat->bits);
 }
 
+
+
+//... StructType
+//... ArcanaType
+//... GenericType (Templates)
+// this is going to be hell

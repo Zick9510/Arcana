@@ -57,6 +57,9 @@ InfoVariable Parser::parsearTipo() {
   InfoVariable info;
   Token t = peek();
 
+
+  std::cout << "[61 parser.cpp] " << t.lexema << '\n';
+
   switch (t.tipo) { //...
     case Tt::INT: {
 
@@ -375,30 +378,6 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
     }
   }
 }
-
-/*InfoVariable Parser::resolverTipo(const InfoTipo& tipoSintactico) {
-  InfoVariable resultado;
-  resultado.es_const = tipoSintactico.es_const;
-
-  // Mapear el TokenType (Tt) a DataType (Dt)
-  Dt tipo_semantico = Dt(TipoPrimitivo::DESCONOCIDO);
-
-  switch (tipoSintactico.base_tipo) {
-    case Tt::INT: {
-      tipo_semantico = TipoPrimitivo::INT;
-      break;
-    }
-
-    case Tt::LONG: {
-      tipo_semantico = TipoPrimitivo::LONG;
-      break;
-    }
-
-
-
-  }
-
-}*/
 
 std::unique_ptr<Sentencia> Parser::parsearDeclaracionVar() {
 

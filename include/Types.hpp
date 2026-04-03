@@ -49,7 +49,7 @@ class VoidType : public ArcanaType {
 
 class IntegerType : public ArcanaType {
   public:
-    int bits; // 16, 32, 64, ...
+    int bits; // 8, 16, 32, 64, ...
     bool is_unsigned;
  
     IntegerType(int b, bool u);
