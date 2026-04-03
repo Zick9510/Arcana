@@ -1052,6 +1052,10 @@ public:
 };
 
 
+/* --- Extra --- */
+inline bool isPowerOf2(int num) { return (num > 0) && (((num + 1) & num) == 0); }
+
+
 /* --- Colors --- */
 extern const std::string COLOR_RESET  ;
 extern const std::string COLOR_RED    ;

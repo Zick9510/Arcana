@@ -30,35 +30,43 @@ public:
   // --- AST Visitor ---
 
   void visitar(ExprNumero* nodo) override { //... Hacer más robusto
-    TipoPrimitivo tipo = TipoPrimitivo::DESCONOCIDO;
+    Dt tipo;
 
     bool tiene_punto = nodo->valor.contains('.');
 
     char suf = ' ';
+    int suf_num   ;
 
-    if (!nodo->sufijo.empty()) {
-      suf = nodo->sufijo[0];
+    if (!nodo->sufijo.empty() && nodo->sufijo.size() > 1) {
+      suf     = nodo->sufijo[0];
+      suf_num = std::stoi(nodo->sufijo.substr(1));
     }
 
-    if (tiene_punto && suf != 'f') {
+    if (!tiene_punto && suf == 'f') {
       //... Error, se esperaba que un float tenga decimal
     }
+
+    //...
 
     switch (suf) { //... Cambiar para comprobar que sea potencia de 2 y simplificar el enum para poder
                    // construir literales tan grandes como C++ permita
 
       case 'i': {
         if        (nodo->sufijo == "i32" ) {
-          tipo = TipoPrimitivo::INT      ;
+          tipo.valor    = typeFactory.getInteger(32 , false);
+          tipo.es_const = false;
 
         } else if (nodo->sufijo == "i64" ) {
-          tipo = TipoPrimitivo::LONG     ;
+          tipo.valor    = typeFactory.getInteger(64 , false);
+          tipo.es_const = false;
 
         } else if (nodo->sufijo == "i128") {
-          tipo = TipoPrimitivo::VERY_LONG;
+          tipo.valor    = typeFactory.getInteger(128, false);
+          tipo.es_const = false;
 
         } else if (nodo->sufijo == "i256") {
-          tipo = TipoPrimitivo::FULL_LONG;
+          tipo.valor    = typeFactory.getInteger(256, false);
+          tipo.es_const = false;
 
         } else                             {
           //... Sufijo inexistente
