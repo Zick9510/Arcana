@@ -50,55 +50,52 @@ Checker::Checker(GestorTablas t, std::vector<std::unique_ptr<Sentencia>>& a, Err
   : tablas(t), ast(a), errHandler(e) {}
 
 // --- Verificar Expresiones ---
-
+//... Nota: Estas funciones deberían retornar
 Dt Checker::verificarSuma(const Dt& izq, const Dt& der) {
 
   if (izq.esPrimitivo() && der.esPrimitivo()) {
-    TipoPrimitivo pIzq = std::get<TipoPrimitivo>(izq.valor);
-    TipoPrimitivo pDer = std::get<TipoPrimitivo>(der.valor);
+    TypeKind pIzq = izq.valor->kind;
+    TypeKind pDer = der.valor->kind;
 
     // Regla 1: Suma de números
     if (esNum(pIzq) && esNum(pDer)) {
-      return promoverTipos(pIzq, pDer);
+      return promoverTipos(izq.valor, der.valor);
     }
 
-    // Regla 2: Concatenación de strings
-    if (pIzq == TipoPrimitivo::STRING && //... Ajustar esto
-        pDer == TipoPrimitivo::STRING) {
-      return Dt(TipoPrimitivo::STRING);
-    }
+    //... Regla 2: Concatenación de strings
+
+    //... Regla 3: Concatenación de arrays (Maps, sets, etc.)
+ 
   }
 
   // Si el código llega acá, se intentó sumar cosas inválidas
   //... Reportar al errHandler
-  return Dt(TipoPrimitivo::DESCONOCIDO);
 }
 
 Dt Checker::verificarResta(const Dt& izq, const Dt& der) {
   if (izq.esPrimitivo() && der.esPrimitivo()) {
-    TipoPrimitivo pIzq = std::get<TipoPrimitivo>(izq.valor);
-    TipoPrimitivo pDer = std::get<TipoPrimitivo>(der.valor);
+    TypeKind pIzq = izq.valor->kind;
+    TypeKind pDer = der.valor->kind;
 
     // Regla 1: Resta de números
     if (esNum(pIzq) && esNum(pDer)) {
-      return promoverTipos(pIzq, pDer);
+      return promoverTipos(izq.valor, der.valor);
     }
 
   }
 
   //... Reportar al errHandler
-  return Dt(TipoPrimitivo::DESCONOCIDO);
 }
 
 Dt Checker::verificarMult(const Dt& izq, const Dt& der) {
 
   if (izq.esPrimitivo() && der.esPrimitivo()) {
-    TipoPrimitivo pIzq = std::get<TipoPrimitivo>(izq.valor);
-    TipoPrimitivo pDer = std::get<TipoPrimitivo>(der.valor);
+    TypeKind pIzq = izq.valor->kind;
+    TypeKind pDer = der.valor->kind;
 
     // Regla 1: Multiplicación de números
     if (esNum(pIzq) && esNum(pDer)) {
-      return promoverTipos(pIzq, pDer);
+      return promoverTipos(izq.valor, der.valor);
     }
 
     // Regla 2: Multiplicar una string con un entero
@@ -107,40 +104,38 @@ Dt Checker::verificarMult(const Dt& izq, const Dt& der) {
   }
 
   //... Reportar al errHandler
-  return Dt(TipoPrimitivo::DESCONOCIDO);
 }
 
 Dt Checker::verificarDiv(const Dt& izq, const Dt& der) {
 
   if (izq.esPrimitivo() && der.esPrimitivo()) {
-    TipoPrimitivo pIzq = std::get<TipoPrimitivo>(izq.valor);
-    TipoPrimitivo pDer = std::get<TipoPrimitivo>(der.valor);
+    TypeKind pIzq = izq.valor->kind;
+    TypeKind pDer = der.valor->kind;
 
     // Regla 1: División de números
     if (esNum(pIzq) && esNum(pDer)) { //... Ajustar esto para que retorne como mínimo, float64
-      return promoverTipos(pIzq, pDer);
+      return promoverTipos(izq.valor, der.valor);
     }
 
   }
 
   //... Reportar al errHandler
-  return Dt(TipoPrimitivo::DESCONOCIDO);
 }
 
 Dt Checker::verificarPotencia(const Dt& izq, const Dt& der) {
   if (izq.esPrimitivo() && der.esPrimitivo()) {
-    TipoPrimitivo pIzq = std::get<TipoPrimitivo>(izq.valor);
-    TipoPrimitivo pDer = std::get<TipoPrimitivo>(der.valor);
+    TypeKind pIzq = izq.valor->kind;
+    TypeKind pDer = der.valor->kind;
 
     // Regla 1: Potenciación de números
     if (esNum(pIzq) && esNum(pDer)) { //... Ojo con (-x) ** ( 1 / (2n) )
       // Obtenemos el tipo más preciso de los dos
-      Dt promovido = promoverTipos(pIzq, pDer);
-      TipoPrimitivo pProm = std::get<TipoPrimitivo>(promovido.valor);
+      Dt promovido = promoverTipos(izq.valor, der.valor);
+      TypeKind pProm = promovido.valor->kind;
 
       if (esFloat(pProm)) {
         // Si es flotante, el piso es double 
-        if (obtenerRangoNum(pProm) < obtenerRangoNum(TipoPrimitivo::DOUBLE)) {
+        if (obtenerRangoNum(pProm) < obtenerRangoNum(TypeKind::FLOAT)) {
           return Dt(TipoPrimitivo::DOUBLE);
 
         }
@@ -162,7 +157,6 @@ Dt Checker::verificarPotencia(const Dt& izq, const Dt& der) {
   }
 
   //... Reportar al errHandler
-  return Dt(TipoPrimitivo::DESCONOCIDO);
 }
 
 Dt Checker::verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador op) { //...

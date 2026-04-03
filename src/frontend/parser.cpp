@@ -626,8 +626,7 @@ std::unique_ptr<Sentencia> Parser::parsearArcano() {
     else if (t_tipo.lexema == "expr") { tipo = TPA::EXPR; }
     else if (t_tipo.lexema == "key" ) { tipo = TPA::KEY ; }
 
-    def.esqueleto.push_back({TipoParte::PARAMETRO,
-                                nombre_param.lexema,
+    def.esqueleto.push_back({nombre_param.lexema,
                                 tipo,
                                 });
 
@@ -657,36 +656,20 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() {
   DefinicionArcano& def = arcanos_activos[nombre_arcano.lexema];
   std::map<std::string, std::unique_ptr<Sentencia>> argumentos;
 
-  bool ultima_key = true;
-
   // Recorremos el esqueleto para saber qué esperar
   for (const auto& parte : def.esqueleto) {
-    if (parte.tipo_parte == TipoParte::PARAMETRO) { //... Sacar este condicional
-      if (parte.tipo_dato == TPA::CODE) {
-        if (!parte.es_opcional || ultima_key) {
-          argumentos[parte.contenido] = parsearBloqSent();
+    if (parte.tipo_dato == TPA::CODE) {
+        argumentos[parte.contenido] = parsearBloqSent();
 
-        }
-      } else if (parte.tipo_dato == TPA::EXPR) {
-        auto expr = parsearExpresion(Pr::MINIMA);
-        argumentos[parte.contenido] = std::make_unique<SentenciaExpr>(std::move(expr));
+    } else if (parte.tipo_dato == TPA::EXPR) {
+      auto expr = parsearExpresion(Pr::MINIMA);
+      argumentos[parte.contenido] = std::make_unique<SentenciaExpr>(std::move(expr));
 
-      } else if (parte.tipo_dato == TPA::KEY) {
-        Token t = peek();
-        if (t.tipo == Tt::IDENTIFICADOR && t.lexema == parte.contenido) {
-          get();
-          ultima_key = true;
+    } else if (parte.tipo_dato == TPA::KEY) {
+      Token t = peek();
+      if (t.tipo == Tt::IDENTIFICADOR && t.lexema == parte.contenido) {
+        get();
 
-        } else {
-          ultima_key = false;
-
-          if (!parte.es_opcional) {
-            std::cerr << "Error: Se esperaba la keyword '" << parte.contenido //...
-                      << "' para el arcano " << nombre_arcano.lexema << ".\n";
-            exit(1);
-
-          }
-        }
       }
     }
   }

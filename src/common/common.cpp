@@ -95,6 +95,21 @@ std::string tipoString(const Dt& tipo) {
   }, tipo.valor);
 }
 
+bool Dt::esPrimitivo() const { //...
+  switch(valor->kind) {
+    case TypeKind::VOID:
+    case TypeKind::INTEGER:
+    case TypeKind::FLOAT:
+    case TypeKind::ARRAY: {
+      return true;
+    }
+    default: {
+      return false;
+    }
+
+  }
+}
+
 /* --- Colores para la terminal --- */
 
 inline const std::string COLOR_RESET   = "\033[0m"   ;

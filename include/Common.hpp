@@ -33,7 +33,7 @@ enum class Precedencia : int {
 
   POTENCIA,     // ** */
 
-  //USER_OPERATORS, //... Operadores del usuario
+  //USER_OPERATOR, //... Operadores del usuario
 
   PREFIJO,      // ++ -- *expr &expr !expr
   SUFIJO,       // ++ --
@@ -135,111 +135,38 @@ enum class Tt {
 
 /* --- Tipos --- */
 
-enum class TipoPrimitivo {
-
-  INFERIDO,
-
-  BOOL, BYTE,
-
-  SHORT, INT, LONG, VERY_LONG, FULL_LONG,
-
-  COMPEJO,
-
-  FLOAT, DOUBLE, LONG_DOUBLE,
-
-  CHAR, STRING,
-
-  VECTOR, MAP, SET,
-
-  RANGO,
-
-  DESCONOCIDO,
-
-};
-
-inline int obtenerRangoNum(TipoPrimitivo p) {
-  switch (p) {                                     // BITS
-    case TipoPrimitivo::SHORT      : { return 1; } // 16
-    case TipoPrimitivo::INT        : { return 2; } // 32
-    case TipoPrimitivo::LONG       : { return 3; } // 64
-    case TipoPrimitivo::VERY_LONG  : { return 4; } // 128
-    case TipoPrimitivo::FULL_LONG  : { return 5; } // 256
-    case TipoPrimitivo::FLOAT      : { return 6; } // 32
-    case TipoPrimitivo::DOUBLE     : { return 7; } // 64
-    case TipoPrimitivo::LONG_DOUBLE: { return 8; } // 128
-    default                        : { return 0; } // No es un número
+inline int obtenerRangoNum(TypeKind t) { //... Distinguir entre tamaño de bits
+  switch (t) {
+    case TypeKind::INTEGER: { return 1; }
+    case TypeKind::FLOAT  : { return 2; }
+    default               : { return 0; }
   }
 }
 
-inline int obtenerRangoFloat(TipoPrimitivo p) {
-  switch (p) {                                     // BITS
-    case TipoPrimitivo::FLOAT      : { return 1; } // 32
-    case TipoPrimitivo::DOUBLE     : { return 2; } // 64
-    case TipoPrimitivo::LONG_DOUBLE: { return 3; } // 128
-    default                        : { return 0; } // No es un float
-  }
-}
-
-inline bool esNum  (TipoPrimitivo p) { return obtenerRangoNum  (p) > 0; }
-inline bool esFloat(TipoPrimitivo p) { return obtenerRangoFloat(p) > 0; }
-
-
-struct TipoUsuario {
-  std::string nombre;
- 
-  bool operator==(const TipoUsuario&) const = default;
-
-};
-
-struct TipoPuntero;
+inline bool esNum(TypeKind t)   { return obtenerRangoNum(t) > 0; }
+inline bool esFloat(TypeKind t) { return t == TypeKind::FLOAT; }
 
 struct Dt {
-  std::variant<TipoPrimitivo, TipoUsuario, std::shared_ptr<TipoPuntero>> valor;
+  std::shared_ptr<ArcanaType> valor;
 
-  Dt() : valor(TipoPrimitivo::DESCONOCIDO) {}
-  Dt(TipoPrimitivo p) : valor(p) {}
-  Dt(TipoUsuario   u) : valor(u) {}
+  Dt(std::shared_ptr<ArcanaType> v)
+    : valor(v) {}
+
+  Dt() : valor(nullptr) {}
 
   bool operator==(const Dt& otro) const;
 
-  bool es(TipoPrimitivo p) const {
-    if (auto* val = std::get_if<TipoPrimitivo>(&valor)) {
-      return *val == p;
-    }
-    return false;
-  }
-
-  bool esPrimitivo() const { return std::holds_alternative<TipoPrimitivo>(valor); }
-  bool esDelUsuario() const { return std::holds_alternative<TipoUsuario>(valor); }
+  bool esPrimitivo() const;
 };
 
-inline Dt promoverTipos(TipoPrimitivo izq, TipoPrimitivo der) {
-  int tipoIzq = obtenerRangoNum(izq);
-  int tipoDer = obtenerRangoNum(der);
+inline Dt promoverTipos(std::shared_ptr<ArcanaType> izq, std::shared_ptr<ArcanaType> der) {
+  int tipoIzq = obtenerRangoNum(izq->kind);
+  int tipoDer = obtenerRangoNum(der->kind);
 
   if (tipoDer >= tipoIzq) { return Dt(der); }
   return Dt(izq);
 }
 
-struct TipoPuntero {
-  Dt tipo_base;
-  bool operator==(const TipoPuntero&) const = default;
-};
-
-inline bool Dt::operator==(const Dt& otro) const {
-
-  if (valor.index() != otro.valor.index()) { return false; }
-
-  if (std::holds_alternative<std::shared_ptr<TipoPuntero>>(valor)) {
-    auto p1 = std::get<std::shared_ptr<TipoPuntero>>(valor);
-    auto p2 = std::get<std::shared_ptr<TipoPuntero>>(otro.valor);
-    if (!p1 || !p2) { return p1 == p2; }
-    return *p1 == *p2;
-  }
-
-  return valor == otro.valor;
-
-}
 
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 
@@ -401,14 +328,11 @@ struct DatosPesados {
   std::vector<uint64_t> valor_pesado;
 };
 
-enum class TipoParte { PARAMETRO, SEPARADOR };
 enum class TPA { NULO, CODE, EXPR, KEY };
 
 struct ParteArcano {
-  TipoParte tipo_parte; //... Sacar esto
   std::string contenido;
   TPA tipo_dato;
-  bool es_opcional;
 };
 
 struct DefinicionArcano {
@@ -424,22 +348,10 @@ bool esInfiere(Tt);
 bool esTipoComp(Tt);
 bool esTipo(Tt);
 
-struct InfoTipo {
-  Tt base_tipo;
-  bool es_nat = false;
-  int multiplicador = 1;
-  bool es_complejo = false;
-  bool es_const = false;
-
-  std::vector<InfoTipo> subtipos;
-};
-
 struct InfoVariable {
   Dt tipo;
   bool es_const = false;
 };
-
-Dt convertirTtaDt(const Tt& tipo);
 
 // Declaraciones previas
 class ExprNumero;
@@ -939,14 +851,11 @@ class SentenciaArcano : public Sentencia {
       std::cout << sangria << "| [ Interfaz ]\n";
       for (const auto& parte : esqueleto.esqueleto) {
           std::cout << sangria << "|   +- ";
-          if (parte.tipo_parte == TipoParte::PARAMETRO) {
-              std::string t_str = (parte.tipo_dato == TPA::CODE ? "code" :
-                                   parte.tipo_dato == TPA::EXPR ? "expr" :
-                                   parte.tipo_dato == TPA::KEY  ? "key"  : "unknown");
-              std::cout << (parte.es_opcional ? "Opcional: " : "Requerido: ");
-              std::cout << parte.contenido << " <" << t_str << ">";
-          }
-         std::cout << "\n";
+          std::string t_str = (parte.tipo_dato == TPA::CODE ? "code" :
+                               parte.tipo_dato == TPA::EXPR ? "expr" :
+                               parte.tipo_dato == TPA::KEY  ? "key"  : "unknown");
+          std::cout << parte.contenido << " <" << t_str << ">";
+          std::cout << "\n";
       }
       std::cout << "\n";
 

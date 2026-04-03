@@ -6,6 +6,16 @@
 
 // --- VoidType ---
 
+VoidType::VoidType()
+  : ArcanaType(TypeKind::Void) {}
+
+std::string VoidType::toString() const { return "void"; }
+
+int VoidType::getBitSize()       const { return 0     ; }
+
+bool VoidType::esIgual(const ArcanaType* otro) const {
+  return (otro->kind == TypeKind::Void);
+}
 
 // --- IntegerType ---
 IntegerType::IntegerType(int b, bool u)
@@ -32,7 +42,7 @@ FloatType::FloatType(int b)
   : ArcanaType(TypeKind::Float), bits(b) {}
 
 std::string FloatType::toString() const {
-  return 'f' + std::to_string(bits);
+  return "f" + std::to_string(bits);
 }
 
 int FloatType::getBitSize() const { return bits; }

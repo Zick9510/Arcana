@@ -2,24 +2,28 @@
 
 #pragma once
 
-#include "Common.hpp"
+#include "Includes.hpp"
 
 /* --- Type System --- */
 
 enum class TypeKind { //...
 
-  Void,
+  VOID,
 
-  Pointer,
+  POINTER,
 
-  Integer,
-  Float,
+  INTEGER,
+  FLOAT,
 
-  Array,
+  STRING,
 
-  Struct,
+  ARRAY,
 
-  Error,
+  STRUCT,
+
+  ERROR,
+
+  DESCONOCIDO,
 
 };
 
@@ -29,22 +33,19 @@ class ArcanaType {
     ArcanaType(TypeKind k)
       : kind(k) {}
 
-    virtual ~ArcanaType() = default;
-    virtual std::string toString() const = 0;
-    virtual int getBitSize() const = 0;
-    virtual bool esIgual(const ArcanaType* otro) const = 0;
+    virtual ~ArcanaType()                    = default;
+    virtual std::string toString()               const;
+    virtual int getBitSize()                     const;
+    virtual bool esIgual(const ArcanaType* otro) const;
 };
-
 
 class VoidType : public ArcanaType {
   public:
-    VoidType() : ArcanaType(TypeKind::Void) {}
+    VoidType();
 
-    std::string toString() const override { return "void"; }
-    int getBitSize() const override { return 0; }
-    bool esIgual(const ArcanaType* otro) const override {
-      return otro->kind == TypeKind::Void;
-    }
+    std::string toString()               const override;
+    int getBitSize()                     const override;
+    bool esIgual(const ArcanaType* otro) const override;
 };
 
 class IntegerType : public ArcanaType {
@@ -54,20 +55,21 @@ class IntegerType : public ArcanaType {
  
     IntegerType(int b, bool u);
  
-    std::string toString() const override;
-    int getBitSize() const override;
+    std::string toString()               const override;
+    int getBitSize()                     const override;
     bool esIgual(const ArcanaType* otro) const override;
 
 };
 
 class FloatType : public ArcanaType {
   public:
-  int bits; // 32, 64, ...
+    int bits; // 32, 64, ...
 
-  FloatType(int b);
+    FloatType(int b);
 
-  std::string toString() const override;
-  int getBitSize() const override;
-  bool esIgual(const ArcanaType* otro) const override;
+    std::string toString()               const override;
+    int getBitSize()                     const override;
+    bool esIgual(const ArcanaType* otro) const override;
 
 };
+
