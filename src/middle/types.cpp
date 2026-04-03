@@ -7,19 +7,19 @@
 // --- VoidType ---
 
 VoidType::VoidType()
-  : ArcanaType(TypeKind::Void) {}
+  : ArcanaType(TypeKind::VOID) {}
 
 std::string VoidType::toString() const { return "void"; }
 
 int VoidType::getBitSize()       const { return 0     ; }
 
 bool VoidType::esIgual(const ArcanaType* otro) const {
-  return (otro->kind == TypeKind::Void);
+  return (otro->kind == TypeKind::VOID);
 }
 
 // --- IntegerType ---
 IntegerType::IntegerType(int b, bool u)
-  : ArcanaType(TypeKind::Integer), bits(b), is_unsigned(u) {}
+  : ArcanaType(TypeKind::INTEGER), bits(b), is_unsigned(u) {}
 
 std::string IntegerType::toString() const {
   return (is_unsigned? "u" : "i") + std::to_string(bits);
@@ -28,7 +28,7 @@ std::string IntegerType::toString() const {
 int IntegerType::getBitSize() const { return bits; }
 
 bool IntegerType::esIgual(const ArcanaType* otro) const {
-  if (otro->kind != TypeKind::Integer) { return false; }
+  if (otro->kind != TypeKind::INTEGER) { return false; }
 
   auto o = static_cast<const IntegerType*>(otro);
 
@@ -39,7 +39,7 @@ bool IntegerType::esIgual(const ArcanaType* otro) const {
 
 // --- FloatType ---
 FloatType::FloatType(int b)
-  : ArcanaType(TypeKind::Float), bits(b) {}
+  : ArcanaType(TypeKind::FLOAT), bits(b) {}
 
 std::string FloatType::toString() const {
   return "f" + std::to_string(bits);
@@ -57,8 +57,6 @@ bool FloatType::esIgual(const ArcanaType* otro) const {
 
   return (this->bits == otroFloat->bits);
 }
-
-
 
 //... StructType
 //... ArcanaType

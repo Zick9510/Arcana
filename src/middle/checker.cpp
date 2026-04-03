@@ -136,14 +136,14 @@ Dt Checker::verificarPotencia(const Dt& izq, const Dt& der) {
       if (esFloat(pProm)) {
         // Si es flotante, el piso es double 
         if (obtenerRangoNum(pProm) < obtenerRangoNum(TypeKind::FLOAT)) {
-          return Dt(TipoPrimitivo::DOUBLE);
+          return Dt(FloatType(64));
 
         }
 
       } else {
         // Si es entero, el piso es long
-        if (obtenerRangoNum(pProm) < obtenerRangoNum(TipoPrimitivo::LONG)) {
-          return Dt(TipoPrimitivo::LONG);
+        if (obtenerRangoNum(pProm) < obtenerRangoNum(TypeKind::INTEGER)) {
+          return FloatType(64);
 
         }
 
