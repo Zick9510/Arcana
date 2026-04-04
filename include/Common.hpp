@@ -143,8 +143,8 @@ inline int obtenerRangoNum(TypeKind t) { //... Distinguir entre tamaño de bits
   }
 }
 
-inline bool esNum(TypeKind t)   { return obtenerRangoNum(t) > 0; }
-inline bool esFloat(TypeKind t) { return t == TypeKind::FLOAT; }
+inline bool esNum  (TypeKind t) { return obtenerRangoNum(t) > 0; }
+inline bool esFloat(TypeKind t) { return t == TypeKind::FLOAT  ; }
 
 struct Dt {
   std::shared_ptr<ArcanaType> valor;
@@ -165,7 +165,6 @@ struct Dt {
 inline std::shared_ptr<ArcanaType> promoverTipos(std::shared_ptr<ArcanaType> izq, std::shared_ptr<ArcanaType> der) {
   int tipoIzq = obtenerRangoNum(izq->kind);
   int tipoDer = obtenerRangoNum(der->kind);
-
   if (tipoDer >= tipoIzq) { return der; }
   return izq;
 }
@@ -229,12 +228,11 @@ inline std::string operadorString(TipoOperador op) { //... Agregar los demás ca
 
 inline TipoOperador convertirEnTipoOperador(Tt op) { //... Agregar los demás casos
   switch (op) {
-    case Tt::MAS: { return TipoOperador::A_SUMA; }
-    case Tt::MENOS: { return TipoOperador::A_RESTA; }
-    case Tt::ASTERISCO: { return TipoOperador::A_MULT; }
-    case Tt::POTENCIA: { return TipoOperador::A_POT; }
-
-    default: { return TipoOperador::DESCONOCIDO; }
+    case Tt::MAS      : { return TipoOperador::A_SUMA     ; }
+    case Tt::MENOS    : { return TipoOperador::A_RESTA    ; }
+    case Tt::ASTERISCO: { return TipoOperador::A_MULT     ; }
+    case Tt::POTENCIA : { return TipoOperador::A_POT      ; }
+    default           : { return TipoOperador::DESCONOCIDO; }
   }
 }
 
@@ -677,8 +675,12 @@ public:
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
+    std::cout << "[682 Common.hpp]\n";
     std::cout << sangria
               << "Sentencia Variable: " << nombre << " [Tipo: " << tipo_explicito.tipo.tipoString() << "]\n";
+
+    std::cout << "[686 Common.hpp]\n";
+
     if (valor_inicial) {
       valor_inicial->imprimir(nivel + 1);
     } else {

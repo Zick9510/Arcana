@@ -19,10 +19,10 @@ public:
   void verificarPrograma();
 
   // --- Verificadores ---
-  std::shared_ptr<ArcanaType> verificarSuma(const Dt& izq, const Dt& der);
-  std::shared_ptr<ArcanaType> verificarResta(const Dt& izq, const Dt& der);
-  std::shared_ptr<ArcanaType> verificarMult(const Dt& izq, const Dt& der);
-  std::shared_ptr<ArcanaType> verificarDiv(const Dt& izq, const Dt& der);
+  std::shared_ptr<ArcanaType> verificarSuma    (const Dt& izq, const Dt& der);
+  std::shared_ptr<ArcanaType> verificarResta   (const Dt& izq, const Dt& der);
+  std::shared_ptr<ArcanaType> verificarMult    (const Dt& izq, const Dt& der);
+  std::shared_ptr<ArcanaType> verificarDiv     (const Dt& izq, const Dt& der);
   std::shared_ptr<ArcanaType> verificarPotencia(const Dt& izq, const Dt& der);
 
   bool esCasteoValido(const Dt& tipo_original, const Dt& tipo_destino);
@@ -31,6 +31,7 @@ public:
 
   void visitar(ExprNumero* nodo) override { //... Hacer más robusto
     Dt tipo;
+    tipo.valor = typeFactory.getUnknown();
 
     bool tiene_punto = nodo->valor.contains('.');
 
@@ -72,12 +73,11 @@ public:
 
     }
 
-    //... Añadir comprobaciones de nulidad. Si tiene algo, return ;
-    //if (tipo != TipoPrimitivo::DESCONOCIDO) {
-    //  nodo->tipo_resuelto = tipo;
-    //  return ;
+    if (tipo.valor != typeFactory.getUnknown()) {
+      nodo->tipo_resuelto = tipo;
+      return ;
+    }
 
-    //}
 
     //... Añadir comprobaciones de tamaño
     if (tiene_punto) {
@@ -90,18 +90,17 @@ public:
 
     nodo->tipo_resuelto = tipo;
 
-    return ;
-
   }
 
   void visitar(ExprBinaria* nodo) override {
     nodo->izquierda->accept(this);
-    nodo->derecha->accept(this);
+    nodo->derecha  ->accept(this);
 
     Dt tipo_izq = nodo->izquierda->tipo_resuelto;
     Dt tipo_der = nodo->derecha  ->tipo_resuelto;
 
     nodo->tipo_resuelto = verificarOperandos(tipo_izq, tipo_der, nodo->operador);
+
   }
 
   void visitar(ExprCasteo* nodo) override {

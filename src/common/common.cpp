@@ -61,7 +61,7 @@ bool esTipo(Tt tipo) {
 
 bool Dt::operator==(const Dt& otro) const { //... Comparar this.es_const
   // Si ambos son nulos, son iguales
-  if (!this->valor && !otro.valor) { return true;  }
+  if (!this->valor && !otro.valor) { return true ; }
   // Si uno es uno y el otro no, son distintos
   if (!this->valor || !otro.valor) { return false; }
 

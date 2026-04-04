@@ -12,8 +12,8 @@
  * Soruce : camelCase.cpp
  * Haeders: PascalCase.hpp
  *
- * Clases     : PascalCase
- * Estructuras: PascalCase
+ * Classes: PascalCase
+ * Structs: PascalCase
  *
  * Argumentos (Clases, privados): camelCase
  * Argumentos (Clases, publicos): snake_case
@@ -23,13 +23,14 @@
  *
  * Argumentos (Funciones): camelCase
  *
- * Elementos de enums: SCREAMING_SNAKE_CASE
+ * Enums          : PascalCase
+ * Enums' elements: SCREAMING_SNAKE_CASE
  *
  * Variables: snake_case
  *
- * //... Means "There is somehting that in this line that should be checked out later" or "This is for debugging"
+ * //... Means "There is something in this line that should be checked out later"
  *
- * */
+ */
 
 CompilerConfig parsearArgumentos(int argc, const char *argv[]) {
   CompilerConfig config;

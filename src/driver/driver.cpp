@@ -20,7 +20,7 @@ bool Driver::compile(const CompilerConfig& config) {
     return false;
   }
 
-  // 3. Set up the error handler
+  // 2. Set up the error handler
   std::vector<Error> errores;
   ErrorHandler errHandler(errores);
 
@@ -36,11 +36,12 @@ bool Driver::compile(const CompilerConfig& config) {
   std::vector<Scope> scopes;
   GestorTablas tablas(errHandler, scopes);
   TypeFactory factory;
+
   Checker checker(tablas, ast, errHandler, factory);
   checker.verificarPrograma();
 
-  if (errHandler.notificar()) { // Hay al menos un error
-    std::cerr << "[45 driver.cpp]: Error\n";
+  if (errHandler.notificar()) { //... Hay al menos un error
+    std::cerr << "[54 driver.cpp]: Error\n";
     return false;
   }
 

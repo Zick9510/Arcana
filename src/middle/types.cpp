@@ -121,6 +121,7 @@ std::shared_ptr<IntegerType> TypeFactory::getInteger(int bits, bool is_unsigned)
 }
 
 std::shared_ptr<FloatType> TypeFactory::getFloat(int bits) {
+
   if (cacheFloat.find(bits) != cacheFloat.end()) {
     return cacheFloat[bits];
 
