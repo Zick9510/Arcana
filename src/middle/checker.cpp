@@ -181,12 +181,12 @@ Dt Checker::verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador 
 
   if (!izq.valor || !der.valor) {
     //...
-    std::cout << "[They Null]\n";
+    std::cout << "[184, checker.cpp]\n";
   }
 
   if (izq.valor->kind == TypeKind::DESCONOCIDO || der.valor->kind == TypeKind::DESCONOCIDO) {
     //...
-    std::cout << "[185 checker.cpp]\n";
+    std::cout << "[189, checker.cpp]\n";
 
   }
 

@@ -95,7 +95,8 @@ void Lexer::consumirSufijoNum() {
 void Lexer::leerNumero() {
 
   size_t inicio = cursor - 1; // get() was already called in tokenize()
-  bool es_float = false;
+  bool tiene_punto = false;
+  bool scientific_notation = false;
 
   // Handle non-decimal bases: 0b..., 0o..., 0x...
   if (source[inicio] == '0' && validarBase()) {
@@ -107,19 +108,54 @@ void Lexer::leerNumero() {
     }
 
   } else { // Handle standar decimals and floating point
-    while (std::isdigit(actual()) || actual() == '.' || actual() == '_' || esSufijoNum()) {
+    while (std::isdigit(actual())             ||
+           actual() == '.' || actual() == '_' ||
+           esSufijoNum()   || actual() == 'e') {
       //... Add scientific notation support
 
+      if (actual() == 'e') {
+        scientific_notation = true;
+
+        if (peek() == '+' || peek() == '-')  {
+          get();
+
+        } else if (!std::isdigit(peek())) {
+          //... Se esperaba un dígito o un signo después de 'e'
+
+        }
+
+        while (std::isdigit(peek())) { get(); }
+
+      }
+
       if (esSufijoNum()) {
+
+        if (actual() == 'f' && !tiene_punto) {
+          //... Literal mal formado, el sufijo 'f' siempre requiere un literal con un punto
+
+        } else if (tiene_punto) {
+          //... Literal mal formado, un sufijo distinto de 'f' no puede tener punto decimal
+        }
+
         consumirSufijoNum();
         get();
         break;
 
       }
 
+      if (actual() == '_' && peek() == '.') {
+        std::cout << "[127 lexer.cpp] _.\n";
+        //... Cant have a dot right after a _
+      }
+
       if (actual() == '.') {
-        if (es_float) { break; } // Don't allow two dots
-        es_float = true;
+        if (peek() == '_') {
+          std::cout << "[133 lexer.cpp ._\n";
+          //... Cant have a _ right after a dot
+        }
+
+        if (tiene_punto) { break; } // Don't allow two dots
+        tiene_punto = true;
 
       }
 
@@ -130,6 +166,13 @@ void Lexer::leerNumero() {
   }
  
   std::string valor(source.substr(inicio, cursor - inicio));
+
+  if (valor.back() == '_') {
+    std::cout << "[151 lexer.cpp] end_\n";
+    //... Ya cant end a number with a "_"
+  }
+
+  std::cout << "[176 lexer.cpp] valor: " << valor << '\n';
 
   tokens.push_back( {Tt::NUMERO, std::string(valor), linea} );
 

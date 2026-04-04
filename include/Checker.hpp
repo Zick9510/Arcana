@@ -34,37 +34,50 @@ public:
     tipo.valor = typeFactory.getUnknown();
 
     bool tiene_punto = nodo->valor.contains('.');
+    bool scientific  = nodo->valor.contains('e');
 
     char suf = ' ';
-    int suf_num   ;
+    int suf_num;
 
-    if (!nodo->sufijo.empty() && nodo->sufijo.size() > 1) { // [char][num]
+    if (!nodo->sufijo.empty()) { // [char][num]
+      std::cout << "[43, Checker.hpp]: " << nodo->sufijo << '\n';
       suf     = nodo->sufijo[0];
+    }
+
+    if (nodo->sufijo.size() > 1) {
       suf_num = std::stoi(nodo->sufijo.substr(1));
+
+    } else if (scientific) {
+      suf_num = 64;
+
+    } else {
+      suf_num = -1; // Flag para "Elegir automáticamente"
+
     }
 
-    if (!tiene_punto && suf == 'f') {
-      //... Error, se esperaba que un float tenga decimal o ".0"
-    }
-
-    if (!isPowerOf2(suf_num) || suf_num < 8) {
+    if (!isPowerOf2(suf_num) || suf_num < 8 && suf_num != -1) {
       //... Error, el sufijo tiene que tener una potencia de 2 mayor o igual a 8
-    }
-
-    if (suf_num <= 8 && !(suf == 'b' || suf == 'c')) {
-      //... Error, solo los bytes y los chars peuden tener sufijos tan chiquitos
     }
 
     switch (suf) {
       case 'i':
       case 'u': {
+        if (suf_num == -1) {
+          suf_num = 32;
+        }
+
         tipo.valor = typeFactory.getInteger(suf_num, (suf == 'u'));
         break;
       }
 
       case 'f': {
+        if (suf_num == -1) {
+          suf_num = 64;
+        }
+
         tipo.valor = typeFactory.getFloat(suf_num);
         break;
+
       }
 
       case ' ': { // No tenía sufijo
@@ -80,7 +93,7 @@ public:
 
 
     //... Añadir comprobaciones de tamaño
-    if (tiene_punto) {
+    if (tiene_punto || scientific) {
       tipo.valor = typeFactory.getFloat(64);
 
     } else {
@@ -129,11 +142,13 @@ public:
 
     }
 
+    //... Asignar el tipo de dato al array y comprobar que todos los tipos de datos dentro sean iguales
   }
-  //... Asignar el tipo de dato al array y comprobar que todos los tipos de datos dentro sean iguales
 
 
   void visitar(ExprUnaria* nodo) override {
+    nodo->operando->accept(this);
+    //... Check if operando is a valid operand
   }
 
   void visitar(ExprLlamadaArcano* nodo) override {

@@ -283,7 +283,7 @@ std::unique_ptr<Sentencia> Parser::parsearEscritura() {
 }
 
 std::pair<std::string, std::string> Parser::partirLexemaNum(std::string lexema) {
-  std::string digitosValidos = "0123456789_.";
+  std::string digitosValidos = "0123456789_.e";
 
   if (lexema.size() > 2 && lexema[0] == '0') {
     if        (lexema[1] == 'x') {
@@ -335,7 +335,6 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
     case Tt::DECREMENTAR: { op = TipoOperador::DEC_PREF  ; }
     case Tt::ASTERISCO  : { op = TipoOperador::PTR_DEREF ; }
     case Tt::AMPERSAND  : { op = TipoOperador::PTR_REF   ;
-
       std::unique_ptr<Expresion> operando = parsearExpresion(Pr::PREFIJO);
       return std::make_unique<ExprUnaria>(op, std::move(operando), true);
 
@@ -394,7 +393,9 @@ std::unique_ptr<Sentencia> Parser::parsearDeclaracionVar() {
   }
   // else: [TIPO] [ID];
 
+  std::cout << "[396, parser.cpp]\n";
   check(Tt::PUNTO_COMA);
+  std::cout << "[398, parser.cpp]\n";
 
   return std::make_unique<SentenciaVar>(nombre.lexema, tipo, std::move(valor));
 
@@ -407,13 +408,17 @@ std::unique_ptr<Sentencia> Parser::parsearSentenciaExpresion() {
     get();
 
     std::unique_ptr<Expresion> derecha = parsearExpresion(Pr::MINIMA);
+    std::cout << "[411, parser.cpp]\n";
     check(Tt::PUNTO_COMA);
+    std::cout << "[413, parser.cpp]\n";
 
     return std::make_unique<SentenciaAsignacion>(std::move(izquierda), std::move(derecha));
 
   }
 
+  std::cout << "[419, parser.cpp]\n";
   check(Tt::PUNTO_COMA); // ...;
+  std::cout << "[421, parser.cpp]\n";
 
   return std::make_unique<SentenciaExpr>(std::move(izquierda));
 
