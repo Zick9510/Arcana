@@ -53,7 +53,10 @@ inline int operator-(Pr lhs, int rhs) {
 // --- TipoToken ---
 enum class Tt {
   // Tipos Inferibles
-  VAR, CONST,
+  VAR,
+
+  // Constantes
+  CONST,
 
   // Tipos de datos
   BYTE, CHAR, BOOL,
@@ -251,15 +254,17 @@ inline std::map<std::string, Tt> keywords = {
   {"var", Tt::VAR}, // auto
 
   // Tipos explícitos
-  {"wyn", Tt::SHORT}, // int16_t
-  {"dox", Tt::INT}, // int
+  {"short", Tt::SHORT}, // int16_t
+  {"int", Tt::INT}, // int
 
-  {"real", Tt::FLOAT}, // float
-  {"vasto", Tt::DOUBLE}, // double
+  {"float", Tt::FLOAT}, // float
+  {"double", Tt::DOUBLE}, // double
 
-  {"dual", Tt::BOOL}, // bool
+  {"bool", Tt::BOOL}, // bool
 
+  {"char", Tt::CHAR},
   {"runa", Tt::CHAR},
+
   {"pergamino", Tt::STRING},
 
   {"tomo", Tt::VECTOR}, // Array
@@ -346,7 +351,7 @@ bool esInfiere(Tt);
 bool esTipoComp(Tt);
 bool esTipo(Tt);
 
-struct InfoVariable { //... Borrar e implementar por Dt
+struct InfoVariable {
   Dt tipo;
   bool es_const = false;
 };
@@ -675,16 +680,16 @@ public:
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
-    std::cout << "[682 Common.hpp]\n";
-    std::cout << sangria
-              << "Sentencia Variable: " << nombre << " [Tipo: " << tipo_explicito.tipo.tipoString() << "]\n";
 
-    std::cout << "[686 Common.hpp]\n";
+    std::cout << sangria << "Asignar Variable:\n";
+    std::cout << "| +- " << nombre << " [" << tipo_explicito.tipo.tipoString() << "]\n";
 
     if (valor_inicial) {
       valor_inicial->imprimir(nivel + 1);
+
     } else {
-      std::cout << sangria << "-+ [Sin inicializar]\n";
+      std::cout << sangria << "+- [Sin inicializar]\n";
+
     }
   }
 
@@ -722,7 +727,7 @@ public:
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
-    std::cout << sangria << "Asignación:\n";
+    std::cout << sangria << "Reasignación:\n";
     izquierda->imprimir(nivel + 1);
     derecha->imprimir(nivel + 1);
   }
@@ -1039,7 +1044,7 @@ struct Scope {
 
 class GestorTablas {
 private:
-  ErrorHandler errHandler; //... Sacar esto de acá
+  ErrorHandler& errHandler;
   std::vector<Scope> scopes;
 
 public:

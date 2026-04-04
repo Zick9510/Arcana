@@ -141,6 +141,10 @@ void Lexer::leerNumero() {
         get();
         break;
 
+      } else if (std::islower(actual())) {
+        //... Sufijo inválido
+        break;
+
       }
 
       if (actual() == '_' && peek() == '.') {

@@ -38,7 +38,11 @@ debug: $(TARGET)
 fast: CXXFLAGS += -O0 -pipe
 fast: $(TARGET)
 
-# Perfil Deploy: Optimizado, sin aserciones (NDEBUG) y "strippeado" (sin símbolos para que pese menos)
+# Perfil Pseudo debug: Similar a debug, pero sin advertencias
+pseudo: CXXFLAGS += -g3 -Og -D_GLIBCXX_DEBUG -D_GLIBCXX_ASSERTIONS -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 -fstack-protector-all -fstack-clash-protection -fsanitize=undefined -fsanitize=leak -fsanitize=float-divide-by-zero -fsanitize=float-cast-overflow -fno-omit-frame-pointer -fPIE -pie -Wl,-z,now -Wl,-z,relro -Wl,-z,noexecstack -fno-common
+pseudo: $(TARGET)
+
+# Perfil Deploy: Optimizado para despliege
 deploy: CXXFLAGS += -O3 -fomit-frame-pointer
 deploy: $(TARGET)
 

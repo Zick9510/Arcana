@@ -29,13 +29,13 @@ bool Driver::compile(const CompilerConfig& config) {
   std::vector<Token> tokens = lexer.tokenize();
 
   // 4. Syntactic Analysis (Tokens -> AST)
-  Parser parser(tokens);
+  TypeFactory factory;
+  Parser parser(tokens, factory);
   std::vector<std::unique_ptr<Sentencia>> ast = std::move(parser.parsearPrograma());
 
   // 5. Semántic Analysis (AST Check)
-  std::vector<Scope> scopes;
+  std::vector<Scope> scopes{};
   GestorTablas tablas(errHandler, scopes);
-  TypeFactory factory;
 
   Checker checker(tablas, ast, errHandler, factory);
   checker.verificarPrograma();

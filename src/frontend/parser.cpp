@@ -49,82 +49,88 @@ Token Parser::check(Tt tipoEsperado) {
   exit(1);
 }
 
-Parser::Parser(std::vector<Token> t)
-  : tokens(std::move(t)), pos(0) {}
+Parser::Parser(std::vector<Token> t, TypeFactory& tf)
+  : tokens(std::move(t)), pos(0), typeFactory(tf) {}
 
+int extraerBits(std::string lexema, int defaultBits) {
+  if (lexema == "int" || lexema == "float") { return defaultBits; }
+
+  std::string num;
+
+  for (char c : lexema) {
+    if (std::isdigit(c)) { num += c; }
+  }
+
+  return num.empty() ? defaultBits : std::stoi(num) ;
+
+}
 
 InfoVariable Parser::parsearTipo() {
   InfoVariable info;
-  Token t = peek();
+  bool procesando_tipos = true ;
+  bool es_unsigned      = false;
 
+  TypeKind tipo_base = TypeKind::VOID;
+  int      bits      = -1;
 
-  std::cout << "[61 parser.cpp] " << t.lexema << '\n';
+  while (procesando_tipos) {
+    Token t = peek();
 
-  switch (t.tipo) { //...
-    case Tt::INT: {
+    switch (t.tipo) { //...
+      case Tt::CONST: {
+        if (info.es_const) {
+          //... Error: Declaró 2 veces const en una sola var
+        } else {
+          info.es_const = true;
+        }
 
-      break;
-    }
+        get();
+        break;
+      }
 
-    default: {
-      break;
+      case Tt::UNSIGNED: {
+        if (es_unsigned) {
+          //... Error: Declaró 2 veces unsigned
+        } else {
+          es_unsigned = true;
+        }
+
+        get();
+        break;
+      }
+
+      case Tt::INT: {
+        tipo_base = TypeKind::INTEGER;
+        bits = extraerBits(t.lexema, 32);
+
+        get();
+        break;
+      }
+
+      case Tt::FLOAT: {
+        tipo_base = TypeKind::FLOAT;
+        bits = extraerBits(t.lexema, 64);
+
+        get();
+        break;
+      }
+
+      default: { // Whatever we found here it aint a type
+        procesando_tipos = false; // We aint gonna process it then
+        break;
+      }
     }
   }
 
-  /*if (esInfiere(t.tipo) || esTipo(t.tipo)) {
-    info.base_tipo = get().tipo;
+  if        (tipo_base == TypeKind::INTEGER) {
+    info.tipo = Dt(typeFactory.getInteger(bits, es_unsigned));
 
-  } else { //... Report to the error handler, recover from this, and keep executing
-    std::cerr << "Error: Se esperaba un tipo de dato, pero se encontró '"
-              << t.lexema << "'\n";
-    exit(1);
+  } else if (tipo_base == TypeKind::FLOAT)   {
+    info.tipo = Dt(typeFactory.getFloat(bits));
 
   }
 
-  if (esTipoComp(info.base_tipo)) {
-
-    check(Tt::MENOR);   // <
-    info.subtipos.push_back(parsearTipo());
-
-    while (peek().tipo == Tt::COMA) { // ,
-      get();
-      info.subtipos.push_back(parsearTipo()); // [Type]
-
-    }
-
-    check(Tt::MAYOR);   // >
-  }
-
-  while (esModificador(peek().tipo)) {
-    Tt mod = get().tipo;
-    switch (mod) {
-      case Tt::UNSIGNED : { info.es_nat         = true; break; }
-      case Tt::CONST    : { info.es_const       = true; break; }
-      case Tt::LONG     : { info.multiplicador *= 2   ; break; }
-      case Tt::VERY_LONG: { info.multiplicador *= 4   ; break; }
-      case Tt::FULL_LONG: { info.multiplicador *= 8   ; break; }
-      case Tt::COMPLEJO : { info.es_complejo    = true; break; }
-      default           : {                             break; }
-    }
-  }
-
-  // Reglas de Tipos:
-  //  Var no puede tener modificadores de tamaño o signo
-  //  Lo mismo para float y short
-  //  Double no puede tener modificadores de signo
-  if (((info.base_tipo == Tt::VAR    || //... I think this should be in a function
-        info.base_tipo == Tt::FLOAT  ||
-        info.base_tipo == Tt::SHORT) &&
-    (info.multiplicador > 1 || info.es_nat)) ||
-    ((info.base_tipo == Tt::DOUBLE) && (info.es_nat))) {
-
-    std::cerr //...
-    << "Error: No podés usar modificadores de tamaño o signo con inferencia de tipos\n";
-    exit(1);
-
-    }
-*/
-    return info;
+  return info;
 
 }
 
@@ -393,9 +399,9 @@ std::unique_ptr<Sentencia> Parser::parsearDeclaracionVar() {
   }
   // else: [TIPO] [ID];
 
-  std::cout << "[396, parser.cpp]\n";
+  std::cout << "[402, parser.cpp]\n";
   check(Tt::PUNTO_COMA);
-  std::cout << "[398, parser.cpp]\n";
+  std::cout << "[404, parser.cpp]\n";
 
   return std::make_unique<SentenciaVar>(nombre.lexema, tipo, std::move(valor));
 
@@ -408,17 +414,13 @@ std::unique_ptr<Sentencia> Parser::parsearSentenciaExpresion() {
     get();
 
     std::unique_ptr<Expresion> derecha = parsearExpresion(Pr::MINIMA);
-    std::cout << "[411, parser.cpp]\n";
     check(Tt::PUNTO_COMA);
-    std::cout << "[413, parser.cpp]\n";
 
     return std::make_unique<SentenciaAsignacion>(std::move(izquierda), std::move(derecha));
 
   }
 
-  std::cout << "[419, parser.cpp]\n";
   check(Tt::PUNTO_COMA); // ...;
-  std::cout << "[421, parser.cpp]\n";
 
   return std::make_unique<SentenciaExpr>(std::move(izquierda));
 

@@ -22,13 +22,22 @@ void GestorTablas::salirBloque() {
 // --- Variables ---
 bool GestorTablas::añadirVariable(const std::string& nombre, InfoVariable info, int linea) {
   // Comprobamos solo en el ámbito actual (redefinición)
+  std::cout << "[25 checker.cpp]\n";
+  scopes.back();
+  std::cout << "[27 checker.cpp]\n";
+  scopes.back().variables;
+  std::cout << "[29 checker.cpp]\n";
   if (scopes.back().variables.count(nombre)) {
     std::vector<std::string> detalle = {nombre};
+    std::cout << "[32 checker.cpp]\n";
     errHandler.reportar(CE::ERR_VARIABLE_REDECLARADA, linea, detalle);
+    std::cout << "[34 checker.cpp]\n";
     return false;
   }
   //... Añadir comprobación de shadiwing
+  std::cout << "[38 checker.cpp]\n";
   scopes.back().variables[nombre] = info;
+  std::cout << "[40 checker.cpp]\n";
   return true;
 }
 
@@ -41,12 +50,13 @@ InfoVariable* GestorTablas::buscarVariable(const std::string& nombre, int linea)
   }
   std::vector<std::string> detalle = {nombre};
   errHandler.reportar(CE::ERR_VARIABLE_USO_SIN_DECLARAR, linea, detalle);
+
   return nullptr; // No encontrada
 }
 
 /* --- Checker --- */
 
-Checker::Checker(GestorTablas t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e, TypeFactory tf)
+Checker::Checker(GestorTablas& t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e, TypeFactory& tf)
   : tablas(t), ast(a), errHandler(e), typeFactory(tf) {}
 
 // --- Verificar Expresiones ---

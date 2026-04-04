@@ -11,6 +11,8 @@ private:
   std::unordered_map<std::string, Tt> aliasLexicos;
   std::unordered_map<std::string, DefinicionArcano> arcanosActivos;
 
+  TypeFactory& typeFactory;
+
   Token resolverAlias(Token t);
   Token peek();
   Token get();
@@ -19,7 +21,7 @@ private:
   bool coincide(std::initializer_list<Tt> tipos);
 
 public:
-  Parser(std::vector<Token> t);
+  Parser(std::vector<Token> t, TypeFactory& tf);
 
   InfoVariable parsearTipo();
 
