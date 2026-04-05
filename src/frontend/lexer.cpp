@@ -18,7 +18,7 @@ char Lexer::actual() const {
 
 }
 
-// Returns the next character (lookahead) withouth advaincing the cursor
+// Returns the next character (lookahead) without advaincing the cursor
 char Lexer::peek() const {
   if (cursor + 1 >= source.size()) { return '\0'; }
   return source[cursor + 1];
@@ -34,7 +34,7 @@ char Lexer::get() {
 
 }
 
-// "Conditional consume": If the current char matches 'esp', advence and return true
+// "Conditional consume": If the current char matches 'esp', advance and return true
 bool Lexer::match(char esp) { // Expected
   if (esFin() || source[cursor] != esp) { return false; }
   cursor++;
@@ -47,7 +47,7 @@ bool Lexer::match(char esp) { // Expected
 // Checks if the current char indicates a numeric base (b, o, x)
 bool Lexer::validarBase() {
   if (actual() == 'b' || actual() == 'o' || actual() == 'x') { return true; }
-  // If it detectes B, O, X we should raise an error: They are not allowed
+  // If it detects B, O, X we should raise an error: They are not allowed
   return false;
 
 }
@@ -148,13 +148,13 @@ void Lexer::leerNumero() {
       }
 
       if (actual() == '_' && peek() == '.') {
-        std::cout << "[127 lexer.cpp] _.\n";
+        std::cout << "[151 lexer.cpp] _.\n";
         //... Cant have a dot right after a _
       }
 
       if (actual() == '.') {
         if (peek() == '_') {
-          std::cout << "[133 lexer.cpp ._\n";
+          std::cout << "[157 lexer.cpp ._\n";
           //... Cant have a _ right after a dot
         }
 
@@ -172,11 +172,11 @@ void Lexer::leerNumero() {
   std::string valor(source.substr(inicio, cursor - inicio));
 
   if (valor.back() == '_') {
-    std::cout << "[151 lexer.cpp] end_\n";
+    std::cout << "[175 lexer.cpp] end_\n";
     //... Ya cant end a number with a "_"
   }
 
-  std::cout << "[176 lexer.cpp] valor: " << valor << '\n';
+  std::cout << "[179 lexer.cpp] valor: " << valor << '\n';
 
   tokens.push_back( {Tt::NUMERO, std::string(valor), linea} );
 
@@ -205,18 +205,45 @@ std::vector<Token> Lexer::tokenize() {
     // --- Identifiers and Keywords ---
     if (std::isalpha(c) || c == '_') { // Must start with alpha or _
 
+      // Consumir el identificador completo
       while (std::isalnum(actual()) || actual() == '_') { get(); }
-
       std::string_view texto = source.substr(inicio, cursor - inicio);
-      std::string s_texto(texto); // Para buscar en el map de keywords
 
-      if (keywords.count(s_texto)) {
-        tokens.push_back( {keywords[s_texto], s_texto, linea} );
+      // Encontrar dónde empiezan los números (si existen)
+      auto it_digito = std::find_if(texto.begin(), texto.end(), ::isdigit);
+      std::string_view prefijo = texto.substr(0, std::distance(texto.begin(), it_digito));
+      std::string_view sufijo  = texto.substr(std::distance(texto.begin(), it_digito));
+      auto es_keyword = keywords.find(std::string(prefijo));
 
-      } else {
-        tokens.push_back( {Tt::IDENTIFICADOR, s_texto, linea} );
+      // Se asume identificador a menos que cumpla todos los requisitos de ser una keyword
+      Tt tipo_final = Tt::IDENTIFICADOR;
 
+      if (auto it = keywords.find(std::string(prefijo));
+               it != keywords.end()) { // Si está en las keywords
+        if (sufijo.empty()) { // Caso: "int", "while", "arcano"
+          tipo_final = it->second;
+
+        } else if (esTipo(it->second)) { // Caso: "float64", "int123"
+          int valor = 0;
+          auto [ptr, ec] =
+            std::from_chars(sufijo.data(), sufijo.data() + sufijo.size(), valor);
+          bool es_valido   = (ec == std::errc());
+          bool es_potencia = (valor >= 8) && (isPowerOf2(valor));
+
+          if        (es_valido && es_potencia) { // Caso: "int128", byte16
+            tipo_final = it->second;
+
+          } else if (es_valido)                { // Caso: "float3", "char9"
+            //... Lanzar warning: El nombre de la variable puede ser confuso
+
+          }
+        } else { // Caso: "if42", "for999"
+          //... Lanzar warning: El nombre de la variable puede ser confuso
+
+        }
       }
+
+      tokens.push_back( {tipo_final, std::string(texto), linea} );
       continue;
     }
 

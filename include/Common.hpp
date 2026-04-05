@@ -254,11 +254,11 @@ inline std::map<std::string, Tt> keywords = {
   {"var", Tt::VAR}, // auto
 
   // Tipos explícitos
-  {"short", Tt::SHORT}, // int16_t
-  {"int", Tt::INT}, // int
+  {"short", Tt::SHORT}, // int16
+  {"int", Tt::INT}, // int32
 
-  {"float", Tt::FLOAT}, // float
-  {"double", Tt::DOUBLE}, // double
+  {"float", Tt::FLOAT}, // float32
+  {"double", Tt::DOUBLE}, // float64
 
   {"bool", Tt::BOOL}, // bool
 
