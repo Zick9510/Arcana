@@ -93,5 +93,5 @@ false ?? null; // false
 ```
 
 ## Contact:
-- **Discord** `zick9510`
+- **Discord** `panqueque.boo`
 - **Email** salastomasalejandro1@gmail.com
