@@ -172,11 +172,8 @@ void Lexer::leerNumero() {
   std::string valor(source.substr(inicio, cursor - inicio));
 
   if (valor.back() == '_') {
-    std::cout << "[175 lexer.cpp] end_\n";
     //... Ya cant end a number with a "_"
   }
-
-  std::cout << "[179 lexer.cpp] valor: " << valor << '\n';
 
   tokens.push_back( {Tt::NUMERO, std::string(valor), linea} );
 

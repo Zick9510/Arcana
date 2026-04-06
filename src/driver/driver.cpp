@@ -41,7 +41,7 @@ bool Driver::compile(const CompilerConfig& config) {
   checker.verificarPrograma();
 
   if (errHandler.notificar()) { //... Hay al menos un error
-    std::cerr << "[54 driver.cpp]: Error\n";
+    std::cerr << "[44 driver.cpp]: Error\n";
     return false;
   }
 

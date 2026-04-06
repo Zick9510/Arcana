@@ -40,7 +40,6 @@ public:
     int suf_num   ;
 
     if (!nodo->sufijo.empty()) { // [f/u/i][num]
-      std::cout << "[43, Checker.hpp]: " << nodo->sufijo << '\n';
       suf     = nodo->sufijo[0];
     }
 
@@ -133,6 +132,17 @@ public:
   }
 
   void visitar(ExprVariable* nodo) override { //...
+    InfoVariable* info = tablas.buscarVariable(nodo->nombre, 0); //... Línea
+    std::cout << "[136, Checker.hpp]\n";
+    std::cout << nodo->nombre << '\n';
+
+    if (info != nullptr) {
+      nodo->tipo_resuelto = info->tipo;
+
+    } else {
+      std::cout << "[143, Checker.hpp] Error: La variable no existe\n";//... La variable no existe
+
+    }
 
   }
 
@@ -162,12 +172,12 @@ public:
 
     }
 
-    if (nodo->fin    ) {
+    if (nodo->fin   ) {
         nodo->fin   ->accept(this);
 
     }
 
-    if (nodo->paso   ) {
+    if (nodo->paso  ) {
         nodo->paso  ->accept(this);
 
     }
@@ -185,31 +195,18 @@ public:
   }
 
   void visitar(SentenciaVar* nodo) override { //... Implementar líneas en los NodoAST
-    std::cout << "[188 Checker.hpp]\n";
     InfoVariable* info = tablas.buscarVariable(nodo->nombre, 0);
-    std::cout << "[190 Checker.hpp]\n";
-    nodo->valor_inicial->accept(this);
-    std::cout << "[192 Checker.hpp]\n";
+    if (info == nullptr) { // Si la variable no existe, creamos una
+      InfoVariable nueva_info;
+      std::cout << "[201, Checker.hpp]\n";
+      nueva_info.tipo = nodo->tipo_explicito.tipo.valor;
+      std::cout << "[203, Checker.hpp]\n";
+      tablas.añadirVariable(nodo->nombre, nueva_info, 0);
+      std::cout << "[205, Checker.hpp]\n";
+      return ;
 
-    if (info != nullptr) {
-      //... Ya existe en algún scope
-    } else {
-      std::cout << "[197 Checker.hpp]\n";
-      nodo->tipo_explicito.tipo.valor;
-      std::cout << "[199 Checker.hpp]\n";
-      nodo->valor_inicial->tipo_resuelto.valor;
-      std::cout << "[201 Checker.hpp]\n";
-      nodo->nombre;
-      std::cout << "[203 Checker.hpp]\n";
-      *info;
-      std::cout << "[205 Checker.hpp]\n";
+    } else { // Si existe, error
 
-      if (nodo->tipo_explicito.tipo.valor != nodo->valor_inicial->tipo_resuelto.valor) {
-        //... Los tipos no coinciden, hay que comprobar que el derecho quepa en el izquierdo
-      } else { // Los tipos coinciden
-        tablas.añadirVariable(nodo->nombre, *info, 0);
-      }
-      std::cout << "[212 Checker.hpp]\n";
     }
 
   }
@@ -219,11 +216,11 @@ public:
   }
 
   void visitar(SentenciaAsignacion* nodo) override {
-    std::cout << "[212 Checker.hpp]\n";
-    nodo->izquierda->accept(this);
-    std::cout << "[214 Checker.hpp]\n";
+    std::cout << "[219, Checker.hpp]\n";
+    //nodo->izquierda->accept(this);
+    std::cout << "[221, Checker.hpp]\n";
     nodo->derecha  ->accept(this);
-    std::cout << "[216 Checker.hpp]\n";
+    std::cout << "[223, Checker.hpp]\n";
 
     //... Check if the left side and right side have the same type
   }

@@ -22,13 +22,23 @@ void GestorTablas::salirBloque() {
 // --- Variables ---
 bool GestorTablas::añadirVariable(const std::string& nombre, InfoVariable info, int linea) {
   // Comprobamos solo en el ámbito actual (redefinición)
+  std::cout << "[25, checker.cpp]\n";
+  if (scopes.empty()) {
+    scopes.push_back(Scope());
+    std::cout << "[27, checker.cpp]\n";
+    //return false;
+  }
+  std::cout << "[30, checker.cpp]\n";
+
   if (scopes.back().variables.count(nombre)) {
     std::vector<std::string> detalle = {nombre};
     errHandler.reportar(CE::ERR_VARIABLE_REDECLARADA, linea, detalle);
     return false;
   }
+
   //... Añadir comprobación de shadiwing
   scopes.back().variables[nombre] = info;
+
   return true;
 }
 
@@ -71,7 +81,6 @@ std::shared_ptr<ArcanaType> Checker::verificarSuma(const Dt& izq, const Dt& der)
   // Si el código llega acá, se intentó sumar cosas inválidas
   //... Reportar al errHandler
 
-  std::cout << "[75 checker.cpp]\n";
   return nullptr; //... Quizás retornar un tipo error?
 
 }
@@ -135,18 +144,18 @@ std::shared_ptr<ArcanaType> Checker::verificarDiv(const Dt& izq, const Dt& der) 
 std::shared_ptr<ArcanaType> Checker::verificarPotencia(const Dt& izq, const Dt& der) {
 
   if (izq.esPrimitivo() && der.esPrimitivo()) {
-    std::cout << "[139 checker.cpp]\n";
+    std::cout << "[143 checker.cpp]\n";
     TypeKind pIzq = izq.valor->kind;
     TypeKind pDer = der.valor->kind;
-    std::cout << "[142 checker.cpp]\n";
+    std::cout << "[146 checker.cpp]\n";
 
     // Regla 1: Potenciación de números
     if (esNum(pIzq) && esNum(pDer)) { //... Ojo con (-x) ** ( 1 / (2n) )
       // Obtenemos el tipo más preciso de los dos
       std::shared_ptr<ArcanaType> promovido = promoverTipos(izq.valor, der.valor);
-      std::cout << "[146 checker.cpp]\n";
+      std::cout << "[152 checker.cpp]\n";
       TypeKind pProm = promovido->kind;
-      std::cout << "[148 checker.cpp]\n";
+      std::cout << "[154 checker.cpp]\n";
 
       if (esFloat(pProm)) {
         // Si es flotante, el piso es double
@@ -171,7 +180,7 @@ std::shared_ptr<ArcanaType> Checker::verificarPotencia(const Dt& izq, const Dt& 
   }
 
   //... Reportar al errHandler
-  std::cout << "[171 checker.cpp]\n";
+  std::cout << "[179 checker.cpp]\n";
   return nullptr;
 
 }
@@ -182,12 +191,12 @@ Dt Checker::verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador 
 
   if (!izq.valor || !der.valor) {
     //...
-    std::cout << "[184, checker.cpp]\n";
+    std::cout << "[190, checker.cpp]\n";
   }
 
   if (izq.valor->kind == TypeKind::DESCONOCIDO || der.valor->kind == TypeKind::DESCONOCIDO) {
     //...
-    std::cout << "[189, checker.cpp]\n";
+    std::cout << "[195, checker.cpp]\n";
 
   }
 
@@ -214,7 +223,7 @@ Dt Checker::verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador 
     }
 
     default: {
-      std::cout << "[77 checker.cpp] Operador desconocido: " << operadorString(op) << "\n";
+      std::cout << "[222 checker.cpp] Operador desconocido: " << operadorString(op) << "\n";
       //... Retornar algo
     }
   }

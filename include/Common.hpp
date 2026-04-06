@@ -1016,6 +1016,7 @@ public:
   bool notificar() {
     bool hayError = !errores.empty();
     for (const auto& e : errores) {
+      std::cout << "Error línea " << e.linea << '\n';
       //... Mostrar errores por pantalla
     }
 
@@ -1038,14 +1039,14 @@ struct Clase {
 };
 
 struct Scope {
-  std::unordered_map<std::string, InfoVariable> variables;
+  std::unordered_map<std::string, InfoVariable> variables = std::unordered_map<std::string, InfoVariable>();
 };
 
 
 class GestorTablas {
 private:
   ErrorHandler& errHandler;
-  std::vector<Scope> scopes;
+  std::vector<Scope> scopes = std::vector<Scope>();
 
 public:
   GestorTablas(ErrorHandler& err, std::vector<Scope> scopes);

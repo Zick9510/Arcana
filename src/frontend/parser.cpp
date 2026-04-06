@@ -61,7 +61,7 @@ int extraerBits(std::string lexema, int defaultBits) {
     if (std::isdigit(c)) { num += c; }
   }
 
-  return num.empty() ? defaultBits : std::stoi(num) ;
+  return num.empty() ? defaultBits : std::stoi(num);
 
 }
 
@@ -135,7 +135,7 @@ InfoVariable Parser::parsearTipo() {
 }
 
 std::unique_ptr<Expresion> Parser::parsearCasteo() {
-  std::cerr << "[103 parser.cpp] NO IMPLEMENTADO (parsearCasteo)\n";
+  std::cerr << "[140 parser.cpp] NO IMPLEMENTADO (parsearCasteo)\n";
   exit(1);
 }
 
@@ -399,9 +399,7 @@ std::unique_ptr<Sentencia> Parser::parsearDeclaracionVar() {
   }
   // else: [TIPO] [ID];
 
-  std::cout << "[402, parser.cpp]\n";
   check(Tt::PUNTO_COMA);
-  std::cout << "[404, parser.cpp]\n";
 
   return std::make_unique<SentenciaVar>(nombre.lexema, tipo, std::move(valor));
 
