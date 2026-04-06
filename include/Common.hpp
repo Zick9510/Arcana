@@ -495,7 +495,16 @@ public:
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
-    std::cout << sangria << "+- " << nombre << "\n";
+    std::cout << sangria << "+- " << nombre << " [";
+
+    if (tipo_resuelto.valor != nullptr) {
+      std::cout << tipo_resuelto.tipoString();
+
+    } else {
+      std::cout << "unknown";
+
+    }
+    std::cout << "]\n";
   }
 
   void accept(ASTVisitor* visitor) override {
@@ -682,13 +691,13 @@ public:
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
 
     std::cout << sangria << "Asignar Variable:\n";
-    std::cout << "| +- " << nombre << " [" << tipo_explicito.tipo.tipoString() << "]\n";
+    std::cout << sangria << "| +- " << nombre << " [" << tipo_explicito.tipo.tipoString() << "]\n";
 
     if (valor_inicial) {
       valor_inicial->imprimir(nivel + 1);
 
     } else {
-      std::cout << sangria << "+- [Sin inicializar]\n";
+      std::cout << sangria << "| +- [Sin inicializar]\n";
 
     }
   }

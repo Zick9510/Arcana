@@ -137,10 +137,12 @@ public:
     std::cout << nodo->nombre << '\n';
 
     if (info != nullptr) {
+      std::cout << "[140, Checker.hpp]\n";
       nodo->tipo_resuelto = info->tipo;
+      std::cout << "[142, Checker.hpp]\n";
 
     } else {
-      std::cout << "[143, Checker.hpp] Error: La variable no existe\n";//... La variable no existe
+      std::cout << "[145, Checker.hpp] Error: La variable no existe\n";//... La variable no existe
 
     }
 
@@ -195,6 +197,8 @@ public:
   }
 
   void visitar(SentenciaVar* nodo) override { //... Implementar líneas en los NodoAST
+    if (nodo->valor_inicial) { nodo->valor_inicial->accept(this); }
+
     InfoVariable* info = tablas.buscarVariable(nodo->nombre, 0);
     if (info == nullptr) { // Si la variable no existe, creamos una
       InfoVariable nueva_info;

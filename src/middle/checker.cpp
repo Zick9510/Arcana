@@ -26,8 +26,10 @@ bool GestorTablas::añadirVariable(const std::string& nombre, InfoVariable info,
   if (scopes.empty()) {
     scopes.push_back(Scope());
     std::cout << "[27, checker.cpp]\n";
-    //return false;
+    scopes.back().variables[nombre] = info;
+    return true;
   }
+
   std::cout << "[30, checker.cpp]\n";
 
   if (scopes.back().variables.count(nombre)) {
@@ -43,15 +45,17 @@ bool GestorTablas::añadirVariable(const std::string& nombre, InfoVariable info,
 }
 
 InfoVariable* GestorTablas::buscarVariable(const std::string& nombre, int linea) {
+  std::cout << "[48, checker.cpp] " << nombre << '\n';
   // Buscamos desde el ámbito actual hacia el global
   for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
     if (it->variables.count(nombre)) {
+      std::cout << "[52, checker.cpp]\n";
       return &it->variables[nombre];
     }
   }
-  std::vector<std::string> detalle = {nombre};
-  errHandler.reportar(CE::ERR_VARIABLE_USO_SIN_DECLARAR, linea, detalle);
-
+  //std::vector<std::string> detalle = {nombre};
+  //errHandler.reportar(CE::ERR_VARIABLE_USO_SIN_DECLARAR, linea, detalle);
+  std::cout << "[58, checker.cpp]\n";
   return nullptr; // No encontrada
 }
 
