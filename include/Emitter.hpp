@@ -4,8 +4,6 @@
 
 #include "Common.hpp"
 
-#include <string>
-
 class Emitter : public ASTVisitor {
 private:
 public:
