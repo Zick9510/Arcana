@@ -51,7 +51,7 @@ bool Driver::compile(const CompilerConfig& config) {
     nodo->accept(&emitter);
   }
 
-  std::string codigo = emitter.obtenerCodigo();
+  std::string codigo = ""; //emitter.obtenerCodigo();
 
   //... Debug
   std::cout << "\n --- TOKENS --- \n\n";

@@ -7,124 +7,38 @@
 #include <string>
 
 class Emitter : public ASTVisitor {
-  private:
-    std::string codigo;
+private:
+public:
 
-  public:
-    std::string obtenerCodigo() const { return codigo; }
+  void visitar(ExprNumero  * nodo) override;
+  void visitar(ExprVariable* nodo) override;
+  void visitar(ExprArray   * nodo) override;
 
-    // --- Expresiones --- //
+  void visitar(ExprUnaria * nodo) override;
+  void visitar(ExprBinaria* nodo) override;
+  void visitar(ExprCasteo * nodo) override;
+
+  void visitar(ExprRango * nodo) override;
+  void visitar(ExprAcceso* nodo) override;
+
+  void visitar(ExprLlamadaArcano* nodo) override;
+
+
+  void visitar(Bloque* nodo) override;
  
-    void visitar(ExprNumero* nodo) override {
-      codigo += nodo->valor;
-    }
-
-    void visitar(ExprVariable* nodo) override {
-      codigo += nodo->nombre;
-    }
-
-    void visitar(ExprArray* nodo) override { //... Array
-
-    }
-
-    void visitar(ExprUnaria* nodo) override { //...
-      codigo += "(";
-      if (nodo->es_prefijo) {
-        codigo += operadorString(nodo->operador);
-        nodo->operando->accept(this);
-
-      } else {
-        nodo->operando->accept(this);
-        codigo += operadorString(nodo->operador);
-      }
-
-      codigo += ")";
-    }
-
-    void visitar(ExprBinaria* nodo) override {
-      codigo += "(";
-      nodo->izquierda->accept(this);
-      codigo += " " + operadorString(nodo->operador) + " ";
-      nodo->derecha->accept(this);
-      codigo += ")";
-    }
-
-    void visitar(ExprCasteo* nodo) override {
-      std::cerr << "Error: No implementado (ExprCasteo)\n";
-    }
-
-    void visitar(ExprRango* nodo) override {
-      std::cerr << "Error: No implementado (ExprRango)\n";
-    }
-
-    void visitar(ExprAcceso* nodo) override {
-      std::cerr << "Error: No implementado (ExprAcceso)\n";
-    }
-
-    void visitar(ExprLlamadaArcano* nodo) override {
-      std::cerr << "Error: No implementado (ExprLlamadaArcano)\n";
-    }
-
-    // --- Sentencias --- //
-
-    void visitar(Bloque* nodo) override {
-      codigo += "{\n";
-      for (const auto& sent : nodo->instrucciones) {
-        codigo += "    ";
-        sent->accept(this);
-      }
-      codigo += "}\n";
-    }
-
-    void visitar(SentenciaExpr* nodo) override {
-      nodo->expresion->accept(this);
-      codigo += ";\n";
-    }
-
-    void visitar(SentenciaVar* nodo) override {
-
-    }
-
-    void visitar(SentenciaAsignacion* nodo) override {
-      nodo->izquierda->accept(this);
-      codigo += " = ";
-      nodo->derecha->accept(this);
-      codigo += ";\n";
-    }
-
-    void visitar(SentenciaSi* nodo) override {
-      codigo += "if (";
-      nodo->condicion->accept(this);
-      codigo += ") ";
-      nodo->rama_si->accept(this);
-
-      if (nodo->rama_sino) {
-        codigo += "else ";
-        nodo->rama_sino->accept(this);
-      }
-    }
-
-    void visitar(SentenciaSino* nodo) override {
-      codigo += "else ";
-      nodo->cuerpo->accept(this);
-    }
-
-    void visitar(SentenciaMientras* nodo) override {
-      codigo += "while (";
-      nodo->condicion->accept(this);
-      codigo +=  ") ";
-      nodo->rama_while->accept(this);
-    }
-
-    void visitar(SentenciaEscritura* nodo) override {
-      std::cerr << "Error: No implementado (SentenciaEscritura)\n";
-    }
-
-    void visitar(SentenciaArcano* nodo) override {
-      std::cerr << "Error: No implementado (SentenciaArcano)\n";
-    }
-
-    void visitar(SentenciaLlamadaArcano* nodo) override {
-      std::cerr << "Error: No implementado (SentenciaLlamadaArcano)\n";
-    }
+  void visitar(SentenciaVar * nodo) override;
+  void visitar(SentenciaExpr* nodo) override;
+ 
+  void visitar(SentenciaAsignacion* nodo) override;
+ 
+  void visitar(SentenciaSi  * nodo) override;
+  void visitar(SentenciaSino* nodo) override;
+ 
+  void visitar(SentenciaMientras* nodo) override;
+ 
+  void visitar(SentenciaEscritura* nodo) override;
+ 
+  void visitar(SentenciaArcano       * nodo) override;
+  void visitar(SentenciaLlamadaArcano* nodo) override;
 };
+
