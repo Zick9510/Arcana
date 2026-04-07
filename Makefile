@@ -2,8 +2,18 @@
 # Configuración del Compilador
 # ==========================================
 CXX      := g++
-CXXFLAGS := -std=c++23 -march=native -Iinclude
+CXXFLAGS :=
 LDFLAGS  :=
+
+# ==========================================
+# Configuración de LLVM
+# ==========================================
+LLVM_CONFIG   := llvm-config
+LLVM_CXXFLAGS := $(shell $(LLVM_CONFIG) --cxxflags)
+LLVM_LDFLAGS  := $(shell $(LLVM_CONFIG) --ldflags --libs all --system-libs)
+
+CXXFLAGS += $(LLVM_CXXFLAGS) -std=c++23 -march=native -Iinclude -fexceptions
+LDFLAGS  += $(LLVM_LDFLAGS)
 
 # ==========================================
 # Directorios

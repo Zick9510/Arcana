@@ -2,8 +2,10 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
 #include <cctype>
+#include <charconv>
 #include <memory>
 #include <iostream>
 #include <fstream>

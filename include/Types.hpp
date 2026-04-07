@@ -43,6 +43,7 @@ class ArcanaType {
 class UnknownType : public ArcanaType {
 public:
   UnknownType();
+
   std::string toString()               const override;
   int getBitSize()                     const override;
   bool esIgual(const ArcanaType* otro) const override;

@@ -3,6 +3,35 @@
 #include "Common.hpp"
 #include "Emitter.hpp"
 
+// --- LLVM --- //
+llvm::Type* Emitter::obtenerTipoLLVM(ArcanaType* tipo) {
+  if (!tipo) { return nullptr; }
+
+  switch (tipo->kind) {
+    case TypeKind::VOID: {
+      return llvm::Type::getVoidTy(llvm_ctx);
+    }
+
+    case TypeKind::INTEGER: {
+      return llvm::Type::getIntNTy(llvm_ctx, tipo->getBitSize());
+    }
+
+    case TypeKind::FLOAT: {
+      switch(tipo->getBitSize()) {
+        case 16 : { return llvm::Type::getHalfTy  (llvm_ctx); }
+        case 32 : { return llvm::Type::getFloatTy (llvm_ctx); }
+        case 64 : { return llvm::Type::getDoubleTy(llvm_ctx); }
+        case 128: { return llvm::Type::getFP128Ty (llvm_ctx); }
+        default : { return nullptr; }
+      }
+    }
+
+    default: {
+      return nullptr;
+    }
+
+  }
+}
 
 // --- Expresiones --- //
 

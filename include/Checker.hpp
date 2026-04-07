@@ -85,6 +85,12 @@ public:
 
     }
 
+    if (tiene_punto) {
+      if (suf != 'f' && suf != ' ') {
+        //... Error, tiene punto y el sufijo no es float
+      }
+    }
+
     if (tipo.valor != typeFactory.getUnknown()) {
       nodo->tipo_resuelto = tipo;
       return ;
