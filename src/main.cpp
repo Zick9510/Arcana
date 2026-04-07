@@ -53,7 +53,7 @@ CompilerConfig parsearArgumentos(int argc, const char *argv[]) {
       }
 
     } else if (arg == "-shh") {
-      config.mute_decorado = true;  
+      config.mute_decorado = true;
 
     } else if (arg == "-w") {
       config.mute_warnings = true;
