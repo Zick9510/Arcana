@@ -133,16 +133,12 @@ public:
 
   void visitar(ExprVariable* nodo) override { //...
     InfoVariable* info = tablas.buscarVariable(nodo->nombre, 0); //... Línea
-    std::cout << "[136, Checker.hpp]\n";
-    std::cout << nodo->nombre << '\n';
 
     if (info != nullptr) {
-      std::cout << "[140, Checker.hpp]\n";
       nodo->tipo_resuelto = info->tipo;
-      std::cout << "[142, Checker.hpp]\n";
 
     } else {
-      std::cout << "[145, Checker.hpp] Error: La variable no existe\n";//... La variable no existe
+      //... La variable no existe
 
     }
 
@@ -202,11 +198,8 @@ public:
     InfoVariable* info = tablas.buscarVariable(nodo->nombre, 0);
     if (info == nullptr) { // Si la variable no existe, creamos una
       InfoVariable nueva_info;
-      std::cout << "[201, Checker.hpp]\n";
       nueva_info.tipo = nodo->tipo_explicito.tipo.valor;
-      std::cout << "[203, Checker.hpp]\n";
       tablas.añadirVariable(nodo->nombre, nueva_info, 0);
-      std::cout << "[205, Checker.hpp]\n";
       return ;
 
     } else { // Si existe, error
@@ -220,11 +213,8 @@ public:
   }
 
   void visitar(SentenciaAsignacion* nodo) override {
-    std::cout << "[219, Checker.hpp]\n";
-    //nodo->izquierda->accept(this);
-    std::cout << "[221, Checker.hpp]\n";
+    nodo->izquierda->accept(this);
     nodo->derecha  ->accept(this);
-    std::cout << "[223, Checker.hpp]\n";
 
     //... Check if the left side and right side have the same type
   }
