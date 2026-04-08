@@ -1,3 +1,6 @@
 int a = 2;
 int* b = &a;
 int c = *b;
+
+int*** d = &&&a;
+int e = ***d;
