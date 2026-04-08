@@ -60,6 +60,19 @@ public:
 
 };
 
+class PointerType : public ArcanaType {
+public:
+
+  std::shared_ptr<ArcanaType> tipo_apuntado;
+
+  PointerType(std::shared_ptr<ArcanaType> t_a);
+
+  std::string toString()               const override;
+  int getBitSize()                     const override;
+  bool esIgual(const ArcanaType* otro) const override;
+
+};
+
 class IntegerType : public ArcanaType {
 public:
   int bits; // 8, 16, 32, 64, ...
@@ -90,13 +103,15 @@ public:
 class TypeFactory { //...
 private:
   std::shared_ptr<UnknownType> cacheUnknown;
-  std::shared_ptr<VoidType> cacheVoid;
+  std::shared_ptr<VoidType>    cacheVoid;
+  std::map<std::shared_ptr<ArcanaType>, std::shared_ptr<PointerType>> cachePointer;
   std::map<std::tuple<int, bool>, std::shared_ptr<IntegerType>> cacheInteger;
   std::map<float, std::shared_ptr<FloatType>> cacheFloat;
 
 public:
-  std::shared_ptr<UnknownType>  getUnknown();
+  std::shared_ptr<UnknownType> getUnknown();
   std::shared_ptr<VoidType>    getVoid();
+  std::shared_ptr<PointerType> getPointer(std::shared_ptr<ArcanaType> base);
   std::shared_ptr<IntegerType> getInteger(int bits, bool is_unsigned);
   std::shared_ptr<FloatType>   getFloat  (int bits);
 

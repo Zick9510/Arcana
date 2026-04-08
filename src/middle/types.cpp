@@ -34,6 +34,23 @@ bool VoidType::esIgual(const ArcanaType* otro) const {
   return (otro->kind == TypeKind::VOID);
 }
 
+// --- PointerType ---
+PointerType::PointerType(std::shared_ptr<ArcanaType> t_a)
+  : ArcanaType(TypeKind::POINTER), tipo_apuntado(t_a) {}
+
+std::string PointerType::toString() const { return tipo_apuntado->toString() + "*"; }
+
+int PointerType::getBitSize() const { return 64; }
+
+bool PointerType::esIgual(const ArcanaType* otro) const {
+  if (otro->kind != TypeKind::POINTER) { return false; }
+
+  auto o = static_cast<const PointerType*>(otro);
+
+  return (this->tipo_apuntado == o->tipo_apuntado);
+
+}
+
 // --- IntegerType ---
 IntegerType::IntegerType(int b, bool u)
   : ArcanaType(TypeKind::INTEGER), bits(b), is_unsigned(u) {}
@@ -101,6 +118,17 @@ std::shared_ptr<VoidType> TypeFactory::getVoid() {
   auto nueva_instancia = std::make_shared<VoidType>();
   cacheVoid = nueva_instancia;
 
+  return nueva_instancia;
+
+}
+
+std::shared_ptr<PointerType> TypeFactory::getPointer(std::shared_ptr<ArcanaType> base) {
+  if (cachePointer.find(base) != cachePointer.end()) {
+    return cachePointer[base];
+  }
+
+  auto nueva_instancia = std::make_shared<PointerType>(base);
+  cachePointer[base] = nueva_instancia;
   return nueva_instancia;
 
 }

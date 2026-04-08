@@ -59,6 +59,7 @@ enum class Tt {
   CONST,
 
   // Tipos de datos
+  VOID,
   BYTE, CHAR, BOOL,
   SHORT, INT,
   FLOAT, DOUBLE,
@@ -254,6 +255,7 @@ inline std::map<std::string, Tt> keywords = {
   {"var", Tt::VAR}, // auto
 
   // Tipos explícitos
+  {"void", Tt::VOID}, // void
   {"short", Tt::SHORT}, // int16
   {"int", Tt::INT}, // int32
 

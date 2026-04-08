@@ -67,69 +67,61 @@ int extraerBits(std::string lexema, int defaultBits) {
 
 InfoVariable Parser::parsearTipo() {
   InfoVariable info;
-  bool procesando_tipos = true ;
-  bool es_unsigned      = false;
+  std::shared_ptr<ArcanaType> tipo_actual = nullptr;
 
-  TypeKind tipo_base = TypeKind::VOID;
-  int      bits      = -1;
+  bool es_unsigned = false;
 
-  while (procesando_tipos) {
-    Token t = peek();
-
-    switch (t.tipo) { //...
-      case Tt::CONST: {
-        if (info.es_const) {
-          //... Error: Declaró 2 veces const en una sola var
-        } else {
-          info.es_const = true;
-        }
-
-        get();
-        break;
+  while (peek().tipo == Tt::CONST || peek().tipo == Tt::UNSIGNED) {
+    if (get().tipo == Tt::CONST) {
+      if (info.es_const) {
+        //... Error, dos veces const
+      } else {
+        info.es_const = true;
       }
-
-      case Tt::UNSIGNED: {
-        if (es_unsigned) {
-          //... Error: Declaró 2 veces unsigned
-        } else {
-          es_unsigned = true;
-        }
-
-        get();
-        break;
-      }
-
-      case Tt::INT: {
-        tipo_base = TypeKind::INTEGER;
-        bits = extraerBits(t.lexema, 32);
-
-        get();
-        break;
-      }
-
-      case Tt::FLOAT: {
-        tipo_base = TypeKind::FLOAT;
-        bits = extraerBits(t.lexema, 64);
-
-        get();
-        break;
-      }
-
-      default: { // Whatever we found here it aint a type
-        procesando_tipos = false; // We aint gonna process it then
-        break;
+    } else {
+      if (es_unsigned) {
+        // Error, dos veces unsigned
+      } else {
+        es_unsigned = true;
       }
     }
   }
 
-  if        (tipo_base == TypeKind::INTEGER) {
-    info.tipo = Dt(typeFactory.getInteger(bits, es_unsigned));
+  Token t_base = get();
 
-  } else if (tipo_base == TypeKind::FLOAT)   {
-    info.tipo = Dt(typeFactory.getFloat(bits));
+  int bits;
+
+  switch (t_base.tipo) { //...
+
+    case Tt::VOID: {
+      tipo_actual = typeFactory.getVoid();
+      break;
+    }
+
+    case Tt::INT: {
+      bits = extraerBits(t_base.lexema, 32);
+      tipo_actual = typeFactory.getInteger(bits, es_unsigned);
+      break;
+    }
+
+    case Tt::FLOAT: {
+      bits = extraerBits(t_base.lexema, 64);
+      tipo_actual = typeFactory.getFloat(bits);
+      break;
+    }
+
+    default: {
+      break;
+    }
 
   }
 
+  while (peek().tipo == Tt::ASTERISCO) {
+    get();
+    tipo_actual = typeFactory.getPointer(tipo_actual);
+  }
+
+  info.tipo = Dt(tipo_actual);
   return info;
 
 }
