@@ -1,6 +1,19 @@
 int a = 2;
+
 int* b = &a;
 int c = *b;
 
-int*** d = &&&a;
-int e = ***d;
+int** d = &&a;
+int e = **d;
+
+int*** f = &&&a;
+int g = ***f;
+
+int**** h = &&&&a;
+int i = ****h;
+
+int***** j = &&&&&a;
+int k = *****j;
+
+int****** l = &&&&&&a;
+int m = ******l;

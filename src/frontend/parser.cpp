@@ -118,12 +118,11 @@ InfoVariable Parser::parsearTipo() {
 
   while (peek().tipo == Tt::ASTERISCO || peek().tipo == Tt::POTENCIA) {
     if (peek().tipo == Tt::ASTERISCO) {
-      get();
       tipo_actual = typeFactory.getPointer(tipo_actual);
     } else {
-      get(); get();
       tipo_actual = typeFactory.getPointer(typeFactory.getPointer(tipo_actual));
     }
+    get();
   }
 
   info.tipo = Dt(tipo_actual);
