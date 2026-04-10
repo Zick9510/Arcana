@@ -45,6 +45,9 @@ public:
   void visitar(SentenciaSino* nodo) override;
  
   void visitar(SentenciaMientras* nodo) override;
+
+  void visitar(SentenciaReturn  * nodo) override;
+  void visitar(SentenciaFuncDecl* nodo) override;
  
   void visitar(SentenciaEscritura* nodo) override;
  

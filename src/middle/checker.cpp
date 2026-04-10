@@ -230,6 +230,7 @@ Dt Checker::verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador 
 }
 
 bool Checker::esCasteoValido(const Dt& origen, const Dt& destino) {
+
   // Regla 1: Identidad
   if (origen == destino) {
     //... Reportar Warning por casteo innecesario

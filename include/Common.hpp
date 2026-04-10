@@ -61,7 +61,7 @@ enum class Tt {
   // Tipos de datos
   VOID,
   BYTE, CHAR, BOOL,
-  SHORT, INT,
+  SHORT, INT, UINT,
   FLOAT, DOUBLE,
   STRING,
   VECTOR, MAP, SET,
@@ -71,6 +71,8 @@ enum class Tt {
   UMBRAL,
 
   ENUM,
+
+  SHAPE,
 
   // Modificadores
   UNSIGNED, LONG, VERY_LONG, FULL_LONG, COMPLEJO,
@@ -91,6 +93,8 @@ enum class Tt {
 
   INCREMENTAR, DECREMENTAR,
 
+  ASTERISCO, AMPERSAND,
+
   // Punteros y Direcciones
   PUNTERO, DIRECCION, SWAP,
 
@@ -105,9 +109,7 @@ enum class Tt {
   BITWISE_L, BITWISE_R,
 
   // Funciones
-  FUNC, PURA, RETORNAR, CEDER, FLECHA, REQ, OP,
-
-  ASTERISCO, AMPERSAND,
+  FUNC, PURE, MATH, RETURN, CEDER, FLECHA, REQ, OP,
 
   // Asignación
   IGUAL_ASIG,
@@ -258,14 +260,15 @@ inline std::map<std::string, Tt> keywords = {
   {"void", Tt::VOID}, // void
   {"short", Tt::SHORT}, // int16
   {"int", Tt::INT}, // int32
+  {"raw", Tt::UINT}, // uint32
 
   {"float", Tt::FLOAT}, // float32
   {"double", Tt::DOUBLE}, // float64
 
   {"bool", Tt::BOOL}, // bool
 
-  {"char", Tt::CHAR},
-  {"runa", Tt::CHAR},
+  {"char", Tt::CHAR}, // char
+  {"runa", Tt::CHAR}, // char
 
   {"pergamino", Tt::STRING},
 
@@ -276,9 +279,12 @@ inline std::map<std::string, Tt> keywords = {
   {"umbral", Tt::UMBRAL},  // Slice
 
   {"enum", Tt::ENUM}, // Enums
+  {"shape", Tt::SHAPE}, // Variants
 
   // Modificadores de Tipos
-  {"eterno", Tt::CONST}, // const
+
+  {"unsigned", Tt::UNSIGNED},
+  {"const", Tt::CONST},
   {"exo", Tt::LONG},
   {"magno", Tt::VERY_LONG},
   {"magna", Tt::VERY_LONG},
@@ -291,25 +297,31 @@ inline std::map<std::string, Tt> keywords = {
   {"arcanito", Tt::ARCANITO},
   {"reglas", Tt::REGLAS},
 
-  {"code", Tt::COD},
+  {"code", Tt::COD },
   {"expr", Tt::EXPR},
-  {"key", Tt::KEY},
+  {"key" , Tt::KEY },
 
   // If-else
-  {"si", Tt::SI},
-  {"sino", Tt::SINO},
+  {"if"  , Tt::SI  },
+  {"else", Tt::SINO},
 
   // While y do-while
   {"trama", Tt::MIENTRAS},
   {"obra", Tt::HACE},
 
   // For y foreach
-  {"late", Tt::PARA},
-  {"vela", Tt::CADA},
+  {"for", Tt::PARA},
+  {"each", Tt::CADA},
 
   // Break y continue
   {"salir", Tt::SALIR},
   {"seguir", Tt::SEGUIR},
+
+  // Functions
+  {"func", Tt::FUNC},
+  {"pure", Tt::PURE},
+  {"math", Tt::MATH},
+  {"return", Tt::RETURN},
 
 };
 
@@ -380,6 +392,9 @@ class SentenciaSi;
 class SentenciaSino;
 class SentenciaMientras;
 
+class SentenciaReturn;
+class SentenciaFuncDecl;
+
 class SentenciaEscritura;
 class SentenciaArcano;
 class SentenciaLlamadaArcano;
@@ -415,6 +430,9 @@ public:
   virtual void visitar(SentenciaSino* nodo) = 0;
 
   virtual void visitar(SentenciaMientras* nodo) = 0;
+
+  virtual void visitar(SentenciaReturn  * nodo) = 0;
+  virtual void visitar(SentenciaFuncDecl* nodo) = 0;
 
   virtual void visitar(SentenciaEscritura* nodo) = 0;
 
@@ -457,7 +475,7 @@ public:
     for (const auto& sent : instrucciones) {
       sent->imprimir(nivel + 1);
     }
-    std::cout << sangria << "}\n";
+    std::cout << "| " << sangria << "}\n";
   }
 
   void accept(ASTVisitor* visitor) override {
@@ -824,6 +842,73 @@ public:
   void accept(ASTVisitor* visitor) override {
     visitor->visitar(this);
   }
+};
+
+class SentenciaReturn : public Sentencia {
+public:
+  Dt ret_type;
+  std::unique_ptr<Expresion> ret_value;
+
+  SentenciaReturn(Dt r, std::unique_ptr<Expresion> v)
+    : ret_type(r), ret_value(std::move(v)) {}
+
+  void imprimir(int nivel = 0) const override {
+    std::string sangria = "";
+    for (int i = 0; i < nivel; ++i) { sangria += "| "; }
+    std::cout << sangria << "Return [" << ret_type.tipoString() << "]\n";
+    std::cout << sangria << "| +- Expr\n";
+    ret_value->imprimir(nivel + 1);
+
+  }
+
+  void accept(ASTVisitor* visitor) override {
+    visitor->visitar(this);
+  }
+
+
+};
+
+class SentenciaFuncDecl : public Sentencia {
+public:
+  std::string nombre_func;
+  bool es_pure;
+  std::unordered_map<std::string, InfoVariable> args_type;
+  std::unique_ptr<Sentencia> cuerpo_func;
+  InfoVariable ret_type;
+
+  SentenciaFuncDecl(std::string n,
+                    bool pure,
+                    std::unordered_map<std::string, InfoVariable> a,
+                    std::unique_ptr<Sentencia> c,
+                    InfoVariable r)
+  : nombre_func(n), es_pure(pure), args_type(a), cuerpo_func(std::move(c)), ret_type(r) {}
+
+  void imprimir(int nivel = 0) const override {
+    std::string sangria = "";
+    for (int i = 0; i < nivel; ++i) { sangria += "| "; }
+    std::cout << sangria << "+- Function Declaration\n";
+    std::cout << sangria << "| +- "
+      << nombre_func
+      << " (pure = "
+      << es_pure << ") -> "
+      << ret_type.tipo.valor->toString() << '\n'; //... Include types of the params when printing
+
+    std::cout << sangria << "| ";
+
+    if (cuerpo_func != nullptr) {
+      cuerpo_func->imprimir(nivel + 1);
+
+    } else {
+      std::cout << sangria << "+- [prototype]\n";
+
+    }
+
+  }
+
+  void accept(ASTVisitor* visitor) override {
+    visitor->visitar(this);
+  }
+
 };
 
 class SentenciaEscritura : public Sentencia {

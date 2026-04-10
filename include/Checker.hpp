@@ -195,7 +195,9 @@ public:
   }
 
   void visitar(Bloque* nodo) override {
-
+    for (const auto& i : nodo->instrucciones) {
+      i->accept(this);
+    }
   }
 
   void visitar(SentenciaVar* nodo) override { //... Implementar líneas en los NodoAST
@@ -234,6 +236,19 @@ public:
   }
 
   void visitar(SentenciaMientras* nodo) override {
+
+  }
+
+  void visitar(SentenciaReturn* nodo) override { //...
+    nodo->ret_type.valor = typeFactory.getUnknown(); //...
+    nodo->ret_value->accept(this);
+
+  }
+
+  void visitar(SentenciaFuncDecl* nodo) override { //...
+    if (nodo->cuerpo_func != nullptr) {
+      nodo->cuerpo_func->accept(this);
+    }
 
   }
 

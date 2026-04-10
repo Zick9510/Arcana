@@ -101,6 +101,14 @@ void Emitter::visitar(SentenciaMientras* nodo) {
 
 }
 
+void Emitter::visitar(SentenciaReturn* nodo) {
+
+}
+
+void Emitter::visitar(SentenciaFuncDecl* nodo) {
+
+}
+
 void Emitter::visitar(SentenciaEscritura* nodo) {
 
 }

@@ -43,20 +43,19 @@ bool esModificador(Tt tipo) {
          tipo == Tt::COMPLEJO  || tipo == Tt::CONST;
 }
 
-bool esInfiere(Tt tipo) {
+bool esInfiere(Tt tipo) { //... I think we should not do this
   return tipo == Tt::VAR || tipo == Tt::CONST;
 }
 
 bool esTipoComp(Tt tipo) {
-  return tipo == Tt::VECTOR || tipo == Tt::MAP ||
-         tipo == Tt::SET;
+  return tipo == Tt::VECTOR || tipo == Tt::MAP || tipo == Tt::SET;
 }
 
 bool esTipo(Tt tipo) {
-  return tipo == Tt::BYTE   || tipo == Tt::CHAR   || tipo == Tt::SHORT ||
-         tipo == Tt::INT    || tipo == Tt::STRING || tipo == Tt::FLOAT ||
-         tipo == Tt::DOUBLE || tipo == Tt::BOOL   || tipo == Tt::SLICE ||
-         esTipoComp(tipo);
+  return tipo == Tt::BYTE   || tipo == Tt::CHAR   || tipo == Tt::SHORT  ||
+         tipo == Tt::INT    || tipo == Tt::UINT   || tipo == Tt::STRING ||
+         tipo == Tt::FLOAT  || tipo == Tt::DOUBLE || tipo == Tt::BOOL   ||
+         tipo == Tt::SLICE  || esTipoComp(tipo);
 }
 
 bool Dt::operator==(const Dt& otro) const { //... Comparar this.es_const

@@ -25,15 +25,21 @@ Token Parser::get() {
   return actual;
 }
 
-// Same use as Token check(Tt) function from this file, but it expects anya of the options
-bool Parser::coincide(std::initializer_list<Tt> tipos) {
+// Same use as Token check(Tt) function from this file, but it expects any of the options
+Token Parser::coincide(std::initializer_list<Tt> tipos) {
   for (Tt tipo : tipos) {
     if (peek().tipo == tipo) {
-      get();
-      return true;
+      return get();
     }
   }
-  return false;
+
+  std::cerr << "Error: Se esperaba ";
+  for (Tt tipo : tipos) {
+    std::cerr << nombreTipo(tipo) << ' ';
+  }
+  std::cerr << '\n';
+  exit(1);
+
 }
 
 // We expect the next token to be exactly this one, if its not, then error
@@ -53,7 +59,7 @@ Parser::Parser(std::vector<Token> t, TypeFactory& tf)
   : tokens(std::move(t)), pos(0), typeFactory(tf) {}
 
 int extraerBits(std::string lexema, int defaultBits) {
-  if (lexema == "int" || lexema == "float") { return defaultBits; }
+  if (lexema == "int" || lexema == "raw" || lexema == "float") { return defaultBits; }
 
   std::string num;
 
@@ -61,16 +67,16 @@ int extraerBits(std::string lexema, int defaultBits) {
     if (std::isdigit(c)) { num += c; }
   }
 
-  return num.empty() ? defaultBits : std::stoi(num);
+  return (num.empty() ? defaultBits : std::stoi(num));
 
 }
 
 InfoVariable Parser::parsearTipo() {
   InfoVariable info;
   std::shared_ptr<ArcanaType> tipo_actual = nullptr;
-
   bool es_unsigned = false;
 
+  // Modifiers
   while (peek().tipo == Tt::CONST || peek().tipo == Tt::UNSIGNED) {
     if (get().tipo == Tt::CONST) {
       if (info.es_const) {
@@ -87,42 +93,119 @@ InfoVariable Parser::parsearTipo() {
     }
   }
 
-  Token t_base = get();
+  Token t_base = peek();
+  std::cout << "[97 parser.cpp] " << t_base.lexema << '\n';
 
-  int bits;
+  switch (t_base.tipo) {
 
-  switch (t_base.tipo) { //...
+    // --- Tipos Compuestos (ADTs) ---
+
+    case Tt::CORCH_L: { // Morphs
+      std::cout << "[104, parser.cpp]\n";
+      get();
+
+      std::vector<std::shared_ptr<ArcanaType>> subtipos;
+
+      while (peek().tipo != Tt::CORCH_R) {
+        InfoVariable sub_info = parsearTipo();
+        subtipos.push_back(sub_info.tipo.valor);
+
+        if (peek().tipo == Tt::COMA) { get(); }
+
+      }
+
+      get();
+
+      std::cout << "[119, parser.cpp]\n";
+      tipo_actual = typeFactory.getMorph(subtipos);
+      std::cout << "[121, parser.cpp]\n";
+      break;
+
+    }
+
+    case Tt::LLAVE_L: { // Shapes
+      std::cout << "[127, parser.cpp]\n";
+      get();
+
+      std::vector<CampoShape> campos;
+
+      while (peek().tipo != Tt::LLAVE_R) {
+        CampoShape campo;
+
+        InfoVariable sub_info = parsearTipo();
+        campo.tipo = sub_info.tipo.valor;
+
+        if (peek().tipo == Tt::IDENTIFICADOR) {
+          campo.nombre = get().lexema;
+        }
+
+        campos.push_back(campo);
+        if (peek().tipo == Tt::COMA) { get(); }
+      }
+
+      get();
+
+      tipo_actual = typeFactory.getShape(campos);
+      break;
+
+    }
+
+    //... What about T1<T2> ?
+
+    // --- Tipos Primitivos ---
 
     case Tt::VOID: {
+      std::cout << "[158, parser.cpp]\n";
+      get();
       tipo_actual = typeFactory.getVoid();
       break;
     }
 
     case Tt::INT: {
-      bits = extraerBits(t_base.lexema, 32);
+      std::cout << "[165, parser.cpp]\n";
+      get();
+      int bits = extraerBits(t_base.lexema, 32);
       tipo_actual = typeFactory.getInteger(bits, es_unsigned);
       break;
     }
 
+    case Tt::UINT: {
+      std::cout << "[173, parser.cpp]\n";
+      get();
+      int bits = extraerBits(t_base.lexema, 32);
+      tipo_actual = typeFactory.getInteger(bits, true);
+      break;
+    }
+
     case Tt::FLOAT: {
-      bits = extraerBits(t_base.lexema, 64);
+      std::cout << "[180, parser.cpp]\n";
+      get();
+      int bits = extraerBits(t_base.lexema, 64);
       tipo_actual = typeFactory.getFloat(bits);
       break;
     }
 
     default: {
+      std::cout << "[189, parser.cpp]\n";
+      std::cout << peek().lexema << '\n';
+      get(); //...
       break;
     }
 
   }
 
   while (peek().tipo == Tt::ASTERISCO || peek().tipo == Tt::POTENCIA) {
+
     if (peek().tipo == Tt::ASTERISCO) {
       tipo_actual = typeFactory.getPointer(tipo_actual);
+
     } else {
       tipo_actual = typeFactory.getPointer(typeFactory.getPointer(tipo_actual));
+
     }
+
     get();
+
   }
 
   info.tipo = Dt(tipo_actual);
@@ -216,8 +299,6 @@ std::unique_ptr<Expresion> Parser::parsearRango() {
   std::unique_ptr<Expresion> fin    = nullptr;
   std::unique_ptr<Expresion> paso   = nullptr;
 
-  bool obtener_valores = false;
- 
   // 1. Hay inicio? [A:]
   if (peek().tipo != Tt::DOS_PUNTOS) {
     inicio = parsearExpresion(Pr::MINIMA);
@@ -243,13 +324,6 @@ std::unique_ptr<Expresion> Parser::parsearRango() {
   // 3. Hay paso? [a:b:C]
   if (peek().tipo != Tt::DOS_PUNTOS && peek().tipo != Tt::CORCH_R) {
     paso = parsearExpresion(Pr::MINIMA);
-
-  }
-
-  // 4. What use could we assign to the "." at the end of a range? Maybe "Access the value elements from the map"?
-  if (peek().tipo == Tt::PUNTO) {
-    get();
-    obtener_valores = true;
 
   }
 
@@ -455,6 +529,9 @@ std::unique_ptr<Sentencia> Parser::parsearSentencia() {
   if (actual == Tt::SINO     ) { return parsearSino()     ; }
   if (actual == Tt::MIENTRAS ) { return parsearMientras() ; }
   if (actual == Tt::LLAVE_L  ) { return parsearBloque()   ; }
+  if (actual == Tt::FUNC     ) { return parsearFuncDecl() ; }
+  if (actual == Tt::PURE     ) { return parsearFuncDecl() ; }
+  if (actual == Tt::RETURN   ) { return parsearReturn()   ; }
   if (actual == Tt::ESCRITURA) { return parsearEscritura(); }
   if (actual == Tt::ARCANO   ) { return parsearArcano()   ; }
 
@@ -523,6 +600,89 @@ std::unique_ptr<Sentencia> Parser::parsearMientras() {
        std::move(condicion),
     std::move(rama_while),
      std::move(rama_sino)
+  );
+
+}
+
+std::unique_ptr<Sentencia> Parser::parsearReturn() {
+  check(Tt::RETURN);
+  std::unique_ptr<Expresion> ret_value = parsearExpresion(Pr::MINIMA);
+  check(Tt::PUNTO_COMA);
+
+  return std::make_unique<SentenciaReturn>(ret_value->tipo_resuelto, std::move(ret_value));
+}
+
+std::unordered_map<std::string, InfoVariable> Parser::parsearFuncArgs() {
+
+  std::unordered_map<std::string, InfoVariable> args;
+
+  while (peek().tipo != Tt::PAREN_R && peek().tipo != Tt::FIN_ARCHIVO) {
+
+    InfoVariable tipo  = parsearTipo();
+    Token nombre = check(Tt::IDENTIFICADOR);
+
+
+    if (args.count(nombre.lexema)) {
+      //... Error, dos argumentos se llaman igual
+
+    } else {
+      args[nombre.lexema] = tipo;
+
+    }
+
+    if (peek().tipo == Tt::COMA) { get(); }
+
+  }
+
+  return args;
+
+}
+
+std::unique_ptr<Sentencia> Parser::parsearFuncDecl() {
+
+  Token t = coincide({Tt::FUNC, Tt::PURE});
+  Token i = check(Tt::IDENTIFICADOR);
+
+  check(Tt::PAREN_L);
+
+  std::unordered_map<std::string, InfoVariable> args = parsearFuncArgs();
+
+  check(Tt::PAREN_R);
+
+  check(Tt::FLECHA);
+
+  InfoVariable ret_type = parsearTipo();
+
+  bool firma;
+  if        (peek().tipo == Tt::PUNTO_COMA) {
+    firma = true;
+
+  } else if (peek().tipo == Tt::LLAVE_L)    {
+    firma = false;
+
+  } else                                    {
+    //... Error, peek().tipo was not expected
+
+  }
+
+  std::unique_ptr<Sentencia> cuerpo_func = nullptr;
+
+  std::cout << "[670, parser.cpp] " << firma << '\n';
+
+  if (firma) { // Firma
+    get();
+
+  } else { // Implementación
+    cuerpo_func = parsearBloque();
+
+  }
+
+  return std::make_unique<SentenciaFuncDecl>(
+    i.lexema,
+    t.tipo == Tt::PURE,
+    args,
+    std::move(cuerpo_func),
+    ret_type
   );
 
 }

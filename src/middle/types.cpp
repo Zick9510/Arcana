@@ -12,7 +12,6 @@ ArcanaType::~ArcanaType() = default;
 
 UnknownType::UnknownType()
   : ArcanaType(TypeKind::DESCONOCIDO) {}
-
 std::string UnknownType::toString() const { return "unkown"; }
 
 int UnknownType::getBitSize()       const { return 0       ; }
@@ -22,7 +21,6 @@ bool UnknownType::esIgual(const ArcanaType* otro) const {
 }
 
 // --- VoidType ---
-
 VoidType::VoidType()
   : ArcanaType(TypeKind::VOID) {}
 
@@ -92,6 +90,48 @@ bool FloatType::esIgual(const ArcanaType* otro) const {
   return (this->bits == otroFloat->bits);
 }
 
+// --- MorphType ---
+MorphType::MorphType(std::vector<std::shared_ptr<ArcanaType>> st)
+  : ArcanaType(TypeKind::MORPH), subtipos(st) {
+  bits = -1;
+  for (const auto& s : subtipos) {
+    bits = std::max(bits, s->getBitSize());
+  }
+}
+
+std::string MorphType::toString() const {
+  std::string res = "[";
+  for (size_t i = 0; i < subtipos.size(); ++i) {
+    res += subtipos[i]->toString();
+    if (i < subtipos.size() - 1) { res += ", "; }
+  }
+  return res + "]";
+}
+
+int MorphType::getBitSize() const { return bits; }
+
+bool MorphType::esIgual(const ArcanaType* otro) const {
+  return true; //...
+}
+
+// --- ShapeType ---
+ShapeType::ShapeType(std::vector<CampoShape> c)
+  : ArcanaType(TypeKind::SHAPE), campos(c) {}
+
+std::string ShapeType::toString() const {
+  return ""; //...
+
+}
+
+int ShapeType::getBitSize() const {
+  return -1; //...
+
+}
+
+bool ShapeType::esIgual(const ArcanaType* otro) const {
+  return true; //...
+}
+
 /* --- Factory --- */
 
 std::shared_ptr<UnknownType> TypeFactory::getUnknown() {
@@ -103,7 +143,6 @@ std::shared_ptr<UnknownType> TypeFactory::getUnknown() {
 
   auto nueva_instancia = std::make_shared<UnknownType>();
   cacheUnknown = nueva_instancia;
-
   return nueva_instancia;
 
 }
@@ -117,12 +156,12 @@ std::shared_ptr<VoidType> TypeFactory::getVoid() {
 
   auto nueva_instancia = std::make_shared<VoidType>();
   cacheVoid = nueva_instancia;
-
   return nueva_instancia;
 
 }
 
 std::shared_ptr<PointerType> TypeFactory::getPointer(std::shared_ptr<ArcanaType> base) {
+
   if (cachePointer.find(base) != cachePointer.end()) {
     return cachePointer[base];
   }
@@ -143,7 +182,6 @@ std::shared_ptr<IntegerType> TypeFactory::getInteger(int bits, bool is_unsigned)
 
   auto nueva_instancia = std::make_shared<IntegerType>(bits, is_unsigned);
   cacheInteger[key]    = nueva_instancia;
-
   return nueva_instancia;
 
 }
@@ -152,18 +190,38 @@ std::shared_ptr<FloatType> TypeFactory::getFloat(int bits) {
 
   if (cacheFloat.find(bits) != cacheFloat.end()) {
     return cacheFloat[bits];
-
+ 
   }
 
   auto nueva_instancia = std::make_shared<FloatType>(bits);
   cacheFloat[bits] = nueva_instancia;
-
   return nueva_instancia;
 
 }
 
+std::shared_ptr<MorphType> TypeFactory::getMorph(std::vector<std::shared_ptr<ArcanaType>> subtipos) {
+  std::string firma = "[";
+  for (size_t i = 0; i < subtipos.size(); ++i) {
+    if (subtipos[i] != nullptr) {
+      firma += subtipos[i]->toString();
+      if (i + 1 < subtipos.size()) { firma += ", "; }
+    }
+  }
+  firma += "]";
 
-//... StructType
+  if (cacheMorph.find(firma) != cacheMorph.end()) {
+    return cacheMorph[firma];
+  }
+
+  auto nueva_instancia = std::make_shared<MorphType>(subtipos);
+  cacheMorph[firma] = nueva_instancia;
+  return nueva_instancia;
+}
+
+std::shared_ptr<ShapeType> TypeFactory::getShape(std::vector<CampoShape> campos) {
+
+}
+
 //... ArcanaType
 //... GenericType (Templates)
 // this is going to be hell

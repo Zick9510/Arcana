@@ -18,7 +18,7 @@ private:
   Token get();
   Token check(Tt tipoEsperado);
 
-  bool coincide(std::initializer_list<Tt> tipos);
+  Token coincide(std::initializer_list<Tt> tipos);
 
 public:
   Parser(std::vector<Token> t, TypeFactory& tf);
@@ -42,6 +42,10 @@ public:
   std::unique_ptr<Sentencia> parsearSi();
   std::unique_ptr<Sentencia> parsearSino();
   std::unique_ptr<Sentencia> parsearMientras();
+
+  std::unique_ptr<Sentencia> parsearReturn();
+  std::unordered_map<std::string, InfoVariable> parsearFuncArgs();
+  std::unique_ptr<Sentencia> parsearFuncDecl();
 
   std::pair<std::string, Regla> parsearReglaArcano();
   std::map<std::string, Regla> parsearReglasArcano();
