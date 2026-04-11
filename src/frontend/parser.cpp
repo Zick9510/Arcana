@@ -13,8 +13,8 @@ Token Parser::resolverAlias(Token t) {
 }
 
 // Look the next token and return it. If its the EOF, give me the last token
-Token Parser::peek() {
-  if (pos >= tokens.size()) { return tokens.back(); } // EOF
+Token Parser::peek(size_t offset) {
+  if (pos + offset >= tokens.size()) { return tokens.back(); } // EOF
   return resolverAlias(tokens[pos]);
 }
 
@@ -52,6 +52,10 @@ Token Parser::check(Tt tipoEsperado) {
   std::cerr << "Error: Se esperaba " << nombreTipo(tipoEsperado)
             << " pero se encontró " << nombreTipo(peek().tipo)
             << " ('" << peek().lexema << "') en linea " << peek().linea << std::endl;
+
+  std::cout << "Backtrace:\n";
+  std::cout << std::stacktrace::current() << '\n';
+
   exit(1);
 }
 
@@ -379,80 +383,146 @@ std::pair<std::string, std::string> Parser::partirLexemaNum(std::string lexema) 
 
 }
 
-std::unique_ptr<Expresion> Parser::parsearPrefijo() {
+//std::unique_ptr<Expresion> Parser::parsearPrefijo() {
+//
+//  Token t = get();
+//
+//  TipoOperador op;
+//
+//  switch (t.tipo) {
+//    case Tt::NUMERO: {
+//      std::pair<std::string, std::string> par = partirLexemaNum(t.lexema);
+//
+//      return std::make_unique<ExprNumero>(par.first, par.second);
+//
+//    }
+//
+//    case Tt::IDENTIFICADOR: { return std::make_unique<ExprVariable>(t.lexema); }
+//
+//    case Tt::PAREN_L: {
+//      std::unique_ptr<Expresion> expr = parsearExpresion(Pr::MINIMA);
+//      check(Tt::PAREN_R);
+//      return expr;
+//
+//    }
+//
+//    // Casos de Prefijos
+//    case Tt::MAS        : { op = TipoOperador::A_SUMA    ; }
+//    case Tt::MENOS      : { op = TipoOperador::A_RESTA   ; }
+//    case Tt::NO_LOGICO  : { op = TipoOperador::LOGICO_NO ; }
+//    case Tt::NO_BITWISE : { op = TipoOperador::BITWISE_NO; }
+//    case Tt::INCREMENTAR: { op = TipoOperador::INC_PREF  ; }
+//    case Tt::DECREMENTAR: { op = TipoOperador::DEC_PREF  ; }
+//    case Tt::ASTERISCO  : { op = TipoOperador::PTR_DEREF ; }
+//    case Tt::AMPERSAND  : { op = TipoOperador::PTR_REF   ;
+//      std::unique_ptr<Expresion> operando = parsearExpresion(Pr::PREFIJO);
+//      return std::make_unique<ExprUnaria>(op, std::move(operando), true);
+//
+//    }
+//
+//    case Tt::POTENCIA: {
+//      op = TipoOperador::A_MULT;
+//      std::unique_ptr<Expresion> inner = parsearExpresion(Pr::PREFIJO);
+//      std::unique_ptr<Expresion> segunda_deref = std::make_unique<ExprUnaria>(
+//        op,
+//        std::move(inner),
+//        true
+//      );
+//      return std::make_unique<ExprUnaria>(op, std::move(segunda_deref), true);
+//
+//    }
+//
+//    case Tt::Y_LOGICO: {
+//      op = TipoOperador::BITWISE_Y;
+//      std::unique_ptr<Expresion> inner = parsearExpresion(Pr::PREFIJO);
+//      std::unique_ptr<Expresion> segunda_ref =std::make_unique<ExprUnaria>(
+//        op,
+//        std::move(inner),
+//        true
+//      );
+//      return std::make_unique<ExprUnaria>(op, std::move(segunda_ref), true);
+//
+//    }
+//
+//    case Tt::CORCH_L: {
+//      return parsearRangoOArray();
+//
+//    }
+//
+//    default: { //...
+//      std::cerr << "Línea: " << t.linea << '\n';
+//      std::cerr << "Error: No se esperaba el prefijo '" << t.lexema << "'\n";
+//      exit(1);
+//
+//    }
+//  }
+//}
 
+
+std::unique_ptr<Expresion> Parser::parsearPrefijo() {
   Token t = get();
 
-  TipoOperador op;
-
-  switch (t.tipo) {
+  switch (t.tipo) { //...
     case Tt::NUMERO: {
-      std::pair<std::string, std::string> par = partirLexemaNum(t.lexema);
-
-      return std::make_unique<ExprNumero>(par.first, par.second);
-
+      auto [num, suf] = partirLexemaNum(t.lexema);
+      return std::make_unique<ExprNumero>(num, suf);
     }
 
-    case Tt::IDENTIFICADOR: { return std::make_unique<ExprVariable>(t.lexema); }
+    case Tt::IDENTIFICADOR: {
+      return std::make_unique<ExprVariable>(t.lexema);
+    }
 
     case Tt::PAREN_L: {
-      std::unique_ptr<Expresion> expr = parsearExpresion(Pr::MINIMA);
+      auto expr = parsearExpresion(Pr::MINIMA);
       check(Tt::PAREN_R);
       return expr;
-
-    }
-
-    // Casos de Prefijos
-    case Tt::MAS        : { op = TipoOperador::A_SUMA    ; }
-    case Tt::MENOS      : { op = TipoOperador::A_RESTA   ; }
-    case Tt::NO_LOGICO  : { op = TipoOperador::LOGICO_NO ; }
-    case Tt::NO_BITWISE : { op = TipoOperador::BITWISE_NO; }
-    case Tt::INCREMENTAR: { op = TipoOperador::INC_PREF  ; }
-    case Tt::DECREMENTAR: { op = TipoOperador::DEC_PREF  ; }
-    case Tt::ASTERISCO  : { op = TipoOperador::PTR_DEREF ; }
-    case Tt::AMPERSAND  : { op = TipoOperador::PTR_REF   ;
-      std::unique_ptr<Expresion> operando = parsearExpresion(Pr::PREFIJO);
-      return std::make_unique<ExprUnaria>(op, std::move(operando), true);
-
-    }
-
-    case Tt::POTENCIA: {
-      op = TipoOperador::A_MULT;
-      std::unique_ptr<Expresion> inner = parsearExpresion(Pr::PREFIJO);
-      std::unique_ptr<Expresion> segunda_deref = std::make_unique<ExprUnaria>(
-        op,
-        std::move(inner),
-        true
-      );
-      return std::make_unique<ExprUnaria>(op, std::move(segunda_deref), true);
-
-    }
-
-    case Tt::Y_LOGICO: {
-      op = TipoOperador::BITWISE_Y;
-      std::unique_ptr<Expresion> inner = parsearExpresion(Pr::PREFIJO);
-      std::unique_ptr<Expresion> segunda_ref =std::make_unique<ExprUnaria>(
-        op,
-        std::move(inner),
-        true
-      );
-      return std::make_unique<ExprUnaria>(op, std::move(segunda_ref), true);
-
     }
 
     case Tt::CORCH_L: {
       return parsearRangoOArray();
-
     }
 
-    default: { //...
-      std::cerr << "Línea: " << t.linea << '\n';
-      std::cerr << "Error: No se esperaba el prefijo '" << t.lexema << "'\n";
-      exit(1);
-
+    default: {
+      break; // No es un átomo
     }
   }
+
+  if (t.tipo == Tt::POTENCIA) { // **
+    auto inner = parsearExpresion(Pr::PREFIJO);
+    auto primera_deref = std::make_unique<ExprUnaria>(TipoOperador::PTR_DEREF, std::move(inner), true);
+    return std::make_unique<ExprUnaria>(TipoOperador::PTR_DEREF, std::move(primera_deref), true);
+
+  }
+
+  if (t.tipo == Tt::Y_LOGICO) { // &&
+    auto inner = parsearExpresion(Pr::PREFIJO);
+    auto primera_ref = std::make_unique<ExprUnaria>(TipoOperador::PTR_REF, std::move(inner), true);
+    return std::make_unique<ExprUnaria>(TipoOperador::PTR_REF, std::move(primera_ref), true);
+
+  }
+
+  TipoOperador op;
+  switch (t.tipo) {
+    case Tt::MAS        : {op = TipoOperador::A_SUMA    ; break; }
+    case Tt::MENOS      : {op = TipoOperador::A_RESTA   ; break; }
+    case Tt::NO_LOGICO  : {op = TipoOperador::LOGICO_NO ; break; }
+    case Tt::NO_BITWISE : {op = TipoOperador::BITWISE_NO; break; }
+    case Tt::INCREMENTAR: {op = TipoOperador::INC_PREF  ; break; }
+    case Tt::DECREMENTAR: {op = TipoOperador::DEC_PREF  ; break; }
+    case Tt::ASTERISCO  : {op = TipoOperador::PTR_DEREF ; break; }
+    case Tt::AMPERSAND  : {op = TipoOperador::PTR_REF   ; break; }
+
+    default: {
+        std::cerr << "Línea " << t.linea << ": No se esperaba el prefijo '" << t.lexema << "'\n";
+        exit(1);
+    }
+  }
+
+  auto operando = parsearExpresion(Pr::PREFIJO);
+  return std::make_unique<ExprUnaria>(op, std::move(operando), true);
+
 }
+
 
 std::unique_ptr<Sentencia> Parser::parsearDeclaracionVar() {
 
@@ -487,6 +557,12 @@ std::unique_ptr<Sentencia> Parser::parsearSentenciaExpresion() {
     return std::make_unique<SentenciaAsignacion>(std::move(izquierda), std::move(derecha));
 
   }
+
+  // If you get a "Expected ';', got [something else]"
+  // Please check this line and inc the counter
+  // 15. Yikes.
+  // Also, the bug you are looking for is most certainly not in this function.
+  // Cheers
 
   check(Tt::PUNTO_COMA); // ...;
 
@@ -612,9 +688,9 @@ std::unique_ptr<Sentencia> Parser::parsearReturn() {
   return std::make_unique<SentenciaReturn>(ret_value->tipo_resuelto, std::move(ret_value));
 }
 
-std::unordered_map<std::string, InfoVariable> Parser::parsearFuncArgs() {
+std::map<std::string, InfoVariable> Parser::parsearFuncArgs() {
 
-  std::unordered_map<std::string, InfoVariable> args;
+  std::map<std::string, InfoVariable> args;
 
   while (peek().tipo != Tt::PAREN_R && peek().tipo != Tt::FIN_ARCHIVO) {
 
@@ -645,7 +721,7 @@ std::unique_ptr<Sentencia> Parser::parsearFuncDecl() {
 
   check(Tt::PAREN_L);
 
-  std::unordered_map<std::string, InfoVariable> args = parsearFuncArgs();
+  std::map<std::string, InfoVariable> args = parsearFuncArgs();
 
   check(Tt::PAREN_R);
 
@@ -684,6 +760,37 @@ std::unique_ptr<Sentencia> Parser::parsearFuncDecl() {
     std::move(cuerpo_func),
     ret_type
   );
+
+}
+
+std::unique_ptr<Expresion> Parser::parsearFunctionCall(std::unique_ptr<Expresion> callee) {
+  std::vector<std::pair<std::string, std::unique_ptr<Expresion>>> args;
+
+  if (peek().tipo != Tt::PAREN_R) {
+    do {
+      std::string nombre_arg = "";
+      if (peek().tipo == Tt::IDENTIFICADOR && peek(1).tipo == Tt::IGUAL_ASIG) {
+        nombre_arg = get().lexema;
+        get(); // Get '='
+
+      }
+
+      args.push_back({nombre_arg, parsearExpresion(Pr::MINIMA)});
+
+      if (peek().tipo == Tt::COMA) {
+        get();
+
+      } else {
+        break; // No hay más comas, no hay más argumentos
+
+      }
+    } while (peek().tipo != Tt::PAREN_R && peek().tipo != Tt::FIN_ARCHIVO);
+
+  }
+
+  check(Tt::PAREN_R);
+
+  return std::make_unique<ExprFuncCall>(std::move(callee), std::move(args));
 
 }
 
@@ -901,6 +1008,9 @@ Pr Parser::obtenerPrecedencia(Tt tipo) {
     case Tt::CORCH_L   :
       return Pr::ACCESO;
 
+    case Tt::PAREN_L    :
+      return Pr::LLAMADA;
+
     default            :
       return Pr::MINIMA;
   }
@@ -918,7 +1028,7 @@ std::unique_ptr<Expresion> Parser::parsearExpresion(Pr precedenciaMinima) {
 
     // Casos de Sufijos
     if (op.tipo == Tt::INCREMENTAR || op.tipo == Tt::DECREMENTAR) {
-      TipoOperador operador = (op.tipo == Tt::INCREMENTAR) ? TipoOperador::INC_SUF: TipoOperador::INC_SUF ;
+      TipoOperador operador = (op.tipo == Tt::INCREMENTAR) ? TipoOperador::INC_SUF: TipoOperador::DEC_SUF;
       izquierda = std::make_unique<ExprUnaria>(
           operador, std::move(izquierda), false);
       continue;
@@ -932,6 +1042,12 @@ std::unique_ptr<Expresion> Parser::parsearExpresion(Pr precedenciaMinima) {
     // Un casteo
     if (op.tipo == Tt::PAREN_L && esTipo(peek().tipo)) {
       izquierda = parsearCasteo();
+      continue;
+    }
+
+    // Function call
+    if (op.tipo == Tt::PAREN_L) {
+      izquierda = parsearFunctionCall(std::move(izquierda));
       continue;
     }
 
@@ -959,4 +1075,3 @@ std::vector<std::unique_ptr<Sentencia>> Parser::parsearPrograma() {
   return programa;
 }
 
-// --- Error Recovery Functions ---

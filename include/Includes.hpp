@@ -16,5 +16,6 @@
 #include <vector>
 #include <map>
 #include <filesystem>
+#include <stacktrace>
 
 // IWYU #pragma: export

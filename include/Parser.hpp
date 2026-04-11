@@ -14,7 +14,7 @@ private:
   TypeFactory& typeFactory;
 
   Token resolverAlias(Token t);
-  Token peek();
+  Token peek(size_t offset = 0);
   Token get();
   Token check(Tt tipoEsperado);
 
@@ -32,6 +32,7 @@ public:
   std::pair<std::string, std::string> partirLexemaNum(std::string lexema);
   std::unique_ptr<Expresion> parsearPrefijo();
   std::unique_ptr<Expresion> parsearCasteo();
+  std::unique_ptr<Expresion> parsearFunctionCall(std::unique_ptr<Expresion> callee);
 
   std::unique_ptr<Sentencia> parsearEscritura();
   std::unique_ptr<Sentencia> parsearDeclaracionVar();
@@ -44,7 +45,7 @@ public:
   std::unique_ptr<Sentencia> parsearMientras();
 
   std::unique_ptr<Sentencia> parsearReturn();
-  std::unordered_map<std::string, InfoVariable> parsearFuncArgs();
+  std::map<std::string, InfoVariable> parsearFuncArgs();
   std::unique_ptr<Sentencia> parsearFuncDecl();
 
   std::pair<std::string, Regla> parsearReglaArcano();

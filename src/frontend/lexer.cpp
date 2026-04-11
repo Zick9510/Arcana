@@ -111,7 +111,6 @@ void Lexer::leerNumero() {
     while (std::isdigit(actual())             ||
            actual() == '.' || actual() == '_' ||
            esSufijoNum()   || actual() == 'e') {
-      //... Add scientific notation support
 
       if (actual() == 'e') {
         scientific_notation = true;

@@ -33,6 +33,7 @@ public:
 
   void visitar(ExprLlamadaArcano* nodo) override;
 
+  void visitar(ExprFuncCall* nodo) override;
 
   void visitar(Bloque* nodo) override;
  

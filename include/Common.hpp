@@ -40,7 +40,7 @@ enum class Precedencia : int {
 
   ACCESO,       // expr[i]
 
-  LLAMADA       // func() .
+  LLAMADA       // func() .method()
 
 };
 
@@ -237,6 +237,7 @@ inline TipoOperador convertirEnTipoOperador(Tt op) { //... Agregar los demás ca
     case Tt::MAS      : { return TipoOperador::A_SUMA     ; }
     case Tt::MENOS    : { return TipoOperador::A_RESTA    ; }
     case Tt::ASTERISCO: { return TipoOperador::A_MULT     ; }
+    case Tt::DIV      : { return TipoOperador::A_DIV      ; }
     case Tt::POTENCIA : { return TipoOperador::A_POT      ; }
     default           : { return TipoOperador::DESCONOCIDO; }
   }
@@ -381,7 +382,10 @@ class ExprCasteo;
 
 class ExprRango;
 class ExprAcceso;
+
 class ExprLlamadaArcano;
+
+class ExprFuncCall;
 
 class Bloque;
 
@@ -417,6 +421,8 @@ public:
   virtual void visitar(ExprAcceso* nodo) = 0;
 
   virtual void visitar(ExprLlamadaArcano* nodo) = 0;
+
+  virtual void visitar(ExprFuncCall* nodo) = 0;
 
   // Sentencias
   virtual void visitar(Bloque* nodo)        = 0;
@@ -696,6 +702,33 @@ public:
   ExprLlamadaArcano(std::string n) : nombre(std::move(n)) {}
 };
 
+class ExprFuncCall : public Expresion {
+public:
+  std::unique_ptr<Expresion> callee;
+  std::vector<std::pair<std::string, std::unique_ptr<Expresion>>> argumentos;
+
+  ExprFuncCall(std::unique_ptr<Expresion> c,
+               std::vector<std::pair<std::string, std::unique_ptr<Expresion>>> a)
+  : callee(std::move(c)), argumentos(std::move(a)) {}
+
+  void imprimir(int nivel = 0) const override {
+    std::string sangria = "";
+    for (int i = 0; i < nivel; ++i) { sangria += "| "; }
+    std::cout << sangria << "+- Function Call\n";
+    callee->imprimir(nivel + 1);
+
+    std::cout << sangria << "| +- Args:\n";
+    for (const auto& [arg_name, arg_value] : argumentos) {
+      arg_value->imprimir(nivel + 1);
+    }
+  }
+
+  void accept(ASTVisitor* visitor) override {
+    visitor->visitar(this);
+  }
+
+};
+
 // Sentencias
 class SentenciaVar : public Sentencia {
 public:
@@ -856,7 +889,6 @@ public:
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
     std::cout << sangria << "Return [" << ret_type.tipoString() << "]\n";
-    std::cout << sangria << "| +- Expr\n";
     ret_value->imprimir(nivel + 1);
 
   }
@@ -872,13 +904,13 @@ class SentenciaFuncDecl : public Sentencia {
 public:
   std::string nombre_func;
   bool es_pure;
-  std::unordered_map<std::string, InfoVariable> args_type;
+  std::map<std::string, InfoVariable> args_type;
   std::unique_ptr<Sentencia> cuerpo_func;
   InfoVariable ret_type;
 
   SentenciaFuncDecl(std::string n,
                     bool pure,
-                    std::unordered_map<std::string, InfoVariable> a,
+                    std::map<std::string, InfoVariable> a,
                     std::unique_ptr<Sentencia> c,
                     InfoVariable r)
   : nombre_func(n), es_pure(pure), args_type(a), cuerpo_func(std::move(c)), ret_type(r) {}
@@ -890,8 +922,12 @@ public:
     std::cout << sangria << "| +- "
       << nombre_func
       << " (pure = "
-      << es_pure << ") -> "
-      << ret_type.tipo.valor->toString() << '\n'; //... Include types of the params when printing
+      << es_pure << ") = (|";
+
+    for (const auto [n, i] : args_type) {
+      std::cout << " " << i.tipo.valor->toString() << " " << n << " |";
+    }
+    std::cout << ") -> " << ret_type.tipo.valor->toString() << '\n';
 
     std::cout << sangria << "| ";
 
@@ -910,6 +946,7 @@ public:
   }
 
 };
+
 
 class SentenciaEscritura : public Sentencia {
 public:
@@ -1157,6 +1194,10 @@ public:
 
 
 /* --- Extra --- */
+// This works bc (2 ** n) & (2 ** n - 1) == 0
+// A power of 2 is just 10..00
+// A (power of 2) - 1 i just 01..11
+// This & that == 0
 inline bool isPowerOf2(int num) { return (num > 0) && ((num & (num - 1)) == 0); }
 
 

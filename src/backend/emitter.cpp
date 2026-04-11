@@ -71,6 +71,10 @@ void Emitter::visitar(ExprLlamadaArcano* nodo) {
 
 }
 
+void Emitter::visitar(ExprFuncCall* nodo) {
+
+}
+
 // --- Sentencias --- //
 
 void Emitter::visitar(Bloque* nodo) {

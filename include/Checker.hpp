@@ -162,7 +162,9 @@ public:
 
   void visitar(ExprUnaria* nodo) override {
     nodo->operando->accept(this);
+    nodo->tipo_resuelto = nodo->operando->tipo_resuelto;
     //... Check if operando is a valid operand
+    //... Check if type is unsigned
   }
 
   void visitar(ExprLlamadaArcano* nodo) override {
@@ -214,6 +216,16 @@ public:
 
     }
 
+  }
+
+  void visitar(ExprFuncCall* nodo) override { //...
+    //... Params, for now, we just blindly assume the output is an integer
+    // for debbuging purposes. No questions asked
+    nodo->tipo_resuelto.valor = typeFactory.getInteger(32, false);
+
+    for (const auto& n : nodo->argumentos) {
+      n.second->accept(this);
+    }
   }
 
   void visitar(SentenciaExpr* nodo) override {

@@ -189,14 +189,18 @@ Dt Checker::verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador 
 
   //... Añadir comprobación de error o desconocido en izq y der
 
-  if (!izq.valor || !der.valor) {
-    //...
-    std::cout << "[190, checker.cpp]\n";
+  //...
+  if (!izq.valor) {
+    std::cout << "[193, checker.cpp] izq null\n";
+  }
+
+  if (!der.valor) {
+    std::cout << "[198, checker.cpp] der null\n";
   }
 
   if (izq.valor->kind == TypeKind::DESCONOCIDO || der.valor->kind == TypeKind::DESCONOCIDO) {
     //...
-    std::cout << "[195, checker.cpp]\n";
+    std::cout << "[203, checker.cpp]\n";
 
   }
 
@@ -223,7 +227,7 @@ Dt Checker::verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador 
     }
 
     default: {
-      std::cout << "[222 checker.cpp] Operador desconocido: " << operadorString(op) << "\n";
+      std::cout << "[230 checker.cpp] Operador desconocido: " << operadorString(op) << "\n";
       //... Retornar algo
     }
   }

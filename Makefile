@@ -2,7 +2,7 @@
 # Configuración del Compilador
 # ==========================================
 CXX      := g++
-CXXFLAGS :=
+CXXFLAGS := -MMD -MP
 LDFLAGS  :=
 
 # ==========================================
@@ -13,7 +13,7 @@ LLVM_CXXFLAGS := $(shell $(LLVM_CONFIG) --cxxflags)
 LLVM_LDFLAGS  := $(shell $(LLVM_CONFIG) --ldflags --libs all --system-libs)
 
 CXXFLAGS += $(LLVM_CXXFLAGS) -std=c++23 -march=native -Iinclude -fexceptions
-LDFLAGS  += $(LLVM_LDFLAGS)
+LDFLAGS  += $(LLVM_LDFLAGS) -lstdc++exp
 
 # ==========================================
 # Directorios
@@ -89,3 +89,5 @@ clean:
 
 # Evita conflictos con archivos que se llamen "all" o "clean"
 .PHONY: all clean
+
+-include $(OBJS:.o=.d)
