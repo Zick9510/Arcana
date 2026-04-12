@@ -9,7 +9,6 @@
 ArcanaType::~ArcanaType() = default;
 
 // --- UnkownType ---
-
 UnknownType::UnknownType()
   : ArcanaType(TypeKind::DESCONOCIDO) {}
 std::string UnknownType::toString() const { return "unkown"; }
@@ -222,6 +221,4 @@ std::shared_ptr<ShapeType> TypeFactory::getShape(std::vector<CampoShape> campos)
 
 }
 
-//... ArcanaType
 //... GenericType (Templates)
-// this is going to be hell
