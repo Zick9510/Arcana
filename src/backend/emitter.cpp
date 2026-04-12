@@ -57,8 +57,6 @@ void Emitter::generarArchivoIR(const std::string& nombreArchivo) {
 }
 
 //... Everything after this line has to be triple checked.
-// I was too sleepy to undertand why this didint compile and then
-// I was too sleepy to undertand why it did seconds after
 
 // --- Expresiones --- //
 void Emitter::visitar(ExprNumero* nodo) { //...
@@ -134,6 +132,28 @@ void Emitter::visitar(ExprLlamadaArcano* nodo) {
 }
 
 void Emitter::visitar(ExprFuncCall* nodo) {
+  auto* var_callee = dynamic_cast<ExprVariable*>(nodo->callee.get());
+  if (!var_callee) {
+    //...
+    return ;
+  }
+
+  llvm::Function* callee_f = llvm_modulo->getFunction(var_callee->nombre);
+
+  if (!callee_f) {
+    // El Checker debería haber evitado que llegemos a este punto
+    std::cerr << "Error: Función " << var_callee->nombre << "no encontrada.\n";
+    return ;
+  }
+
+  std::vector<llvm::Value*> args_v;
+  for (auto& arg : nodo->argumentos) {
+    arg.second->accept(this);
+    args_v.push_back(llvm_valor);
+
+  }
+
+  llvm_valor = llvm_builder->CreateCall(callee_f, args_v, "calltmp");
 
 }
 

@@ -3,5 +3,5 @@ func a() -> int {
 }
 
 func main() -> int {
-  return a() + 5;
+  return a() + 1;
 }

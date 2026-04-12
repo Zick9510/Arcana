@@ -897,7 +897,6 @@ public:
     visitor->visitar(this);
   }
 
-
 };
 
 class SentenciaFuncDecl : public Sentencia {

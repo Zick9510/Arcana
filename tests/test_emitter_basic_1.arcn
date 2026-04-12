@@ -1,0 +1,11 @@
+func A() -> int {
+  int a = 3;
+  int b = a + 4;
+
+  return b + b + a + a + 3;
+}
+
+func main() -> int {
+  int a = A();
+  return a;
+}
