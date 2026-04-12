@@ -82,7 +82,6 @@ spell NullCheckOp(expr1: expr, [??]: op, expr2: expr) {
 	
 	};
 
-
 }
 
 // Use:
