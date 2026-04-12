@@ -1,7 +1,7 @@
 func A(int a) -> void;
 func Aa(int aA) -> unsigned int;
 func B(int b, float b2) -> void;
-func C(int c) -> [void, int];
+func C(int c) -> [void, int]; // Same concept as std::variant
 func D(int d) -> [int, int32, float64, raw32];
 func E(int e) -> [raw];
 func Ee(int eE) -> raw16;

@@ -1,0 +1,7 @@
+func a() -> int {
+  return (1 + 2 + 3);
+}
+
+func main() -> int {
+  return a() + 5;
+}

@@ -426,7 +426,7 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
   }
 
   TipoOperador op;
-  
+
   switch (t.tipo) {
     case Tt::MAS        : {op = TipoOperador::A_SUMA    ; break; }
     case Tt::MENOS      : {op = TipoOperador::A_RESTA   ; break; }

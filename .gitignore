@@ -1,5 +1,4 @@
 # --- Carpetas de Compilación y Sistema ---
-
 bin/
 obj/
 .cache/
@@ -11,7 +10,8 @@ compile_commands.json
 Session.vim
 
 # --- Archivos Temporales ---
-salida.cpp
+salida.ll
+salida.s
 
 # --- Archivos Arcana ---
 *.arcn

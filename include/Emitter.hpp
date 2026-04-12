@@ -4,21 +4,20 @@
 
 #include "Common.hpp"
 
-#include <llvm/IR/LLVMContext.h>
-#include <llvm/IR/Module.h>
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/Verifier.h>
-#include <llvm/IR/Value.h>
-
 class Emitter : public ASTVisitor {
 private:
-  llvm::LLVMContext                        llvm_ctx            ;
-  std::unique_ptr<llvm::Module>            llvm_modulo         ;
-  std::unique_ptr<llvm::IRBuilder<>>       llvm_builder        ;
-  llvm::Value*                             llvm_valor = nullptr;
-  std::map<std::string, llvm::AllocaInst*> llvm_tabla_variables;
+  llvm::LLVMContext                                     llvm_ctx            ;
+  std ::unique_ptr<llvm::Module>                         llvm_modulo        ;
+  std ::unique_ptr<llvm::IRBuilder<>>                    llvm_builder       ;
+  llvm::Value*                                          llvm_valor = nullptr;
+  std ::vector<std::map<std::string, llvm::AllocaInst*>> llvm_scopes        ;
 
 public:
+
+  Emitter();
+
+  void generarArchivoIR(const std::string& nombreArchivo);
+  llvm::Type* obtenerTipoLLVM(std::shared_ptr<ArcanaType> tipo);
 
   void visitar(ExprNumero  * nodo) override;
   void visitar(ExprVariable* nodo) override;
@@ -54,8 +53,6 @@ public:
  
   void visitar(SentenciaArcano       * nodo) override;
   void visitar(SentenciaLlamadaArcano* nodo) override;
-
-  llvm::Type* obtenerTipoLLVM(ArcanaType* tipo);
 
 };
 

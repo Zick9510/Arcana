@@ -904,7 +904,7 @@ class SentenciaFuncDecl : public Sentencia {
 public:
   std::string nombre_func;
   bool es_pure;
-  std::map<std::string, InfoVariable> args_type;
+  std::map<std::string, InfoVariable> args_type; //... Replace this with std::vector
   std::unique_ptr<Sentencia> cuerpo_func;
   InfoVariable ret_type;
 
@@ -946,7 +946,6 @@ public:
   }
 
 };
-
 
 class SentenciaEscritura : public Sentencia {
 public:

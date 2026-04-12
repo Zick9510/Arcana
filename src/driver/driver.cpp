@@ -34,7 +34,7 @@ bool Driver::compile(const CompilerConfig& config) {
   std::vector<std::unique_ptr<Sentencia>> ast = std::move(parser.parsearPrograma());
 
   // 5. Semántic Analysis (AST Check)
-  std::vector<Scope> scopes{};
+  std::vector<Scope> scopes;
   GestorTablas tablas(errHandler, scopes);
 
   Checker checker(tablas, ast, errHandler, factory);
@@ -51,7 +51,9 @@ bool Driver::compile(const CompilerConfig& config) {
     nodo->accept(&emitter);
   }
 
-  std::string codigo = ""; //emitter.obtenerCodigo();
+  // 7. Escribir el Código (Source -> File)
+  std::string output_name = "salida.ll"; //...
+  emitter.generarArchivoIR(output_name);
 
   //... Debug
   std::cout << "\n --- TOKENS --- \n\n";
@@ -66,15 +68,6 @@ bool Driver::compile(const CompilerConfig& config) {
     if (nodo) { nodo->imprimir(); }
     else      { std::cout << "[Nodo Nulo]\n"; }
     std::cout << "---------------------------\n";
-  }
-
-  std::ofstream outFile("salida.cpp"); //... Change this to accept the actual output file from the user
-  if (outFile.is_open()) {
-    outFile << codigo;
-    outFile.close();
-  } else {
-    std::cerr << "Error: No se pudo escribir en el archivo de salida.\n";
-    return false;
   }
 
   return true;
