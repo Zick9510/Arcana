@@ -2,7 +2,6 @@ func A(int x, int y) -> int {
   return x * x + y;
 }
 
-
 func main() -> int {
   return A(3, 10);
 }

@@ -152,10 +152,10 @@ void Emitter::visitar(ExprFuncCall* nodo) {
 
   llvm::Function* callee_f = llvm_modulo->getFunction(var_callee->nombre);
 
-  if (!callee_f) {
-    // El Checker debería haber evitado que llegemos a este punto
+  if (!callee_f) { // Trust me, there is no way the code ends up here.
     std::cerr << "Error: Función " << var_callee->nombre << "no encontrada.\n";
     return ;
+
   }
 
   std::vector<llvm::Value*> args_v;
