@@ -1,7 +1,7 @@
 # ==========================================
 # Configuración del Compilador
 # ==========================================
-CXX      := g++
+CXX      := ccache g++
 CXXFLAGS := -MMD -MP
 LDFLAGS  :=
 

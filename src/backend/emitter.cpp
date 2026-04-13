@@ -225,15 +225,112 @@ void Emitter::visitar(SentenciaAsignacion* nodo) {
 
 }
 
-void Emitter::visitar(SentenciaSi* nodo) {
+void Emitter::visitar(SentenciaSi* nodo) { //...
+  nodo->condicion->accept(this);
+  llvm::Value* cond_v = llvm_valor;
 
+  llvm::Value* cero =
+    llvm::ConstantInt::get(llvm_ctx,
+                           llvm::APInt(cond_v->getType()->getIntegerBitWidth(),0)
+                           );
+
+  cond_v = llvm_builder->CreateICmpNE(cond_v, cero, "ifcond");
+
+  llvm::Function* funcion_actual = llvm_builder->GetInsertBlock()->getParent();
+
+  llvm::BasicBlock* then_bb  = llvm::BasicBlock::Create(llvm_ctx, "then", funcion_actual);
+  llvm::BasicBlock* else_bb  = llvm::BasicBlock::Create(llvm_ctx, "else");
+  llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(llvm_ctx, "ifcont");
+
+  llvm_builder->CreateCondBr(cond_v, then_bb, else_bb);
+
+  llvm_builder->SetInsertPoint(then_bb);
+  nodo->rama_si->accept(this);
+
+  if (!llvm_builder->GetInsertBlock()->getTerminator()) {
+    llvm_builder->CreateBr(merge_bb);
+  }
+
+  funcion_actual->insert(funcion_actual->end(), else_bb);
+  llvm_builder->SetInsertPoint(else_bb);
+
+  if (nodo->rama_sino) {
+    nodo->rama_sino->accept(this);
+  }
+
+  if (!llvm_builder->GetInsertBlock()->getTerminator()) {
+    llvm_builder->CreateBr(merge_bb);
+  }
+
+  if (merge_bb->use_empty()) {
+    delete merge_bb;
+
+  } else {
+    funcion_actual->insert(funcion_actual->end(), merge_bb);
+    llvm_builder->SetInsertPoint(merge_bb);
+
+  }
 }
 
 void Emitter::visitar(SentenciaSino* nodo) {
+  if (nodo->cuerpo) {
+    nodo->cuerpo->accept(this);
+  }
 
 }
 
 void Emitter::visitar(SentenciaMientras* nodo) {
+  llvm::Function* funcion_actual = llvm_builder->GetInsertBlock()->getParent();
+
+  llvm::BasicBlock* cond_bb = llvm::BasicBlock::Create(llvm_ctx, "while.cond", funcion_actual);
+  llvm::BasicBlock* loop_bb = llvm::BasicBlock::Create(llvm_ctx, "while.body");
+  llvm::BasicBlock* else_bb = llvm::BasicBlock::Create(llvm_ctx, "while.else");
+  llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(llvm_ctx, "while.end");
+
+  llvm_builder->CreateBr(cond_bb);
+
+  llvm_builder->SetInsertPoint(cond_bb);
+  nodo->condicion->accept(this);
+  llvm::Value* cond_v = llvm_valor;
+
+  llvm::Value* cero =
+    llvm::ConstantInt::get(llvm_ctx,
+                           llvm::APInt(cond_v->getType()->getIntegerBitWidth(), 0)
+                           );
+  cond_v = llvm_builder->CreateICmpNE(cond_v, cero, "whilecond");
+
+  llvm_builder->CreateCondBr(cond_v, loop_bb, else_bb);
+
+  pila_continues.push_back(cond_bb);
+  pila_breaks.push_back(merge_bb);
+
+  funcion_actual->insert(funcion_actual->end(), loop_bb);
+  llvm_builder->SetInsertPoint(loop_bb);
+
+  if (nodo->rama_while) {
+    nodo->rama_while->accept(this);
+  }
+
+  if (!llvm_builder->GetInsertBlock()->getTerminator()) {
+    llvm_builder->CreateBr(cond_bb);
+  }
+
+  pila_continues.pop_back();
+  pila_breaks.pop_back();
+
+  funcion_actual->insert(funcion_actual->end(), else_bb);
+  llvm_builder->SetInsertPoint(else_bb);
+
+  if (nodo->rama_sino) {
+    nodo->rama_sino->accept(this);
+  }
+
+  if (!llvm_builder->GetInsertBlock()->getTerminator()) {
+    llvm_builder->CreateBr(merge_bb);
+  }
+
+  funcion_actual->insert(funcion_actual->end(), merge_bb);
+  llvm_builder->SetInsertPoint(merge_bb);
 
 }
 

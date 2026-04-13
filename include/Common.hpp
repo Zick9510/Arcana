@@ -806,8 +806,9 @@ public:
   std::unique_ptr<Sentencia> rama_sino;
 
   SentenciaSi(std::unique_ptr<Expresion> cond,
-              std::unique_ptr<Sentencia> si)
-    : condicion(std::move(cond)), rama_si(std::move(si)), rama_sino(nullptr) {}
+              std::unique_ptr<Sentencia> si,
+              std::unique_ptr<Sentencia> no)
+    : condicion(std::move(cond)), rama_si(std::move(si)), rama_sino(std::move(no)) {}
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
@@ -815,12 +816,15 @@ public:
     std::cout << sangria << "+- Si\n";
     std::cout << sangria << "| +- Condición:\n";
     condicion->imprimir(nivel + 1);
+
     std::cout << sangria << "| +- Entonces:\n";
     rama_si->imprimir(nivel + 1);
+
     if (rama_sino) {
-      std::cout << sangria << "| +- Sino:\n";
-      rama_sino->imprimir(nivel + 1);
+      rama_sino->imprimir(nivel);
+
     }
+
   }
 
   void accept(ASTVisitor* visitor) override {
@@ -839,7 +843,7 @@ public:
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
     std::cout << sangria << "+- Sino\n";
-    cuerpo->imprimir(nivel + 2);
+    cuerpo->imprimir(nivel + 1);
   }
 
   void accept(ASTVisitor* visitor) override {

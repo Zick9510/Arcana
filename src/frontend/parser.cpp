@@ -568,7 +568,13 @@ std::unique_ptr<Sentencia> Parser::parsearSi() {
   std::unique_ptr<Sentencia> rama_si;
   rama_si = parsearBloqSent();
  
-  return std::make_unique<SentenciaSi>(std::move(condicion), std::move(rama_si));
+  std::unique_ptr<Sentencia> rama_sino = nullptr;
+
+  if (peek().tipo == Tt::SINO) {
+    rama_sino = parsearSino();
+  }
+
+  return std::make_unique<SentenciaSi>(std::move(condicion), std::move(rama_si), std::move(rama_sino));
 
 }
 

@@ -238,11 +238,19 @@ public:
     //... Check if the left side and right side have the same type
   }
 
-  void visitar(SentenciaSi* nodo) override { //...
+  void visitar(SentenciaSi* nodo) override {
+    nodo->condicion->accept(this);
+    nodo->rama_si  ->accept(this);
+
+    if (nodo->rama_sino) {
+      nodo->rama_sino->accept(this);
+
+    }
 
   }
 
   void visitar(SentenciaSino* nodo) override {
+    nodo->cuerpo->accept(this);
 
   }
 
