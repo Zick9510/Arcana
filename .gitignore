@@ -18,8 +18,10 @@ Session.vim
 !tests/valid/*.arcn
 !tests/invalid/*.arcn
 
+# --- Tests ---
+test/build
+
 # --- Binarios Comunes (por si acaso) ---
 *.o
 *.out
 *.exe
-
