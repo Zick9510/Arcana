@@ -397,7 +397,7 @@ std::vector<Token> Lexer::tokenize() {
         break;
       }
 
-      case '~': {
+      case '~': { //... x ~= y has no sense. We could use the "~=" symbol for flaots comparations
         if   (match('=')) { tokens.push_back( {Tt::NO_BIT_IGUAL, "~=", linea} ); }
         else                   { tokens.push_back( {Tt::NO_BITWISE  , "~" , linea} ); }
 
