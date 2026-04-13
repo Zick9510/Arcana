@@ -10,8 +10,8 @@ compile_commands.json
 Session.vim
 
 # --- Archivos Temporales ---
-salida.ll
-salida.s
+*.ll
+*.s
 
 # --- Archivos Arcana ---
 *.arcn

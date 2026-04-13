@@ -45,23 +45,26 @@ bool Driver::compile(const CompilerConfig& config) {
     return false;
   }
 
-  // 6. Generación de Código (AST -> Source)
+  // 6. Generación de Código (AST Check -> Source)
   Emitter emitter;
   for (auto& nodo : ast) {
     nodo->accept(&emitter);
   }
 
   // 7. Escribir el Código (Source -> File)
-  std::string output_name = "salida.ll"; //...
-  emitter.generarArchivoIR(output_name);
+  auto output_name = config.archivo_salida.transform([](std::filesystem::path p) {
+    return p += ".ll";
+  });
+
+  emitter.generarArchivoIR(output_name.value());
 
   //... Debug
-  std::cout << "\n --- TOKENS --- \n\n";
-  for (const auto& t : tokens) {
-    std::cout << "< Token: '" << t.lexema << "' | "
-              << "L: " << t.linea
-              << " >\n";
-  }
+  //std::cout << "\n --- TOKENS --- \n\n";
+  //for (const auto& t : tokens) {
+  //  std::cout << "< Token: '" << t.lexema << "' | "
+  //            << "L: " << t.linea
+  //            << " >\n";
+  //}
 
   std::cout << "\n --- ARBOL DE SINTAXIS ABSTRACTA (AST) ---\n\n";
   for (const auto& nodo : ast) {

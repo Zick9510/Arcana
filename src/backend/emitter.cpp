@@ -38,10 +38,10 @@ llvm::Type* Emitter::obtenerTipoLLVM(std::shared_ptr<ArcanaType> tipo) {
   }
 }
 
-void Emitter::generarArchivoIR(const std::string& nombreArchivo) {
+void Emitter::generarArchivoIR(const std::filesystem::path& nombreArchivo) {
   std::error_code ec;
 
-  llvm::raw_fd_ostream archivo(nombreArchivo, ec, llvm::sys::fs::OF_None);
+  llvm::raw_fd_ostream archivo(std::string(nombreArchivo), ec, llvm::sys::fs::OF_None);
 
   if (ec) {
     std::cerr << "Error al abrir el archivo apra escribir IR: " << ec.message() << '\n';

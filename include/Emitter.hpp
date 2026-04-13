@@ -19,7 +19,7 @@ public:
 
   Emitter();
 
-  void generarArchivoIR(const std::string& nombreArchivo);
+  void generarArchivoIR(const std::filesystem::path& nombreArchivo);
   llvm::Type* obtenerTipoLLVM(std::shared_ptr<ArcanaType> tipo);
 
   void visitar(ExprNumero  * nodo) override;
