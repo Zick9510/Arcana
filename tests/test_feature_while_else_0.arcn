@@ -1,0 +1,14 @@
+func main() -> int {
+
+  int x = 1;
+
+  while (0) {
+    x = 30;
+
+  } else {
+    x = 20;
+  }
+
+  return x;
+
+}

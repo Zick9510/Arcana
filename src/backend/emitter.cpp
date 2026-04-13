@@ -334,6 +334,28 @@ void Emitter::visitar(SentenciaMientras* nodo) {
 
 }
 
+void Emitter::visitar(SentenciaBreak* nodo) {
+  if (pila_breaks.empty()) { //...
+    std::cerr << "Error: 'break' fuera de un bucle.\n";
+    return ;
+  }
+
+  llvm::BasicBlock* bloque_salida = pila_breaks.back();
+  llvm_builder->CreateBr(bloque_salida);
+
+}
+
+void Emitter::visitar(SentenciaContinue* nodo) {
+  if (pila_continues.empty()) { //...
+    std::cerr << "Error: 'continue' fuera de un bucle.\n";
+    return ;
+  }
+
+  llvm::BasicBlock* bloque_condicion = pila_continues.back();
+  llvm_builder->CreateBr(bloque_condicion);
+
+}
+
 void Emitter::visitar(SentenciaReturn* nodo) {
   nodo->ret_value->accept(this);
   llvm_builder->CreateRet(llvm_valor);

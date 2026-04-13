@@ -265,6 +265,14 @@ public:
 
   }
 
+  void visitar(SentenciaBreak* nodo) override { //...
+
+  }
+
+  void visitar(SentenciaContinue* nodo) override { //...
+
+  }
+
   void visitar(SentenciaReturn* nodo) override { //...
     nodo->ret_type.valor = typeFactory.getUnknown(); //...
     nodo->ret_value->accept(this);

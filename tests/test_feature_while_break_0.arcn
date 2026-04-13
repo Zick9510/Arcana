@@ -1,0 +1,25 @@
+func main() -> int {
+
+  int x = 10;
+  int r = 0;
+
+  while (1) {
+
+    if (x) {
+      r = 10;
+
+    } else {
+      r = 20;
+      break;
+
+    }
+
+    x = x - 1;
+
+  } else {
+    r = 30;
+  }
+
+  return r;
+
+}

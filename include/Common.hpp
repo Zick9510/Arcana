@@ -81,12 +81,12 @@ enum class Tt {
   IDENTIFICADOR, NUMERO,
 
   // If-else
-  SI, SINO,
+  IF, ELSE,
 
   // Loops
-  HACE, MIENTRAS, PARA, CADA, LOOP,
+  DO, WHILE, FOR, FOREACH, LOOP,
 
-  SALIR, SEGUIR, // break, continue
+  BREAK, CONTINUE, PASS,
 
   // Operadores
   MAS, MENOS, DIV, POTENCIA, RAIZ, MODULO, // La multiplicación es ASTERISCO
@@ -303,20 +303,21 @@ inline std::map<std::string, Tt> keywords = {
   {"key" , Tt::KEY },
 
   // If-else
-  {"if"  , Tt::SI  },
-  {"else", Tt::SINO},
+  {"if"  , Tt::IF  },
+  {"else", Tt::ELSE},
 
   // While y do-while
-  {"while", Tt::MIENTRAS},
-  {"do", Tt::HACE},
+  {"while", Tt::WHILE},
+  {"do"   , Tt::DO   },
 
   // For y foreach
-  {"for", Tt::PARA},
-  {"each", Tt::CADA},
+  {"for" , Tt::FOR    },
+  {"each", Tt::FOREACH},
 
-  // Break y continue
-  {"break", Tt::SALIR},
-  {"continue", Tt::SEGUIR},
+  // Break, continue and pass
+  {"break"   , Tt::BREAK   },
+  {"continue", Tt::CONTINUE},
+  {"pass"    , Tt::PASS},
 
   // Functions
   {"func", Tt::FUNC},
@@ -396,6 +397,9 @@ class SentenciaSi;
 class SentenciaSino;
 class SentenciaMientras;
 
+class SentenciaBreak;
+class SentenciaContinue;
+
 class SentenciaReturn;
 class SentenciaFuncDecl;
 
@@ -436,6 +440,9 @@ public:
   virtual void visitar(SentenciaSino* nodo) = 0;
 
   virtual void visitar(SentenciaMientras* nodo) = 0;
+
+  virtual void visitar(SentenciaBreak   * nodo) = 0;
+  virtual void visitar(SentenciaContinue* nodo) = 0;
 
   virtual void visitar(SentenciaReturn  * nodo) = 0;
   virtual void visitar(SentenciaFuncDecl* nodo) = 0;
@@ -874,6 +881,42 @@ public:
       std::cout << sangria << "| +- Sino:\n";
       rama_sino->imprimir(nivel + 1);
     }
+  }
+
+  void accept(ASTVisitor* visitor) override {
+    visitor->visitar(this);
+  }
+};
+
+class SentenciaBreak : public Sentencia {
+public:
+  int linea;
+
+  SentenciaBreak(int l)
+    : linea(l) {}
+
+  void imprimir(int nivel = 0) const override {
+    std::string sangria = "";
+    for (int i = 0; i < nivel; ++i) { sangria += "| "; }
+    std::cout << sangria << "Break\n";
+  }
+
+  void accept(ASTVisitor* visitor) override {
+    visitor->visitar(this);
+  }
+};
+
+class SentenciaContinue : public Sentencia {
+public:
+  int linea;
+
+  SentenciaContinue(int l)
+    : linea(l) {}
+
+  void imprimir(int nivel = 0) const override {
+    std::string sangria = "";
+    for (int i = 0; i < nivel; ++i) { sangria += "| "; }
+    std::cout << sangria << "Continue\n";
   }
 
   void accept(ASTVisitor* visitor) override {

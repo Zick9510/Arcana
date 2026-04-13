@@ -526,9 +526,11 @@ std::unique_ptr<Sentencia> Parser::parsearBloque() {
 std::unique_ptr<Sentencia> Parser::parsearSentencia() {
   Tt actual = peek().tipo;
 
-  if (actual == Tt::SI       ) { return parsearSi()       ; }
-  if (actual == Tt::SINO     ) { return parsearSino()     ; }
-  if (actual == Tt::MIENTRAS ) { return parsearMientras() ; }
+  if (actual == Tt::IF       ) { return parsearSi()       ; }
+  if (actual == Tt::ELSE     ) { return parsearSino()     ; }
+  if (actual == Tt::WHILE    ) { return parsearMientras() ; }
+  if (actual == Tt::BREAK    ) { return parsearBreak()    ; }
+  if (actual == Tt::CONTINUE ) { return parsearContinue() ; }
   if (actual == Tt::LLAVE_L  ) { return parsearBloque()   ; }
   if (actual == Tt::FUNC     ) { return parsearFuncDecl() ; }
   if (actual == Tt::PURE     ) { return parsearFuncDecl() ; }
@@ -556,7 +558,7 @@ std::unique_ptr<Sentencia> Parser::parsearSentencia() {
 }
 
 std::unique_ptr<Sentencia> Parser::parsearSi() {
-  check(Tt::SI);
+  check(Tt::IF);
   check(Tt::PAREN_L);
 
   auto condicion = parsearExpresion(Pr::MINIMA);
@@ -570,7 +572,7 @@ std::unique_ptr<Sentencia> Parser::parsearSi() {
  
   std::unique_ptr<Sentencia> rama_sino = nullptr;
 
-  if (peek().tipo == Tt::SINO) {
+  if (peek().tipo == Tt::ELSE) {
     rama_sino = parsearSino();
   }
 
@@ -579,13 +581,13 @@ std::unique_ptr<Sentencia> Parser::parsearSi() {
 }
 
 std::unique_ptr<Sentencia> Parser::parsearSino() {
-  check(Tt::SINO);
+  check(Tt::ELSE);
   return std::make_unique<SentenciaSino>(parsearBloqSent());
 
 }
 
 std::unique_ptr<Sentencia> Parser::parsearMientras() {
-  check(Tt::MIENTRAS);
+  check(Tt::WHILE);
   check(Tt::PAREN_L);
 
   auto condicion = parsearExpresion(Pr::MINIMA);
@@ -597,7 +599,7 @@ std::unique_ptr<Sentencia> Parser::parsearMientras() {
 
   std::unique_ptr<Sentencia> rama_sino = nullptr;
 
-  if (peek().tipo == Tt::SINO) {
+  if (peek().tipo == Tt::ELSE) {
     get();
     rama_sino = parsearBloqSent();
 
@@ -609,6 +611,20 @@ std::unique_ptr<Sentencia> Parser::parsearMientras() {
      std::move(rama_sino)
   );
 
+}
+
+std::unique_ptr<Sentencia> Parser::parsearBreak() {
+  int linea = peek().linea;
+  check(Tt::BREAK);
+  check(Tt::PUNTO_COMA);
+  return std::make_unique<SentenciaBreak>(linea);
+}
+
+std::unique_ptr<Sentencia> Parser::parsearContinue() {
+  int linea = peek().linea;
+  check(Tt::CONTINUE);
+  check(Tt::PUNTO_COMA);
+  return std::make_unique<SentenciaContinue>(linea);
 }
 
 std::unique_ptr<Sentencia> Parser::parsearReturn() {

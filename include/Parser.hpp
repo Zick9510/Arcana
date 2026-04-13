@@ -43,6 +43,9 @@ public:
   std::unique_ptr<Sentencia> parsearSi();
   std::unique_ptr<Sentencia> parsearSino();
   std::unique_ptr<Sentencia> parsearMientras();
+  std::unique_ptr<Sentencia> parsearBreak();
+  std::unique_ptr<Sentencia> parsearContinue();
+
 
   std::unique_ptr<Sentencia> parsearReturn();
   std::map<std::string, InfoVariable> parsearFuncArgs();
