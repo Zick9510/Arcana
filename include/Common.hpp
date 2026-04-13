@@ -307,16 +307,16 @@ inline std::map<std::string, Tt> keywords = {
   {"else", Tt::SINO},
 
   // While y do-while
-  {"trama", Tt::MIENTRAS},
-  {"obra", Tt::HACE},
+  {"while", Tt::MIENTRAS},
+  {"do", Tt::HACE},
 
   // For y foreach
   {"for", Tt::PARA},
   {"each", Tt::CADA},
 
   // Break y continue
-  {"salir", Tt::SALIR},
-  {"seguir", Tt::SEGUIR},
+  {"break", Tt::SALIR},
+  {"continue", Tt::SEGUIR},
 
   // Functions
   {"func", Tt::FUNC},

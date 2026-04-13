@@ -282,9 +282,9 @@ void Emitter::visitar(SentenciaSino* nodo) {
 void Emitter::visitar(SentenciaMientras* nodo) {
   llvm::Function* funcion_actual = llvm_builder->GetInsertBlock()->getParent();
 
-  llvm::BasicBlock* cond_bb = llvm::BasicBlock::Create(llvm_ctx, "while.cond", funcion_actual);
-  llvm::BasicBlock* loop_bb = llvm::BasicBlock::Create(llvm_ctx, "while.body");
-  llvm::BasicBlock* else_bb = llvm::BasicBlock::Create(llvm_ctx, "while.else");
+  llvm::BasicBlock* cond_bb  = llvm::BasicBlock::Create(llvm_ctx, "while.cond", funcion_actual);
+  llvm::BasicBlock* loop_bb  = llvm::BasicBlock::Create(llvm_ctx, "while.body");
+  llvm::BasicBlock* else_bb  = llvm::BasicBlock::Create(llvm_ctx, "while.else");
   llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(llvm_ctx, "while.end");
 
   llvm_builder->CreateBr(cond_bb);

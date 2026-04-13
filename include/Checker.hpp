@@ -255,6 +255,13 @@ public:
   }
 
   void visitar(SentenciaMientras* nodo) override {
+    nodo->condicion ->accept(this);
+    nodo->rama_while->accept(this);
+
+    if (nodo->rama_sino) {
+      nodo->rama_sino->accept(this);
+
+    }
 
   }
 
