@@ -9,11 +9,11 @@ GestorTablas::GestorTablas(ErrorHandler& e, std::vector<Scope> s)
   : errHandler(e), scopes(s) {}
 
 // --- Bloques ---
-void GestorTablas::entrarBloque(Scope scope) {
+void GestorTablas::entrarScope(Scope scope) {
   scopes.push_back(scope);
 }
 
-void GestorTablas::salirBloque() {
+void GestorTablas::salirScope() {
   if (scopes.size() > 1) {
     scopes.pop_back();
   }
@@ -42,7 +42,7 @@ bool GestorTablas::añadirVariable(const std::string& nombre, InfoVariable info,
 
 }
 
-InfoVariable* GestorTablas::buscarVariable(const std::string& nombre, int linea) {
+InfoVariable* GestorTablas::buscarVariable(const std::string& nombre) {
   // Buscamos desde el ámbito actual hacia el global
 
   for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
@@ -191,7 +191,7 @@ Dt Checker::verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador 
 
   //...
   if (!izq.valor) {
-    std::cout << "[193, checker.cpp] izq null\n";
+    std::cout << "[194, checker.cpp] izq null\n";
   }
 
   if (!der.valor) {

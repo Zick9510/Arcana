@@ -1182,12 +1182,12 @@ private:
 public:
   GestorTablas(ErrorHandler& err, std::vector<Scope> scopes);
 
-  void entrarBloque(Scope scope);
-  void salirBloque();
+  void entrarScope(Scope scope = {});
+  void salirScope();
 
   // --- Variables ---
   bool añadirVariable(const std::string& nombre, InfoVariable info, int linea);
-  InfoVariable* buscarVariable(const std::string& nombre, int linea);
+  InfoVariable* buscarVariable(const std::string& nombre);
 };
 
 

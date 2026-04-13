@@ -117,6 +117,7 @@ void Emitter::visitar(ExprBinaria* nodo) {
     case TipoOperador::A_MULT: {
       llvm_valor = es_float ? llvm_builder->CreateFMul(L, R, "multtemp")
                             : llvm_builder->CreateMul(L, R, "multtemp");
+      break;
     }
 
     default: {

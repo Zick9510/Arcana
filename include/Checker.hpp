@@ -138,7 +138,7 @@ public:
   }
 
   void visitar(ExprVariable* nodo) override { //...
-    InfoVariable* info = tablas.buscarVariable(nodo->nombre, 0); //... Línea
+    InfoVariable* info = tablas.buscarVariable(nodo->nombre);
 
     if (info != nullptr) {
       nodo->tipo_resuelto = info->tipo;
@@ -205,7 +205,7 @@ public:
   void visitar(SentenciaVar* nodo) override { //... Implementar líneas en los NodoAST
     if (nodo->valor_inicial) { nodo->valor_inicial->accept(this); }
 
-    InfoVariable* info = tablas.buscarVariable(nodo->nombre, 0);
+    InfoVariable* info = tablas.buscarVariable(nodo->nombre);
     if (info == nullptr) { // Si la variable no existe, creamos una
       InfoVariable nueva_info;
       nueva_info.tipo = nodo->tipo_explicito.tipo.valor;
@@ -220,7 +220,6 @@ public:
 
   void visitar(ExprFuncCall* nodo) override { //...
     //... Params, for now, we just blindly assume the output is an integer
-    // for debbuging purposes. No questions asked
     nodo->tipo_resuelto.valor = typeFactory.getInteger(32, false);
 
     for (const auto& n : nodo->argumentos) {
@@ -258,9 +257,17 @@ public:
   }
 
   void visitar(SentenciaFuncDecl* nodo) override { //...
+    tablas.entrarScope();
+
+    for (const auto& [nombre, info] : nodo->args_type) {
+      tablas.añadirVariable(nombre, info, 0);
+    }
+
     if (nodo->cuerpo_func != nullptr) {
       nodo->cuerpo_func->accept(this);
     }
+
+    tablas.salirScope();
 
   }
 
