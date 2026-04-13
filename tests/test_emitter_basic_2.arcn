@@ -1,0 +1,21 @@
+func A() -> int {
+  int a = 3;
+  int b = a + 4; // 7
+
+  return b + b + a + a + 3; // 23
+
+}
+
+func B() -> int {
+  int a = 2 * 4 - 1; // 7
+  int b = a * a * a * 2; // 686
+
+  return a + b - 2 * 4; // 685
+
+}
+
+func main() -> int {
+  int a = A() - B() * B(); // 23 - 685 * 685
+  return a + 469203;
+}
+

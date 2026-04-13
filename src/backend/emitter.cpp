@@ -108,6 +108,17 @@ void Emitter::visitar(ExprBinaria* nodo) {
       break;
     }
 
+    case TipoOperador::A_RESTA: {
+      llvm_valor = es_float ? llvm_builder->CreateFSub(L, R, "subtemp")
+                            : llvm_builder->CreateSub(L, R, "subtemp");
+      break;
+    }
+
+    case TipoOperador::A_MULT: {
+      llvm_valor = es_float ? llvm_builder->CreateFMul(L, R, "multtemp")
+                            : llvm_builder->CreateMul(L, R, "multtemp");
+    }
+
     default: {
       break;
     }
