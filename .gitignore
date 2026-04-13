@@ -15,7 +15,8 @@ Session.vim
 
 # --- Archivos Arcana ---
 *.arcn
-!tests/*.arcn
+!tests/valid/*.arcn
+!tests/invalid/*.arcn
 
 # --- Binarios Comunes (por si acaso) ---
 *.o
