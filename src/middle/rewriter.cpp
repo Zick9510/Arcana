@@ -1,5 +1,5 @@
 // rewritter.cpp
 
-#include "Rewritter.hpp"
+#include "Rewriter.hpp"
 
 #include "Common.hpp"
