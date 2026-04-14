@@ -825,36 +825,66 @@ std::vector<std::pair<std::string, ReglaArcano>> Parser::parsearReglasArcano() {
 
 }
 
-std::vector<ArcaneBranch> Parser::parsearCuerpoArcano() {
+std::vector<ArcaneBranch> Parser::parsearCuerpoArcano(
+  const std::vector<std::pair<std::string, ReglaArcano>>& reglas_declaradas
+  ) {
 
-  std::vector<ArcaneBranch> ramas;
+  std::vector<ArcaneBranch> ramas_totales;
 
-  while (peek().tipo != Tt::LLAVE_R && peek().tipo != Tt::FIN_ARCHIVO) {
-    Token t_keyword = check(Tt::IDENTIFICADOR); // algo
-    std::vector<std::pair<std::string, InfoVariable>> params;
+  auto existe_regla = [&](const std::string& etiqueta) {
+    for (const auto& r : reglas_declaradas) {
+      if (r.first == etiqueta) { return true; }
+    }
+    return false;
+  };
 
-    if (peek().tipo == Tt::PAREN_L) {
-      get();
+  while (peek().tipo == Tt::ARROBA) {
+    get(); // @
+    Token t_label = check(Tt::IDENTIFICADOR);
 
-      params = parsearFuncArgs();
+    std::string tag_name = "@" + t_label.lexema; // @simple
+    if (!existe_regla(tag_name)) {
+      throw std::runtime_error("Error: La regla '" + tag_name + "' no ha sido declarada en el bloque rules.");
 
-      check(Tt::PAREN_R);
     }
 
-    check(Tt::ASIG_BLOQUE);                     // <=>
-    std::unique_ptr<Sentencia> cuerpo = parsearBloque();      // { ... }
+    check(Tt::LLAVE_L);
 
-    check(Tt::PUNTO_COMA);                      // ;
+    while (peek().tipo !=  Tt::LLAVE_R && peek().tipo != Tt::FIN_ARCHIVO) {
+      ArcaneBranch rama_actual;
+      rama_actual.rule_tag = tag_name;
 
-    ArcaneBranch rama;
-    rama.br_key  = t_keyword.lexema;
-    rama.br_args = params;
-    rama.br_cont = std::move(cuerpo);
+      bool es_primer_segmento = true;
 
-    ramas.push_back(rama);
+      while (peek().tipo != Tt::PUNTO_COMA && peek().tipo != Tt::FIN_ARCHIVO) {
+        ArcaneSegment segmento;
+        segmento.br_key = check(Tt::IDENTIFICADOR).lexema; // 'inc' o 'boo'
+
+        if (peek().tipo == Tt::PAREN_L) {
+          get();
+          segmento.br_args = parsearFuncArgs();
+          check(Tt::PAREN_R);
+        }
+
+        if (es_primer_segmento) {
+            check(Tt::ASIG_BLOQUE); // <=>
+            es_primer_segmento = false;
+        }
+
+        segmento.br_cont = parsearBloque(); // { ... }
+
+        rama_actual.segmentos.push_back(std::move(segmento));
+      }
+
+      check(Tt::PUNTO_COMA);
+
+      ramas_totales.push_back(std::move(rama_actual));
+    }
+
+    check(Tt::LLAVE_R); // '}'
   }
 
-  return ramas;
+  return ramas_totales;
 }
 
 std::unique_ptr<Sentencia> Parser::parsearArcano() {

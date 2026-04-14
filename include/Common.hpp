@@ -515,23 +515,23 @@ public:
 
 // --- Manejo de Arcanos --- //
 
-struct ArcaneBranch {
+struct ArcaneSegment {
   std::string                                       br_key ;
   std::vector<std::pair<std::string, InfoVariable>> br_args;
   std::unique_ptr<Sentencia>                        br_cont;
 
-  ArcaneBranch() = default;
-  ArcaneBranch(ArcaneBranch&&) = default;
-  ArcaneBranch& operator=(ArcaneBranch&&) = default;
+  ArcaneSegment() = default;
+  ArcaneSegment(ArcaneSegment&&) = default;
+  ArcaneSegment& operator=(ArcaneSegment&&) = default;
 
-  ArcaneBranch(const ArcaneBranch& otra)
+  ArcaneSegment(const ArcaneSegment& otra)
     : br_key(otra.br_key), br_args(otra.br_args) {
     if (otra.br_cont) {
       br_cont = otra.br_cont->clonar();
     }
   }
 
-  ArcaneBranch& operator=(const ArcaneBranch& otra) {
+  ArcaneSegment& operator=(const ArcaneSegment& otra) {
     if (this != &otra) {
       br_key = otra.br_key;
       br_args = otra.br_args;
@@ -544,6 +544,14 @@ struct ArcaneBranch {
     }
     return *this;
   }
+
+};
+
+struct ArcaneBranch {
+  std::string rule_tag;
+  std::vector<ArcaneSegment> segmentos;
+
+  //...
 
 };
 

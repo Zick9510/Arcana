@@ -52,7 +52,9 @@ public:
 
   std::pair<std::string, ReglaArcano> parsearReglaArcano();
   std::vector<std::pair<std::string, ReglaArcano>> parsearReglasArcano();
-  std::vector<ArcaneBranch> parsearCuerpoArcano();
+  std::vector<ArcaneBranch> parsearCuerpoArcano(
+    const std::vector<std::pair<std::string, ReglaArcano>>& reglas_declaradas
+  );
   std::unique_ptr<Sentencia> parsearArcano();
   std::unique_ptr<Sentencia> parsearLlamadaArcano();
 
