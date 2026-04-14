@@ -147,13 +147,13 @@ void Lexer::leerNumero() {
       }
 
       if (actual() == '_' && peek() == '.') {
-        std::cout << "[151 lexer.cpp] _.\n";
+        std::cout << "[150 lexer.cpp] _.\n";
         //... Cant have a dot right after a _
       }
 
       if (actual() == '.') {
         if (peek() == '_') {
-          std::cout << "[157 lexer.cpp ._\n";
+          std::cout << "[156 lexer.cpp ._\n";
           //... Cant have a _ right after a dot
         }
 
@@ -458,6 +458,11 @@ std::vector<Token> Lexer::tokenize() {
       case '?': {
         if   (match('?')) { tokens.push_back( {Tt::DOS_PREGUNTAS, "??", linea} ); }
         else                   { tokens.push_back( {Tt::PREGUNTA     , "?" , linea} ); }
+        break;
+      }
+
+      case '@': {
+        tokens.push_back( {Tt::ARROBA, "@", linea} );
         break;
       }
     }

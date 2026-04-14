@@ -17,6 +17,7 @@
 #include <vector>
 #include <map>
 #include <filesystem>
+#include <set>
 #include <stacktrace>
 
 // --- LLVM --- //

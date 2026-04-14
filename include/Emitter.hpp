@@ -15,9 +15,11 @@ private:
   std::vector<llvm::BasicBlock*> pila_breaks   ;
   std::vector<llvm::BasicBlock*> pila_continues;
 
+  ContextoArcanos& contextoArcanos;
+
 public:
 
-  Emitter();
+  Emitter(ContextoArcanos& ca);
 
   void generarArchivoIR(const std::filesystem::path& nombreArchivo);
   llvm::Type* obtenerTipoLLVM(std::shared_ptr<ArcanaType> tipo);

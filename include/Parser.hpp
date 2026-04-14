@@ -9,9 +9,9 @@ private:
   std::vector<Token> tokens;
   unsigned long long pos;
   std::unordered_map<std::string, Tt> aliasLexicos;
-  std::unordered_map<std::string, DefinicionArcano> arcanosActivos;
 
-  TypeFactory& typeFactory;
+  ContextoArcanos& contextoArcanos;
+  TypeFactory&     typeFactory;
 
   Token resolverAlias(Token t);
   Token peek(size_t offset = 0);
@@ -21,7 +21,7 @@ private:
   Token coincide(std::initializer_list<Tt> tipos);
 
 public:
-  Parser(std::vector<Token> t, TypeFactory& tf);
+  Parser(std::vector<Token> t, ContextoArcanos& ca, TypeFactory& tf);
 
   InfoVariable parsearTipo();
 
@@ -46,14 +46,13 @@ public:
   std::unique_ptr<Sentencia> parsearBreak();
   std::unique_ptr<Sentencia> parsearContinue();
 
-
   std::unique_ptr<Sentencia> parsearReturn();
-  std::map<std::string, InfoVariable> parsearFuncArgs();
+  std::vector<std::pair<std::string, InfoVariable>> parsearFuncArgs();
   std::unique_ptr<Sentencia> parsearFuncDecl();
 
-  std::pair<std::string, Regla> parsearReglaArcano();
-  std::map<std::string, Regla> parsearReglasArcano();
-  std::map<std::string, std::unique_ptr<Sentencia>> parsearCuerpoArcano();
+  std::pair<std::string, ReglaArcano> parsearReglaArcano();
+  std::vector<std::pair<std::string, ReglaArcano>> parsearReglasArcano();
+  std::vector<ArcaneBranch> parsearCuerpoArcano();
   std::unique_ptr<Sentencia> parsearArcano();
   std::unique_ptr<Sentencia> parsearLlamadaArcano();
 

@@ -3,7 +3,8 @@
 #include "Common.hpp"
 #include "Emitter.hpp"
 
-Emitter::Emitter() {
+Emitter::Emitter(ContextoArcanos& ca)
+  : contextoArcanos(ca) {
   llvm_modulo  = std::make_unique<llvm::Module>("ArcanaModulo", llvm_ctx);
   llvm_builder = std::make_unique<llvm::IRBuilder<>>(llvm_ctx);
 }
@@ -71,6 +72,7 @@ void Emitter::visitar(ExprNumero* nodo) { //...
 }
 
 void Emitter::visitar(ExprVariable* nodo) {
+
   llvm::AllocaInst* alloca = nullptr;
   for (auto it = llvm_scopes.rbegin(); it != llvm_scopes.rend(); ++it) {
     if (it->count(nodo->nombre)) {

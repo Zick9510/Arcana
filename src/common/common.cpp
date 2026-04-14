@@ -11,7 +11,6 @@ std::string nombreTipo(Tt tipo) {
     case Tt::VAR: return "VAR";
     case Tt::IDENTIFICADOR: return "IDENTIFICADOR";
     case Tt::NUMERO: return "NUMERO";
-    case Tt::REGLAS: return "REGLAS";
 
     case Tt::ASIG_BLOQUE: return "ASIG_BLOQUE";
     case Tt::PUNTO_COMA: return "PUNTO_COMA";
@@ -31,7 +30,11 @@ std::string nombreTipo(Tt tipo) {
     case Tt::CORCH_L: return "CORCH_L";
     case Tt::CORCH_R: return "CORCH_R";
 
-    case Tt::ARCANO: return "ARCANO";
+    case Tt::ARCANE: return "ARCANE";
+    case Tt::RULES : return "REGLAS";
+    case Tt::KEY   : return "KEY"   ;
+    case Tt::EXPR  : return "EXPR"  ;
+    case Tt::CODE  : return "CODE"  ;
 
     default: return "DESCONOCIDO";
   }

@@ -93,7 +93,7 @@ enum class Tt {
 
   INCREMENTAR, DECREMENTAR,
 
-  ASTERISCO, AMPERSAND,
+  ASTERISCO, AMPERSAND, ARROBA,
 
   // Punteros y Direcciones
   PUNTERO, DIRECCION, SWAP,
@@ -131,8 +131,11 @@ enum class Tt {
   PAREN_L, PAREN_R,
   CORCH_L, CORCH_R,
 
-  ARCANO, ARCANITO,
-  COD, EXPR, KEY, REGLAS,
+  // Arcanos
+  ARCANE, ARCANITO,
+  CODE, EXPR, KEY, RULES,
+
+  // Escritura
   ESCRITURA,
 
   // Otros
@@ -294,11 +297,11 @@ inline std::map<std::string, Tt> keywords = {
 
   // --- Estructuras ---
   // Arcanos
-  {"arcano", Tt::ARCANO},
+  {"arcane"  , Tt::ARCANE  },
   {"arcanito", Tt::ARCANITO},
-  {"reglas", Tt::REGLAS},
+  {"rules"   , Tt::RULES   },
 
-  {"code", Tt::COD },
+  {"code", Tt::CODE},
   {"expr", Tt::EXPR},
   {"key" , Tt::KEY },
 
@@ -327,7 +330,6 @@ inline std::map<std::string, Tt> keywords = {
 
 };
 
-/* --- Arcanos --- */
 struct DatosPesados;
 
 using ValorVar = std::variant <
@@ -347,16 +349,36 @@ struct DatosPesados {
   std::vector<uint64_t> valor_pesado;
 };
 
+/* --- Arcanos --- */
+
+struct InfoVariable {
+  Dt tipo;
+  bool es_const = false;
+};
+
 enum class TPA { NULO, CODE, EXPR, KEY };
+
+struct ReglaArcano {
+
+  std::string keyword;
+  std::vector<std::pair<Token, uint8_t>> componentes;
+  std::vector<std::pair<std::string, InfoVariable>> argumentos;
+
+  /*
+   * Propiedades:
+   *
+   * 0b00 = 0 o más veces
+   * 0b01 = 1 o más veces
+   * 0b10 = 0 o 1 vez
+   * 0b11 = Exactamente 1 vez
+   *
+   * */
+
+};
 
 struct ParteArcano {
   std::string contenido;
   TPA tipo_dato;
-};
-
-struct DefinicionArcano {
-  std::string keyword;
-  std::vector<ParteArcano> esqueleto;
 };
 
 // Auxiliares para manejar tipos
@@ -367,10 +389,7 @@ bool esInfiere(Tt);
 bool esTipoComp(Tt);
 bool esTipo(Tt);
 
-struct InfoVariable {
-  Dt tipo;
-  bool es_const = false;
-};
+
 
 // Declaraciones previas
 class ExprNumero;
@@ -451,6 +470,7 @@ public:
 
   virtual void visitar(SentenciaArcano* nodo)        = 0;
   virtual void visitar(SentenciaLlamadaArcano* nodo) = 0;
+
 };
 
 /* --- AST --- */
@@ -459,6 +479,21 @@ public:
   virtual ~NodoAST() = default;
   virtual void imprimir(int nivel = 0) const = 0;
   virtual void accept(ASTVisitor* visitor) = 0;
+
+};
+
+template <typename Base, typename Derived>
+class NodoBase : public Base {
+public:
+
+  void accept(ASTVisitor* visitor) override {
+    visitor->visitar(static_cast<Derived*>(this));
+  }
+
+  std::unique_ptr<Base> clonar() const override {
+    return std::make_unique<Derived>(static_cast<const Derived&>(*this));
+  }
+
 };
 
 // Subclases principales
@@ -467,15 +502,122 @@ public:
   Dt tipo_resuelto;
   int linea;
 
-  virtual void accept(ASTVisitor* visitor) = 0;
+  //virtual void accept(ASTVisitor* visitor) = 0;
+  virtual std::unique_ptr<Expresion> clonar() const = 0;
+
 };
 
-class Sentencia : public NodoAST {};
+class Sentencia : public NodoAST {
+public:
+  virtual std::unique_ptr<Sentencia> clonar() const = 0;
+
+};
+
+// --- Manejo de Arcanos --- //
+
+struct ArcaneBranch {
+  std::string                                       br_key ;
+  std::vector<std::pair<std::string, InfoVariable>> br_args;
+  std::unique_ptr<Sentencia>                        br_cont;
+
+  ArcaneBranch() = default;
+  ArcaneBranch(ArcaneBranch&&) = default;
+  ArcaneBranch& operator=(ArcaneBranch&&) = default;
+
+  ArcaneBranch(const ArcaneBranch& otra)
+    : br_key(otra.br_key), br_args(otra.br_args) {
+    if (otra.br_cont) {
+      br_cont = otra.br_cont->clonar();
+    }
+  }
+
+  ArcaneBranch& operator=(const ArcaneBranch& otra) {
+    if (this != &otra) {
+      br_key = otra.br_key;
+      br_args = otra.br_args;
+
+      if (otra.br_cont) {
+        br_cont = otra.br_cont->clonar();
+      } else {
+        br_cont = nullptr;
+      }
+    }
+    return *this;
+  }
+
+};
+
+struct ArcaneDef {
+  std::string name;
+
+  std::vector<ParteArcano>  args    ;
+  std::vector<ReglaArcano>  rules   ;
+  std::vector<ArcaneBranch> branches;
+
+  ArcaneDef() = default;
+  ArcaneDef(ArcaneDef&&) = default;
+  ArcaneDef& operator=(ArcaneDef&&) = default;
+
+  ArcaneDef(const ArcaneDef& otra)
+    : name(otra.name), args(otra.args), rules(otra.rules), branches(otra.branches) {}
+
+  ArcaneDef& operator=(const ArcaneDef& otra) {
+
+    if (this != &otra) {
+      name = otra.name;
+      args = otra.args;
+      rules = otra.rules;
+      branches = otra.branches;
+
+    }
+
+    return *this;
+
+  }
+
+};
+
+class ContextoArcanos { //...
+private:
+  std::unordered_map<std::string, ArcaneDef> activos;
+  std::unordered_map<std::string, ReglaArcano> reglas;
+  std::unordered_map<std::string, std::unique_ptr<Sentencia>> ramas;
+
+public:
+  void registrarDefinicion(const std::string& nombre, const ArcaneDef def) {
+    activos[nombre] = std::move(def);
+  }
+
+  void registrarRegla(const std::string& nombre, const ReglaArcano& regla) {
+    reglas[nombre] = regla;
+  }
+
+  void registrarRama(const std::string& nombre, const std::unique_ptr<Sentencia>& rama) {
+    ramas[nombre] = rama->clonar();
+  }
+
+  bool existeRegla(const std::string& nombre) const {
+    return reglas.count(nombre) > 0;
+  }
+
+  ReglaArcano obtenerRegla(const std::string& nombre) {
+    return reglas.at(nombre);
+  }
+
+};
 
 // Bloque
-class Bloque : public Sentencia {
+class Bloque : public NodoBase<Sentencia, Bloque> {
 public:
   std::vector<std::unique_ptr<Sentencia>> instrucciones;
+
+  Bloque() = default;
+
+  Bloque(const Bloque& otra) {
+    for (const auto& inst : otra.instrucciones) {
+      instrucciones.push_back(inst->clonar());
+    }
+  }
 
   void agregarSentencia(std::unique_ptr<Sentencia> sent) {
     instrucciones.push_back(std::move(sent));
@@ -491,15 +633,12 @@ public:
     std::cout << "| " << sangria << "}\n";
   }
 
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
 };
 
 // - Nodos -
 
 // Expresiones
-class ExprNumero : public Expresion {
+class ExprNumero : public NodoBase<Expresion, ExprNumero> {
 public:
   std::string valor;
   std::string sufijo;
@@ -513,12 +652,9 @@ public:
     std::cout << sangria << "+- " << valor << sufijo << " [" << tipo_resuelto.tipoString() << "]\n";
   }
 
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
 };
 
-class ExprVariable : public Expresion {
+class ExprVariable : public NodoBase<Expresion, ExprVariable> {
 public:
   std::string nombre;
 
@@ -540,17 +676,26 @@ public:
     std::cout << "]\n";
   }
 
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
 };
 
-class ExprArray : public Expresion {
+class ExprArray : public NodoBase<Expresion, ExprArray> {
 public:
   std::vector<std::unique_ptr<Expresion>> elementos;
 
   ExprArray(std::vector<std::unique_ptr<Expresion>> elem)
     : elementos(std::move(elem)) {}
+
+  ExprArray(const ExprArray& otra) {
+    elementos.reserve(otra.elementos.size());
+
+    for (const auto& e : otra.elementos) {
+      elementos.push_back(e->clonar());
+    }
+
+    this->tipo_resuelto = otra.tipo_resuelto;
+    this->linea         = otra.linea        ;
+
+  }
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
@@ -561,13 +706,9 @@ public:
     }
   }
 
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
-
 };
 
-class ExprUnaria : public Expresion {
+class ExprUnaria : public NodoBase<Expresion, ExprUnaria> {
 public:
   TipoOperador operador;
   std::unique_ptr<Expresion> operando;
@@ -576,6 +717,14 @@ public:
   ExprUnaria(TipoOperador op, std::unique_ptr<Expresion> arg, bool pref)
     : operador(op), operando(std::move(arg)), es_prefijo(pref) {}
 
+  ExprUnaria(const ExprUnaria& otra)
+    : operador(otra.operador), operando(otra.operando->clonar()), es_prefijo(otra.es_prefijo) {
+
+    this->tipo_resuelto = otra.tipo_resuelto;
+    this->linea         = otra.linea        ;
+
+  }
+
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
@@ -583,12 +732,9 @@ public:
     operando->imprimir(nivel + 1);
   }
 
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
 };
 
-class ExprBinaria : public Expresion {
+class ExprBinaria : public NodoBase<Expresion, ExprBinaria> {
 public:
   TipoOperador operador;
   std::unique_ptr<Expresion> izquierda;
@@ -596,6 +742,16 @@ public:
 
   ExprBinaria(TipoOperador op, std::unique_ptr<Expresion> izq, std::unique_ptr<Expresion> der)
     : operador(op), izquierda(std::move(izq)), derecha(std::move(der)) {}
+
+  ExprBinaria(const ExprBinaria& otra)
+    : operador (otra.operador),
+      izquierda(otra.izquierda->clonar()),
+      derecha  (otra.derecha  ->clonar()) {
+
+    this->tipo_resuelto = otra.tipo_resuelto;
+    this->linea         = otra.linea        ;
+
+  }
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
@@ -605,12 +761,9 @@ public:
     derecha->imprimir(nivel + 1);
   }
 
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
 };
 
-class ExprCasteo : public Expresion {
+class ExprCasteo : public NodoBase<Expresion, ExprCasteo> {
 public:
   std::unique_ptr<Expresion> expresion;
   Dt tipo_casteo;
@@ -618,19 +771,23 @@ public:
   ExprCasteo(std::unique_ptr<Expresion> e, Dt t_c)
     : expresion(std::move(e)), tipo_casteo(t_c) {}
 
+  ExprCasteo(const ExprCasteo& otra)
+    : expresion(otra.expresion->clonar()), tipo_casteo(otra.tipo_casteo) {
+
+    this->tipo_resuelto = otra.tipo_resuelto;
+    this->linea         = otra.linea        ;
+
+  }
+
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
     std::cout << sangria << "+- Cast (" << tipo_casteo.tipoString() << ")\n";
   }
 
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
-
 };
 
-class ExprRango : public Expresion {
+class ExprRango : public NodoBase<Expresion, ExprRango> {
   public:
     std::unique_ptr<Expresion> inicio;
     std::unique_ptr<Expresion> fin;
@@ -640,52 +797,51 @@ class ExprRango : public Expresion {
               std::unique_ptr<Expresion> f,
               std::unique_ptr<Expresion> p
               )
-    : inicio(std::move(i)), fin(std::move(f)), paso(std::move(p)) {}
+      : inicio(std::move(i)), fin(std::move(f)), paso(std::move(p)) {}
+
+    ExprRango(const ExprRango& otra)
+      : inicio(otra.inicio ? otra.inicio->clonar() : nullptr),
+        fin   (otra.fin    ? otra.fin   ->clonar() : nullptr),
+        paso  (otra.paso   ? otra.paso  ->clonar() : nullptr) {
+
+      this->tipo_resuelto = otra.tipo_resuelto;
+      this->linea         = otra.linea        ;
+
+    }
 
     void imprimir(int nivel = 0) const override {
       std::string sangria = "";
       for (int i = 0; i < nivel; ++i) { sangria += "| "; }
       std::cout << sangria << "+- Op (Slice)\n";
 
-      if (inicio) {
-        inicio->imprimir(nivel + 1);
+      if   (inicio) { inicio->imprimir(nivel + 1); }
+      else          { std::cout << sangria << "| +-\n"  ; }
 
-      } else {
-        std::cout << sangria << "| +-\n";
+      if   (fin   ) { fin   ->imprimir(nivel + 1); }
+      else          { std::cout << sangria << "| +-\n"  ; }
 
-      }
-
-      if (fin   ) {
-        fin->imprimir(nivel + 1);
-
-      } else {
-        std::cout << sangria << "| +-\n";
-
-      }
-
-      if (paso  ) {
-        paso->imprimir(nivel + 1);
-
-      } else {
-
-        std::cout << sangria << "| +-\n";
-
-      }
+      if   (paso  ) { paso  ->imprimir(nivel + 1); }
+      else          { std::cout << sangria << "| +-\n"  ; }
 
     }
 
-    void accept(ASTVisitor* visitor) override {
-      visitor->visitar(this);
-    }
 };
 
-class ExprAcceso : public Expresion {
+class ExprAcceso : public NodoBase<Expresion, ExprAcceso> {
 public:
   std::unique_ptr<Expresion> contenedor;
   std::unique_ptr<Expresion> rango;
 
   ExprAcceso(std::unique_ptr<Expresion> cont, std::unique_ptr<Expresion> idxs)
     : contenedor(std::move(cont)), rango(std::move(idxs)) {}
+
+  ExprAcceso(const ExprAcceso& otra)
+    : contenedor(otra.contenedor->clonar()), rango(otra.rango->clonar()) {
+
+      this->tipo_resuelto = otra.tipo_resuelto;
+      this->linea         = otra.linea        ;
+
+  }
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
@@ -695,21 +851,33 @@ public:
     rango->imprimir(nivel + 1);
   }
 
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
 };
 
-class ExprLlamadaArcano : public Expresion {
+class ExprLlamadaArcano : public NodoBase<Expresion, ExprLlamadaArcano> {
 public:
   std::string nombre;
   std::vector<std::unique_ptr<Expresion>> args_expr;
   std::vector<std::unique_ptr<Bloque>> args_bloque;
 
   ExprLlamadaArcano(std::string n) : nombre(std::move(n)) {}
+
+  ExprLlamadaArcano(const ExprLlamadaArcano& otra)
+    : nombre(otra.nombre) {
+    for (const auto& e : otra.args_expr  ) { args_expr.push_back(e->clonar()); }
+    for (const auto& b    : otra.args_bloque) {
+      args_bloque.push_back(std::unique_ptr<Bloque>(static_cast<Bloque*>(b->clonar().release())));
+    }
+
+    this->tipo_resuelto = otra.tipo_resuelto;
+    this->linea         = otra.linea        ;
+
+  }
+
+  void imprimir(int nivel = 0) const override {}
+
 };
 
-class ExprFuncCall : public Expresion {
+class ExprFuncCall : public NodoBase<Expresion, ExprFuncCall> {
 public:
   std::unique_ptr<Expresion> callee;
   std::vector<std::pair<std::string, std::unique_ptr<Expresion>>> argumentos;
@@ -717,6 +885,18 @@ public:
   ExprFuncCall(std::unique_ptr<Expresion> c,
                std::vector<std::pair<std::string, std::unique_ptr<Expresion>>> a)
   : callee(std::move(c)), argumentos(std::move(a)) {}
+
+  ExprFuncCall(const ExprFuncCall& otra)
+    : callee(otra.callee->clonar()) {
+
+    for (const auto& par : otra.argumentos) {
+      argumentos.push_back({par.first, par.second->clonar()});
+    }
+
+    this->tipo_resuelto = otra.tipo_resuelto;
+    this->linea         = otra.linea        ;
+
+  }
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
@@ -730,14 +910,10 @@ public:
     }
   }
 
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
-
 };
 
 // Sentencias
-class SentenciaVar : public Sentencia {
+class SentenciaVar : public NodoBase<Sentencia, SentenciaVar> {
 public:
   std::string nombre;
   InfoVariable tipo_explicito;
@@ -745,6 +921,10 @@ public:
 
   SentenciaVar(std::string nom, InfoVariable tipo, std::unique_ptr<Expresion> val)
     : nombre(nom), tipo_explicito(tipo), valor_inicial(std::move(val)) {}
+
+  SentenciaVar(const SentenciaVar& otra)
+    : nombre(otra.nombre), tipo_explicito(otra.tipo_explicito),
+      valor_inicial(otra.valor_inicial ? otra.valor_inicial->clonar() : nullptr) {}
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
@@ -762,16 +942,17 @@ public:
     }
   }
 
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
 };
 
-class SentenciaExpr : public Sentencia {
+class SentenciaExpr : public NodoBase<Sentencia, SentenciaExpr> {
 public:
   std::unique_ptr<Expresion> expresion;
+
   SentenciaExpr(std::unique_ptr<Expresion> expr)
     : expresion(std::move(expr)) {}
+
+  SentenciaExpr(const SentenciaExpr& otra)
+    : expresion(otra.expresion->clonar()) {}
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
@@ -780,18 +961,18 @@ public:
     expresion->imprimir(nivel + 1);
   }
 
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
 };
 
-class SentenciaAsignacion : public Sentencia {
+class SentenciaAsignacion : public NodoBase<Sentencia, SentenciaAsignacion> {
 public:
   std::unique_ptr<Expresion> izquierda;
   std::unique_ptr<Expresion> derecha;
 
   SentenciaAsignacion(std::unique_ptr<Expresion> izq, std::unique_ptr<Expresion> val)
     : izquierda(std::move(izq)), derecha(std::move(val)) {}
+
+  SentenciaAsignacion(const SentenciaAsignacion& otra)
+    : izquierda(otra.izquierda->clonar()), derecha(otra.izquierda->clonar()) {}
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
@@ -801,12 +982,9 @@ public:
     derecha->imprimir(nivel + 1);
   }
 
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
 };
 
-class SentenciaSi : public Sentencia {
+class SentenciaSi : public NodoBase<Sentencia, SentenciaSi> {
 public:
   std::unique_ptr<Expresion> condicion;
   std::unique_ptr<Sentencia> rama_si;
@@ -816,6 +994,11 @@ public:
               std::unique_ptr<Sentencia> si,
               std::unique_ptr<Sentencia> no)
     : condicion(std::move(cond)), rama_si(std::move(si)), rama_sino(std::move(no)) {}
+
+  SentenciaSi(const SentenciaSi& otra)
+    : condicion (otra.condicion->clonar()),
+      rama_si   (otra.rama_si  ->clonar()),
+      rama_sino (otra.rama_sino ? otra.rama_sino->clonar() : nullptr) {}
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
@@ -827,24 +1010,20 @@ public:
     std::cout << sangria << "| +- Entonces:\n";
     rama_si->imprimir(nivel + 1);
 
-    if (rama_sino) {
-      rama_sino->imprimir(nivel);
-
-    }
-
+    if (rama_sino) { rama_sino->imprimir(nivel); }
   }
 
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
 };
 
-class SentenciaSino : public Sentencia {
+class SentenciaSino : public NodoBase<Sentencia, SentenciaSino> {
 public:
   std::unique_ptr<Sentencia> cuerpo;
 
   SentenciaSino(std::unique_ptr<Sentencia> c)
     : cuerpo(std::move(c)) {}
+
+  SentenciaSino(const SentenciaSino& otra)
+    : cuerpo(otra.cuerpo->clonar()) {}
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
@@ -853,21 +1032,25 @@ public:
     cuerpo->imprimir(nivel + 1);
   }
 
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
 };
 
-class SentenciaMientras : public Sentencia {
+class SentenciaMientras : public NodoBase<Sentencia, SentenciaMientras> {
 public:
   std::unique_ptr<Expresion> condicion;
   std::unique_ptr<Sentencia> rama_while;
   std::unique_ptr<Sentencia> rama_sino;
+
   SentenciaMientras(
       std::unique_ptr<Expresion> cond,
       std::unique_ptr<Sentencia> r_while,
       std::unique_ptr<Sentencia> r_sino
   ) : condicion(std::move(cond)), rama_while(std::move(r_while)), rama_sino(std::move(r_sino)) {}
+
+  SentenciaMientras(const SentenciaMientras& otra)
+    : condicion  (otra.condicion->clonar()),
+      rama_while (otra.rama_while  ->clonar()),
+      rama_sino  (otra.rama_sino ? otra.rama_sino->clonar() : nullptr) {}
+
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
@@ -883,12 +1066,9 @@ public:
     }
   }
 
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
 };
 
-class SentenciaBreak : public Sentencia {
+class SentenciaBreak : public NodoBase<Sentencia, SentenciaBreak> {
 public:
   int linea;
 
@@ -901,12 +1081,9 @@ public:
     std::cout << sangria << "Break\n";
   }
 
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
 };
 
-class SentenciaContinue : public Sentencia {
+class SentenciaContinue : public NodoBase<Sentencia, SentenciaContinue> {
 public:
   int linea;
 
@@ -919,18 +1096,20 @@ public:
     std::cout << sangria << "Continue\n";
   }
 
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
 };
 
-class SentenciaReturn : public Sentencia {
+class SentenciaReturn : public NodoBase<Sentencia, SentenciaReturn> {
 public:
   Dt ret_type;
   std::unique_ptr<Expresion> ret_value;
 
   SentenciaReturn(Dt r, std::unique_ptr<Expresion> v)
     : ret_type(r), ret_value(std::move(v)) {}
+
+  SentenciaReturn(const SentenciaReturn& otra)
+    : ret_type(otra.ret_type),
+      ret_value(otra.ret_value ? otra.ret_value->clonar() : nullptr) {
+  }
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
@@ -940,26 +1119,29 @@ public:
 
   }
 
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
-
 };
 
-class SentenciaFuncDecl : public Sentencia {
+class SentenciaFuncDecl : public NodoBase<Sentencia, SentenciaFuncDecl> {
 public:
   std::string nombre_func;
   bool es_pure;
-  std::map<std::string, InfoVariable> args_type; //... Replace this with std::vector
+  std::vector<std::pair<std::string, InfoVariable>> args_type;
   std::unique_ptr<Sentencia> cuerpo_func;
   InfoVariable ret_type;
 
   SentenciaFuncDecl(std::string n,
                     bool pure,
-                    std::map<std::string, InfoVariable> a,
+                    std::vector<std::pair<std::string, InfoVariable>> a,
                     std::unique_ptr<Sentencia> c,
                     InfoVariable r)
   : nombre_func(n), es_pure(pure), args_type(a), cuerpo_func(std::move(c)), ret_type(r) {}
+
+  SentenciaFuncDecl(const SentenciaFuncDecl& otra)
+    : nombre_func(otra.nombre_func),
+      es_pure(otra.es_pure),
+      args_type(otra.args_type),
+      cuerpo_func(otra.cuerpo_func->clonar()),
+      ret_type(otra.ret_type) {}
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
@@ -987,19 +1169,18 @@ public:
 
   }
 
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
-
 };
 
-class SentenciaEscritura : public Sentencia {
+class SentenciaEscritura : public NodoBase<Sentencia, SentenciaEscritura> {
 public:
   std::string alias;
   Tt original;
 
   SentenciaEscritura(std::string a, Tt o)
     : alias(std::move(a)), original(o) {}
+
+  SentenciaEscritura(const SentenciaEscritura& otra)
+    : alias(otra.alias), original(otra.original) {}
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
@@ -1008,55 +1189,64 @@ public:
     std::cout << sangria << "| +- " << alias << "\n";
   }
 
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
 };
 
-class SentenciaArcano : public Sentencia {
+class SentenciaArcano : public NodoBase<Sentencia, SentenciaArcano> {
 public:
-  std::string nombre;
-  DefinicionArcano esqueleto;
-  std::map<std::string, std::unique_ptr<Sentencia>> ramas; // Keywords contextuales
+  ArcaneDef def;
 
-  //... Reglas
   //... Arcanitos
 
-  SentenciaArcano(std::string n, DefinicionArcano e,
-                  std::map<std::string, std::unique_ptr<Sentencia>> r)
-    : nombre(std::move(n)), esqueleto(std::move(e)), ramas(std::move(r)) {}
+  SentenciaArcano(ArcaneDef d)
+    : def(std::move(d)) {}
+
+  SentenciaArcano(const SentenciaArcano& otra) {
+
+    def.name  = otra.def.name ;
+    def.args  = otra.def.args ;
+    def.rules = otra.def.rules;
+
+    def.branches.reserve(otra.def.branches.size());
+
+    def.branches = otra.def.branches;
+
+  }
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
 
-    std::cout << sangria << "+- Arcano: " << nombre << "\n";
+    std::cout << sangria << "+- Arcane: " << def.name << "\n";
  
     // --- Sección 1: Interfaz / Esqueleto ---
     std::cout << sangria << "| [ Interfaz ]\n";
-    for (const auto& parte : esqueleto.esqueleto) {
+    for (const auto& arg : def.args) {
         std::cout << sangria << "|   +- ";
-        std::string t_str = (parte.tipo_dato == TPA::CODE ? "code" :
-                             parte.tipo_dato == TPA::EXPR ? "expr" :
-                             parte.tipo_dato == TPA::KEY  ? "key"  : "unknown");
-        std::cout << parte.contenido << " <" << t_str << ">";
+        std::string t_str = (arg.tipo_dato == TPA::CODE ? "code" :
+                             arg.tipo_dato == TPA::EXPR ? "expr" :
+                             arg.tipo_dato == TPA::KEY  ? "key"  : "unknown");
+        std::cout << arg.contenido << " <" << t_str << ">";
         std::cout << "\n";
     }
     std::cout << "\n";
 
     // --- Sección 2: Cuerpo / Ramas ---
     std::cout << sangria << "| [ Implementación ]\n";
-    for (const auto& par : ramas) {
-        std::cout << sangria << "|   +- Rama contextual: '" << par.first << "'\n";
-        if (par.second) {
-            par.second->imprimir(nivel + 1);
-        }
+    for (const auto& branch : def.branches) {
+      std::cout << sangria << "|   +- Rama contextual: '" << branch.br_key << " (| ";
+
+      for (const auto& type : branch.br_args) {
+        std::cout << type.second.tipo.tipoString() << ' ';
+        std::cout << type.first << " |";
+      }
+
+      std::cout << ")\n";
+
+      branch.br_cont->imprimir(nivel + 1);
+
     }
   }
 
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
 };
 
 class SentenciaLlamadaArcano : public Sentencia {
@@ -1080,25 +1270,6 @@ public:
       }
     }
   }
-
-  void accept(ASTVisitor* visitor) override {
-    visitor->visitar(this);
-  }
-};
-
-struct Regla {
-
-  std::vector<Token> componentes;
-  uint8_t propiedades;
-  /*
-   * Propiedades:
-   *
-   * 0b00 = 0 o más veces
-   * 0b01 = 1 o más veces
-   * 0b10 = 0 o 1 veces
-   * 0b11 = Exactamente 1 vez
-   *
-   * */
 
 };
 

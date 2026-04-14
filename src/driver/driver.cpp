@@ -28,9 +28,18 @@ bool Driver::compile(const CompilerConfig& config) {
   Lexer lexer(*source);
   std::vector<Token> tokens = lexer.tokenize();
 
+  //... Debug
+  std::cout << "\n --- TOKENS --- \n\n";
+  for (const auto& t : tokens) {
+    std::cout << "< Token: '" << t.lexema << "' | "
+              << "L: " << t.linea
+              << " >\n";
+  }
+
   // 4. Syntactic Analysis (Tokens -> AST)
   TypeFactory factory;
-  Parser parser(tokens, factory);
+  ContextoArcanos contexto_arcanos;
+  Parser parser(tokens, contexto_arcanos, factory);
   std::vector<std::unique_ptr<Sentencia>> ast = std::move(parser.parsearPrograma());
 
   // 5. Semántic Analysis (AST Check)
@@ -46,7 +55,7 @@ bool Driver::compile(const CompilerConfig& config) {
   }
 
   // 6. Generación de Código (AST Check -> Source)
-  Emitter emitter;
+  Emitter emitter(contexto_arcanos);
   for (auto& nodo : ast) {
     nodo->accept(&emitter);
   }
@@ -59,13 +68,6 @@ bool Driver::compile(const CompilerConfig& config) {
   emitter.generarArchivoIR(output_name.value());
 
   //... Debug
-  //std::cout << "\n --- TOKENS --- \n\n";
-  //for (const auto& t : tokens) {
-  //  std::cout << "< Token: '" << t.lexema << "' | "
-  //            << "L: " << t.linea
-  //            << " >\n";
-  //}
-
   std::cout << "\n --- ARBOL DE SINTAXIS ABSTRACTA (AST) ---\n\n";
   for (const auto& nodo : ast) {
     if (nodo) { nodo->imprimir(); }
