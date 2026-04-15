@@ -13,82 +13,64 @@ Arcana is currently in a heavy development phase. The core Lexer and Parser are 
 and the Semantic Checker is currently being implemented. **Not suitable for production use.**
 
 ## The Philosophy
-Most languages force you to wait for a committee to add a new feature. Arcana gives you the **"Arcano"** system:
+Most languages force you to wait for a committee to add a new feature. Arcana gives you the **Arcane** system:
 a way to expand the compiler's Abstract Syntax Tree (AST) directly from your source code.
 
 ### Side-Effect Clarity: Strict visual separation between code blocks '{}' (actions) and expressions '()' (values).
-#### Note: An expression can change and/or assign the value of a variable (e.g., i++, (j = 2), etc. )
+#### Note: An expression can change and/or assign the value of a variable (e.g., ++i, (j = 2), etc. )
 
-
-## Note: Not implemented, subject to changes
-### Example: The Arcano System
+### Example: The Arcane System
 
 ```arc
-arcano Maybe(maybe: key, name: string, code: code) {
+arcane Test (twice: key, twice_if: key, expr1: expr, block1: code) {
 
-  rules {
-    maybe [ name? { code } ] // After the 'maybe' keyword, the syntax
-                             // might have a string and then a block of code
-  };
+    rules [
+        @simple: twice [ block1 ];
+        @eval  : twice [ expr1 block1 ];
+    ];
 
-  maybe <=> {
-    if (random() > 0.5) {
-      code;
+    @simple {
+        twice () <=> {
+            block1;
+            block1;
+        };
+
+   }
+
+   @eval {
+        twice_if (int a) <=> { 
+			if (a) {
+				block1;
+				block1;
+            }
+        };
     }
-  };
 }
 
-// Use:
-maybe "Hi" { // Not 100% certain it will execute the following block
-  print(1 + 2);
-  print(2 + 3);
+func main() -> int {
+
+	int x = 1;
+	int y = 2;
+	int z = 3;
+
+	twice {
+		x = x + 3;
+	}
+
+	twice_if (1) {
+		y = y + 3;
+	}
+
+	twice_if (0) {
+		z = z + 3;
+	}
+
+	// x = 7
+	// y = 8
+	// z = 3
+
+	return x + y + z;
 }
-
-maybe {
-  print(2 */ 3); // 2 ** (1 / 3)
-}
-```
-
-### Example: The Spell System
-```arc
-spell AddOne([#]: prefix, expr1: expr) {
-	rules {
-		[[#] expr1]
-	};
-	
-	[#] <=> {
-		return (expr1 + 1);
-	};
-
-
-}
-
-// Use:
-
-var a = #4;  // a = 5
-
-spell NullCheckOp(expr1: expr, [??]: op, expr2: expr) {
-	rules { // Binary Operator
-		[expr1 [??] expr2]
-	
-	};
-	
-	[??] <=> {
-		if (expr1 != null) {
-			return expr1;
-		} else {
-			return expr2;
-		}
-	
-	};
-
-}
-
-// Use:
-null  ?? true; // Will return true
-false ?? true; // false
-false ?? null; // false
-
 ```
 
 ## Contact:
