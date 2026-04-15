@@ -86,7 +86,13 @@ void Emitter::visitar(ExprVariable* nodo) {
     }
   }
 
-  llvm::Type* tipoLLVM = obtenerTipoLLVM(nodo->tipo_resuelto.valor);
+  if (!alloca) {
+    std::cerr << "Error: Variable '" << nodo->nombre << "' no encontrada.\n";
+    return;
+  }
+
+  //llvm::Type* tipoLLVM = obtenerTipoLLVM(nodo->tipo_resuelto.valor);
+  llvm::Type* tipoLLVM = alloca->getAllocatedType();
 
   llvm_valor = llvm_builder->CreateLoad(tipoLLVM, alloca, nodo->nombre + "_val");
 
@@ -431,7 +437,7 @@ void Emitter::visitar(SentenciaArcano* nodo) {
 
 }
 
-void Emitter::visitar(SentenciaLlamadaArcano* nodo) {
+void Emitter::visitar(SentenciaLlamadaArcano* nodo) { //...
   ArcaneDef& def = contextoArcanos.buscarDefinicionPorKeyword(nodo->nombre);
 
   ArcaneBranch* rama_elegida = nullptr;
@@ -439,10 +445,10 @@ void Emitter::visitar(SentenciaLlamadaArcano* nodo) {
   for (auto& branch : def.branches) {
     if (branch.segmentos[0].br_key == nodo->nombre) {
 
-      //... (por simplicidad, asumiendo un solo segmento 'inc' por ahora)
+      //... (por simplicidad, asumiendo un solo segmento por ahora)
       size_t params_esperados = branch.segmentos[0].br_args.size();
 
-      // Contamos cuántos argumentos convencionales PASÓ
+      // Contamos cuántos argumentos convencionales hay
       // (descontando los bloques de código)
       size_t args_pasados = 0;
       for (auto const& [nom, ast] : nodo->argumentos) {
@@ -464,18 +470,19 @@ void Emitter::visitar(SentenciaLlamadaArcano* nodo) {
   }
 
   if (!rama_elegida) {
-    std::cerr << "Error: No se pudo resolver la rama a emitir para el Arcano '" << nodo->nombre << '\n';
+    std::cerr << "Error: No se pudo resolver la rama a emitir para el Arcano '" << nodo->nombre << ".\n";
     return ;
   }
 
   llvm_scopes.push_back(std::map<std::string, llvm::AllocaInst*>());
-
   auto backup_bloques = bloques_arcano_activos;
+
 
   for (const auto& [nombre_arg, ast_arg] : nodo->argumentos) {
     if (!ast_arg) { continue; }
 
     bool es_codigo = false;
+
     for (const auto& arg_def : def.args) {
       if (arg_def.contenido == nombre_arg && arg_def.tipo_dato == TPA::CODE) {
         es_codigo = true;
@@ -485,14 +492,15 @@ void Emitter::visitar(SentenciaLlamadaArcano* nodo) {
 
     if (es_codigo) {
       bloques_arcano_activos[nombre_arg] = ast_arg.get();
+
     } else {
       ast_arg->accept(this);
       llvm::Value* valor_arg = llvm_valor;
 
       llvm::AllocaInst* alloca = llvm_builder->CreateAlloca(valor_arg->getType(), nullptr, nombre_arg);
       llvm_builder->CreateStore(valor_arg, alloca);
-
       llvm_scopes.back()[nombre_arg] = alloca;
+
     }
   }
 

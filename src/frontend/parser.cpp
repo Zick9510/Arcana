@@ -943,138 +943,69 @@ std::unique_ptr<Sentencia> Parser::parsearArcano() {
 
 }
 
-//std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() {
-//  Token t_trigger = check(Tt::IDENTIFICADOR);
-//  std::string key = t_trigger.lexema;
-//
-//  ArcaneDef& def = contextoArcanos.buscarDefinicionPorKeyword(key);
-//
-//  std::vector<std::unique_ptr<Expresion>> args_llamada;
-//
-//  if (peek().tipo == Tt::PAREN_L) {
-//    get();
-//    while (peek().tipo != Tt::PAREN_R && peek().tipo != Tt::FIN_ARCHIVO) {
-//      args_llamada.push_back(parsearExpresion(Pr::MINIMA));
-//      if (peek().tipo == Tt::COMA) { get(); }
-//
-//    }
-//    check(Tt::PAREN_R);
-//
-//  }
-//
-//  ArcaneBranch* rama = nullptr;
-//  for (auto& branch : def.branches) {
-//    auto& primer_seg = branch.segmentos[0];
-//    if (primer_seg.br_key == key && primer_seg.br_args.size() == args_llamada.size()) { //... Comprobar tipos estricto
-//      rama = &branch;
-//      break;
-//    }
-//  }
-//
-//  if (!rama) {
-//    throw std::runtime_error("Error: No se encontró firma para '" + key + "' con tales argumentos.");
-//  }
-//
-//  auto nodo_llamada = std::make_unique<SentenciaLlamadaArcano>(def.name, rama->rule_tag);
-//  nodo_llamada->argumentos_iniciales = std::move(args_llamada);
-//
-//  for (size_t i = 0; i < rama->segmentos.size(); ++i) {
-//    auto& seg = rama->segmentos[i];
-//
-//    if (i > 0) {
-//      check(Tt::IDENTIFICADOR);
-//      if (peek().tipo == Tt::PAREN_L) {
-//        get();
-//        //... Parsear argumentos
-//        check(Tt::PAREN_R);
-//      }
-//    }
-//
-//    std::unique_ptr<Sentencia> bloque = parsearBloque();
-//    nodo_llamada->bloques.push_back(std::move(bloque));
-//
-//  }
-//
-//  if (peek().tipo == Tt::PUNTO_COMA) { get(); }
-//
-//  return nodo_llamada;
-//
-//}
 std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() { //...
-    Token t_trigger = check(Tt::IDENTIFICADOR);
-    std::string key = t_trigger.lexema;
+  Token t_trigger = check(Tt::IDENTIFICADOR);
+  std::string key = t_trigger.lexema;
 
-    // 1. Buscamos la definición del Arcano al que pertenece esta keyword
-    ArcaneDef& def = contextoArcanos.buscarDefinicionPorKeyword(key);
+  ArcaneDef& def = contextoArcanos.buscarDefinicionPorKeyword(key);
 
-    // 2. Recolectamos los argumentos de la llamada (lo que va en paréntesis)
-    std::vector<std::unique_ptr<Expresion>> expr_args;
-    if (peek().tipo == Tt::PAREN_L) {
+  std::vector<std::unique_ptr<Expresion>> expr_args;
+  if (peek().tipo == Tt::PAREN_L) {
+    get();
+    while (peek().tipo != Tt::PAREN_R && peek().tipo != Tt::FIN_ARCHIVO) {
+      expr_args.push_back(parsearExpresion(Pr::MINIMA));
+      if (peek().tipo == Tt::COMA) get();
+    }
+    check(Tt::PAREN_R);
+  }
+
+  ArcaneBranch* rama_elegida = nullptr;
+  for (auto& branch : def.branches) {
+    auto& primer_seg = branch.segmentos[0];
+    if (primer_seg.br_key == key && primer_seg.br_args.size() == expr_args.size()) {
+      rama_elegida = &branch;
+      break;
+    }
+  }
+
+  if (!rama_elegida) {
+    throw
+      std::runtime_error("Firma no encontrada para '"          +
+                              key               + "' con "          +
+                              std::to_string(expr_args.size()) + " argumentos.");
+  }
+
+  std::map<std::string, std::unique_ptr<Sentencia>> mapa_argumentos;
+
+  for (size_t i = 0; i < expr_args.size(); ++i) {
+    std::string nombre_param = rama_elegida->segmentos[0].br_args[i].first;
+    mapa_argumentos[nombre_param] = std::make_unique<SentenciaExpr>(std::move(expr_args[i]));
+  }
+
+  ReglaArcano regla_gramatical = contextoArcanos.obtenerRegla(rama_elegida->rule_tag);
+
+  int bloque_actual_idx = 0;
+  for (size_t i = 0; i < rama_elegida->segmentos.size(); ++i) {
+    auto& seg = rama_elegida->segmentos[i];
+
+    if (i > 0) {
+      check(Tt::IDENTIFICADOR);
+      if (peek().tipo == Tt::PAREN_L) {
         get();
-        while (peek().tipo != Tt::PAREN_R) {
-            expr_args.push_back(parsearExpresion(Pr::MINIMA));
-            if (peek().tipo == Tt::COMA) get();
-        }
+
         check(Tt::PAREN_R);
+      }
     }
 
-    // 3. Resolución de Sobrecarga: ¿Qué rama de este Arcano coincide?
-    ArcaneBranch* rama_elegida = nullptr;
-    for (auto& branch : def.branches) {
-        // Miramos el primer segmento de la rama
-        auto& primer_seg = branch.segmentos[0];
-        if (primer_seg.br_key == key && primer_seg.br_args.size() == expr_args.size()) {
-            rama_elegida = &branch;
-            break;
-        }
-    }
+    std::unique_ptr<Sentencia> bloque_usuario = parsearBloque();
 
-    if (!rama_elegida) {
-        throw std::runtime_error("Firma no encontrada para '" + key + "' con " + std::to_string(expr_args.size()) + " argumentos.");
-    }
+    std::string nombre_bloque = "block" + std::to_string(i + 1);
+    mapa_argumentos[nombre_bloque] = std::move(bloque_usuario);
+  }
 
-    // 4. Mapeo de argumentos y bloques
-    std::map<std::string, std::unique_ptr<Sentencia>> mapa_argumentos;
+  if (peek().tipo == Tt::PUNTO_COMA) { get(); }
 
-    // Mapear expresiones (ej: x -> el valor de x)
-    for (size_t i = 0; i < expr_args.size(); ++i) {
-        std::string nombre_param = rama_elegida->segmentos[0].br_args[i].first;
-        // Metemos la expresión en un nodo sentencia para el mapa
-        mapa_argumentos[nombre_param] = std::make_unique<SentenciaExpr>(std::move(expr_args[i]));
-    }
-
-    // 5. Consumir los bloques según la estructura de la rama
-    // Obtenemos la regla (ej: @alter tiene [block1, boo, block2])
-    ReglaArcano regla_gramatical = contextoArcanos.obtenerRegla(rama_elegida->rule_tag);
-
-    int bloque_actual_idx = 0;
-    for (size_t i = 0; i < rama_elegida->segmentos.size(); ++i) {
-        auto& seg = rama_elegida->segmentos[i];
-
-        // Si es un segmento encadenado (como 'boo'), validamos su keyword
-        if (i > 0) {
-            check(Tt::IDENTIFICADOR); // Consumir 'boo'
-            if (peek().tipo == Tt::PAREN_L) {
-                get();
-
-                check(Tt::PAREN_R);
-            }
-        }
-
-        // Parsear el bloque de código { ... }
-        std::unique_ptr<Sentencia> bloque_usuario = parsearBloque();
-
-        // Identificar cómo se llama este bloque en la definición (ej: "block1")
-        // Esto lo sacamos de la declaración del Arcano Test5(..., block1: code)
-        // Por simplicidad, usamos un índice o buscamos el nombre en def.args
-        std::string nombre_bloque = "block" + std::to_string(i + 1); 
-        mapa_argumentos[nombre_bloque] = std::move(bloque_usuario);
-    }
-
-    // Consumir el punto y coma opcional si no es parte de una estructura mayor
-    if (peek().tipo == Tt::PUNTO_COMA) get();
-
-    return std::make_unique<SentenciaLlamadaArcano>(key, std::move(mapa_argumentos));
+  return std::make_unique<SentenciaLlamadaArcano>(key, std::move(mapa_argumentos));
 }
 
 // Precedencias de las operaciones
