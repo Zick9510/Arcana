@@ -1,0 +1,51 @@
+arcane Test (inc: key, boo: key, block1: code, block2: code) {
+
+    rules [
+        @simple: inc [ block1 ];
+        @alter : inc [ block1 boo block2 ];
+    ];
+    
+    @simple {
+        inc (int a) <=> {
+            block1;
+        };
+        
+        inc (int a, int b) <=> { 
+            block1;
+            block1;
+        };
+    }
+
+    @alter {
+        inc (int a, int b, int c) <=> {
+            if (a) {
+				block1;
+
+            } else {
+				block2;
+
+            }
+            
+        } boo (int x) {
+			block2;
+        };
+    }
+}
+
+
+func main() -> int {
+
+	int x = 1;
+	int y = 2;
+	int z = 3;
+
+	inc (x) {
+		y = y + 18;
+	};
+
+	inc (x, z) {
+		y = y - 3;
+	};
+
+	return y;
+}

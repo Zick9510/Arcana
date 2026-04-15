@@ -73,6 +73,11 @@ void Emitter::visitar(ExprNumero* nodo) { //...
 
 void Emitter::visitar(ExprVariable* nodo) {
 
+  if (bloques_arcano_activos.count(nodo->nombre)) {
+    bloques_arcano_activos[nodo->nombre]->accept(this);
+    return ;
+  }
+
   llvm::AllocaInst* alloca = nullptr;
   for (auto it = llvm_scopes.rbegin(); it != llvm_scopes.rend(); ++it) {
     if (it->count(nodo->nombre)) {
@@ -203,6 +208,9 @@ void Emitter::visitar(SentenciaVar* nodo) {
 }
 
 void Emitter::visitar(SentenciaExpr* nodo) {
+  if (nodo->expresion) {
+    nodo->expresion->accept(this);
+  }
 
 }
 
@@ -424,5 +432,77 @@ void Emitter::visitar(SentenciaArcano* nodo) {
 }
 
 void Emitter::visitar(SentenciaLlamadaArcano* nodo) {
+  ArcaneDef& def = contextoArcanos.buscarDefinicionPorKeyword(nodo->nombre);
+
+  ArcaneBranch* rama_elegida = nullptr;
+
+  for (auto& branch : def.branches) {
+    if (branch.segmentos[0].br_key == nodo->nombre) {
+
+      //... (por simplicidad, asumiendo un solo segmento 'inc' por ahora)
+      size_t params_esperados = branch.segmentos[0].br_args.size();
+
+      // Contamos cuántos argumentos convencionales PASÓ
+      // (descontando los bloques de código)
+      size_t args_pasados = 0;
+      for (auto const& [nom, ast] : nodo->argumentos) {
+        bool es_codigo = false;
+        for (auto const& arg_def : def.args) {
+          if (arg_def.contenido == nom && arg_def.tipo_dato == TPA::CODE) {
+            es_codigo = true;
+            break;
+          }
+        }
+        if (!es_codigo) args_pasados++;
+      }
+
+      if (params_esperados == args_pasados) {
+        rama_elegida = &branch;
+        break;
+      }
+    }
+  }
+
+  if (!rama_elegida) {
+    std::cerr << "Error: No se pudo resolver la rama a emitir para el Arcano '" << nodo->nombre << '\n';
+    return ;
+  }
+
+  llvm_scopes.push_back(std::map<std::string, llvm::AllocaInst*>());
+
+  auto backup_bloques = bloques_arcano_activos;
+
+  for (const auto& [nombre_arg, ast_arg] : nodo->argumentos) {
+    if (!ast_arg) { continue; }
+
+    bool es_codigo = false;
+    for (const auto& arg_def : def.args) {
+      if (arg_def.contenido == nombre_arg && arg_def.tipo_dato == TPA::CODE) {
+        es_codigo = true;
+        break;
+      }
+    }
+
+    if (es_codigo) {
+      bloques_arcano_activos[nombre_arg] = ast_arg.get();
+    } else {
+      ast_arg->accept(this);
+      llvm::Value* valor_arg = llvm_valor;
+
+      llvm::AllocaInst* alloca = llvm_builder->CreateAlloca(valor_arg->getType(), nullptr, nombre_arg);
+      llvm_builder->CreateStore(valor_arg, alloca);
+
+      llvm_scopes.back()[nombre_arg] = alloca;
+    }
+  }
+
+  for (const auto& seg: rama_elegida->segmentos) {
+    if (seg.br_cont) {
+      seg.br_cont->accept(this);
+    }
+  }
+
+  bloques_arcano_activos = backup_bloques;
+  llvm_scopes.pop_back();
 
 }

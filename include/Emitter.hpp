@@ -17,6 +17,8 @@ private:
 
   ContextoArcanos& contextoArcanos;
 
+  std::map<std::string, Sentencia*> bloques_arcano_activos;
+
 public:
 
   Emitter(ContextoArcanos& ca);

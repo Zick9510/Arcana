@@ -485,7 +485,7 @@ std::unique_ptr<Sentencia> Parser::parsearSentenciaExpresion() {
 
   // If you get a "Expected ';', got [something else]"
   // Please check this line and inc the counter
-  // 15. Yikes.
+  // 22. Yikes.
   // Also, the bug you are looking for is most certainly not in this function.
   // Cheers
 
@@ -546,7 +546,7 @@ std::unique_ptr<Sentencia> Parser::parsearSentencia() {
  
   // Manejo de arcanos
   if (actual == Tt::IDENTIFICADOR) {
-    if (contextoArcanos.existeRegla(peek().lexema)) {
+    if (contextoArcanos.esKeywordArcano(peek().lexema)) {
       return parsearLlamadaArcano();
     }
   }
@@ -663,7 +663,7 @@ std::vector<std::pair<std::string, InfoVariable>> Parser::parsearFuncArgs() {
 
 std::unique_ptr<Sentencia> Parser::parsearFuncDecl() {
 
-  Token t = coincide({Tt::FUNC, Tt::PURE});
+  bool es_pure = (coincide({Tt::FUNC, Tt::PURE}).tipo == Tt::PURE);
   Token i = check(Tt::IDENTIFICADOR);
 
   check(Tt::PAREN_L);
@@ -702,7 +702,7 @@ std::unique_ptr<Sentencia> Parser::parsearFuncDecl() {
 
   return std::make_unique<SentenciaFuncDecl>(
     i.lexema,
-    t.tipo == Tt::PURE,
+    es_pure,
     args,
     std::move(cuerpo_func),
     ret_type
@@ -746,7 +746,7 @@ std::pair<std::string, ReglaArcano> Parser::parsearReglaArcano() { //...
 
   check(Tt::ARROBA);
 
-  par.first = check(Tt::IDENTIFICADOR).lexema;
+  par.first = "@" + check(Tt::IDENTIFICADOR).lexema;
 
   check(Tt::DOS_PUNTOS);
 
@@ -815,6 +815,7 @@ std::vector<std::pair<std::string, ReglaArcano>> Parser::parsearReglasArcano() {
 
   while (peek().tipo != Tt::CORCH_R) {
     par = parsearReglaArcano();
+    std::cout << "[818, parser.cpp] par.first: " << par.first << '\n';
     rules.push_back(par);
   }
 
@@ -844,6 +845,12 @@ std::vector<ArcaneBranch> Parser::parsearCuerpoArcano(
 
     std::string tag_name = "@" + t_label.lexema; // @simple
     if (!existe_regla(tag_name)) {
+      std::cout << "[847, parser.cpp]: " << tag_name << '\n';
+
+      for (const auto& rule : reglas_declaradas) {
+        std::cout << rule.first << '\n';
+      }
+
       throw std::runtime_error("Error: La regla '" + tag_name + "' no ha sido declarada en el bloque rules.");
 
     }
@@ -872,8 +879,11 @@ std::vector<ArcaneBranch> Parser::parsearCuerpoArcano(
         }
 
         segmento.br_cont = parsearBloque(); // { ... }
-
         rama_actual.segmentos.push_back(std::move(segmento));
+
+        if (peek().tipo != Tt::IDENTIFICADOR && peek().tipo != Tt::PUNTO_COMA) {
+          break;
+        }
       }
 
       check(Tt::PUNTO_COMA);
@@ -919,13 +929,11 @@ std::unique_ptr<Sentencia> Parser::parsearArcano() {
   for (const auto& rule : rules) {
     contextoArcanos.registrarRegla(rule.first, rule.second);
     def.rules.push_back(rule.second);
+    std::cout << "[925, parser.cpp]: " << rule.first << '\n';
   }
 
   // Cuerpo
-  def.branches = parsearCuerpoArcano();
-  for (const auto& branch : def.branches) {
-    contextoArcanos.registrarRama(branch.br_key, branch.br_cont);
-  }
+  def.branches = parsearCuerpoArcano(rules);
 
   check(Tt::LLAVE_R);
 
@@ -935,28 +943,138 @@ std::unique_ptr<Sentencia> Parser::parsearArcano() {
 
 }
 
-std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() {
-  std::string key = check(Tt::IDENTIFICADOR).lexema;
+//std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() {
+//  Token t_trigger = check(Tt::IDENTIFICADOR);
+//  std::string key = t_trigger.lexema;
+//
+//  ArcaneDef& def = contextoArcanos.buscarDefinicionPorKeyword(key);
+//
+//  std::vector<std::unique_ptr<Expresion>> args_llamada;
+//
+//  if (peek().tipo == Tt::PAREN_L) {
+//    get();
+//    while (peek().tipo != Tt::PAREN_R && peek().tipo != Tt::FIN_ARCHIVO) {
+//      args_llamada.push_back(parsearExpresion(Pr::MINIMA));
+//      if (peek().tipo == Tt::COMA) { get(); }
+//
+//    }
+//    check(Tt::PAREN_R);
+//
+//  }
+//
+//  ArcaneBranch* rama = nullptr;
+//  for (auto& branch : def.branches) {
+//    auto& primer_seg = branch.segmentos[0];
+//    if (primer_seg.br_key == key && primer_seg.br_args.size() == args_llamada.size()) { //... Comprobar tipos estricto
+//      rama = &branch;
+//      break;
+//    }
+//  }
+//
+//  if (!rama) {
+//    throw std::runtime_error("Error: No se encontró firma para '" + key + "' con tales argumentos.");
+//  }
+//
+//  auto nodo_llamada = std::make_unique<SentenciaLlamadaArcano>(def.name, rama->rule_tag);
+//  nodo_llamada->argumentos_iniciales = std::move(args_llamada);
+//
+//  for (size_t i = 0; i < rama->segmentos.size(); ++i) {
+//    auto& seg = rama->segmentos[i];
+//
+//    if (i > 0) {
+//      check(Tt::IDENTIFICADOR);
+//      if (peek().tipo == Tt::PAREN_L) {
+//        get();
+//        //... Parsear argumentos
+//        check(Tt::PAREN_R);
+//      }
+//    }
+//
+//    std::unique_ptr<Sentencia> bloque = parsearBloque();
+//    nodo_llamada->bloques.push_back(std::move(bloque));
+//
+//  }
+//
+//  if (peek().tipo == Tt::PUNTO_COMA) { get(); }
+//
+//  return nodo_llamada;
+//
+//}
+std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() { //...
+    Token t_trigger = check(Tt::IDENTIFICADOR);
+    std::string key = t_trigger.lexema;
 
-  ReglaArcano rule = contextoArcanos.obtenerRegla(key);
+    // 1. Buscamos la definición del Arcano al que pertenece esta keyword
+    ArcaneDef& def = contextoArcanos.buscarDefinicionPorKeyword(key);
 
-  for (const auto& [t, u] : rule.componentes) {
-    std::cout << "[879, parser.cpp]: " << nombreTipo(t.tipo) << '\n';
-
-    switch (t.tipo) { //...
-
-      case Tt::CODE: {
-        parsearBloqSent();
-
-      }
-
-      default: {
-
-      }
+    // 2. Recolectamos los argumentos de la llamada (lo que va en paréntesis)
+    std::vector<std::unique_ptr<Expresion>> expr_args;
+    if (peek().tipo == Tt::PAREN_L) {
+        get();
+        while (peek().tipo != Tt::PAREN_R) {
+            expr_args.push_back(parsearExpresion(Pr::MINIMA));
+            if (peek().tipo == Tt::COMA) get();
+        }
+        check(Tt::PAREN_R);
     }
 
-  }
+    // 3. Resolución de Sobrecarga: ¿Qué rama de este Arcano coincide?
+    ArcaneBranch* rama_elegida = nullptr;
+    for (auto& branch : def.branches) {
+        // Miramos el primer segmento de la rama
+        auto& primer_seg = branch.segmentos[0];
+        if (primer_seg.br_key == key && primer_seg.br_args.size() == expr_args.size()) {
+            rama_elegida = &branch;
+            break;
+        }
+    }
 
+    if (!rama_elegida) {
+        throw std::runtime_error("Firma no encontrada para '" + key + "' con " + std::to_string(expr_args.size()) + " argumentos.");
+    }
+
+    // 4. Mapeo de argumentos y bloques
+    std::map<std::string, std::unique_ptr<Sentencia>> mapa_argumentos;
+
+    // Mapear expresiones (ej: x -> el valor de x)
+    for (size_t i = 0; i < expr_args.size(); ++i) {
+        std::string nombre_param = rama_elegida->segmentos[0].br_args[i].first;
+        // Metemos la expresión en un nodo sentencia para el mapa
+        mapa_argumentos[nombre_param] = std::make_unique<SentenciaExpr>(std::move(expr_args[i]));
+    }
+
+    // 5. Consumir los bloques según la estructura de la rama
+    // Obtenemos la regla (ej: @alter tiene [block1, boo, block2])
+    ReglaArcano regla_gramatical = contextoArcanos.obtenerRegla(rama_elegida->rule_tag);
+
+    int bloque_actual_idx = 0;
+    for (size_t i = 0; i < rama_elegida->segmentos.size(); ++i) {
+        auto& seg = rama_elegida->segmentos[i];
+
+        // Si es un segmento encadenado (como 'boo'), validamos su keyword
+        if (i > 0) {
+            check(Tt::IDENTIFICADOR); // Consumir 'boo'
+            if (peek().tipo == Tt::PAREN_L) {
+                get();
+
+                check(Tt::PAREN_R);
+            }
+        }
+
+        // Parsear el bloque de código { ... }
+        std::unique_ptr<Sentencia> bloque_usuario = parsearBloque();
+
+        // Identificar cómo se llama este bloque en la definición (ej: "block1")
+        // Esto lo sacamos de la declaración del Arcano Test5(..., block1: code)
+        // Por simplicidad, usamos un índice o buscamos el nombre en def.args
+        std::string nombre_bloque = "block" + std::to_string(i + 1); 
+        mapa_argumentos[nombre_bloque] = std::move(bloque_usuario);
+    }
+
+    // Consumir el punto y coma opcional si no es parte de una estructura mayor
+    if (peek().tipo == Tt::PUNTO_COMA) get();
+
+    return std::make_unique<SentenciaLlamadaArcano>(key, std::move(mapa_argumentos));
 }
 
 // Precedencias de las operaciones

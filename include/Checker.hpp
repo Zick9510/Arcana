@@ -299,10 +299,27 @@ public:
   }
 
   void visitar(SentenciaArcano* nodo) override {
+    for (const auto& branch : nodo->def.branches) {
+      tablas.entrarScope();
 
+      for (const auto& segment : branch.segmentos) {
+        for (const auto& [name, info] : segment.br_args) {
+          tablas.añadirVariable(name, info, 0);
+        }
+
+        if (segment.br_cont != nullptr) {
+          segment.br_cont->accept(this);
+        }
+      }
+      tablas.salirScope();
+    }
   }
 
   void visitar(SentenciaLlamadaArcano* nodo) override {
-
+    for (const auto& [name, arg_nodo] : nodo->argumentos) {
+      if (arg_nodo != nullptr) {
+        arg_nodo->accept(this);
+      }
+    }
   }
 };

@@ -590,10 +590,28 @@ private:
   std::unordered_map<std::string, ArcaneDef> activos;
   std::unordered_map<std::string, ReglaArcano> reglas;
   std::unordered_map<std::string, std::unique_ptr<Sentencia>> ramas;
+  std::unordered_map<std::string, std::string> keywordArcano;
 
 public:
+
+  bool esKeywordArcano(const std::string& key) const {
+    return keywordArcano.find(key) != keywordArcano.end();
+  }
+
   void registrarDefinicion(const std::string& nombre, const ArcaneDef def) {
+    for (const auto& arg : def.args) {
+      if (arg.tipo_dato == TPA::KEY) {
+        keywordArcano[arg.contenido] = nombre;
+      }
+    }
     activos[nombre] = std::move(def);
+  }
+
+  ArcaneDef& buscarDefinicionPorKeyword(const std::string& key) {
+    if (keywordArcano.find(key) == keywordArcano.end()) {
+      throw std::runtime_error("Error interno: Se intentó buscar la definición de una keyword inexistente: " + key);
+    }
+    return activos.at(keywordArcano.at(key));
   }
 
   void registrarRegla(const std::string& nombre, const ReglaArcano& regla) {
@@ -605,6 +623,10 @@ public:
   }
 
   bool existeRegla(const std::string& nombre) const {
+    std::cout << "[622, Common.hpp] Rules:\n";
+    for (const auto& r : reglas) {
+      std::cout << r.first << '\n';
+    }
     return reglas.count(nombre) > 0;
   }
 
@@ -1240,30 +1262,35 @@ public:
 
     // --- Sección 2: Cuerpo / Ramas ---
     std::cout << sangria << "| [ Implementación ]\n";
-    for (const auto& branch : def.branches) {
-      std::cout << sangria << "|   +- Rama contextual: '" << branch.br_key << " (| ";
+    //for (const auto& branch : def.branches) {
+    //  std::cout << sangria << "|   +- Rama contextual: '" << branch.segmentos.br_key << " (| ";
 
-      for (const auto& type : branch.br_args) {
-        std::cout << type.second.tipo.tipoString() << ' ';
-        std::cout << type.first << " |";
-      }
+    //  for (const auto& type : branch.segmentos.br_args) {
+    //    std::cout << type.second.tipo.tipoString() << ' ';
+    //    std::cout << type.first << " |";
+    //  }
 
-      std::cout << ")\n";
+    //  std::cout << ")\n";
 
-      branch.br_cont->imprimir(nivel + 1);
+    //  branch.br_cont->imprimir(nivel + 1);
 
-    }
+    //}
   }
 
 };
 
-class SentenciaLlamadaArcano : public Sentencia {
+class SentenciaLlamadaArcano : public NodoBase<Sentencia, SentenciaLlamadaArcano> {
 public:
   std::string nombre;
   std::map<std::string, std::unique_ptr<Sentencia>> argumentos;
 
   SentenciaLlamadaArcano(std::string n, std::map<std::string, std::unique_ptr<Sentencia>> args)
     : nombre(std::move(n)), argumentos(std::move(args)) {}
+
+  SentenciaLlamadaArcano(const SentenciaLlamadaArcano& otra)
+    : nombre(otra.nombre) {
+
+    }
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
@@ -1418,7 +1445,6 @@ public:
 
 
 /* --- Extra --- */
-// This works bc (2 ** n) & (2 ** n - 1) == 0
 // A power of 2 is just 10..00
 // A (power of 2) - 1 i just 01..11
 // This & that == 0
