@@ -22,54 +22,54 @@ a way to expand the compiler's Abstract Syntax Tree (AST) directly from your sou
 ### Example: The Arcane System
 
 ```arc
-arcane Test (twice: key, twice_if: key, expr1: expr, block1: code) {
+arcane Twice_TwiceIf (twice: key, twice_if: key, expr1: expr, block1: code) {
 
-    rules [
-        @simple: twice [ block1 ];
-        @eval  : twice [ expr1 block1 ];
-    ];
+  rules [
+    @simple: twice [ block1 ];
+    @eval  : twice [ expr1 block1 ];
+  ];
 
-    @simple {
-        twice () <=> {
-            block1;
-            block1;
-        };
+  @simple {
+    twice () <=> {
+      block1;
+      block1;
+      };
 
-   }
+  }
 
-   @eval {
-        twice_if (int a) <=> { 
-			if (a) {
-				block1;
-				block1;
-            }
-        };
-    }
+  @eval {
+    twice_if (int a) <=> {
+      if (a) {
+        block1;
+        block1;
+      }
+    };
+  }
 }
 
 func main() -> int {
 
-	int x = 1;
-	int y = 2;
-	int z = 3;
-
-	twice {
-		x = x + 3;
-	}
-
-	twice_if (1) {
-		y = y + 3;
-	}
-
-	twice_if (0) {
-		z = z + 3;
-	}
-
-	// x = 7
-	// y = 8
-	// z = 3
-
-	return x + y + z;
+  int x = 1;
+  int y = 2;
+  int z = 3;
+ 
+  twice {
+  x = x + 3;
+  }
+ 
+  twice_if (1) {
+  y = y + 3;
+  }
+ 
+  twice_if (0) {
+  z = z + 3;
+  }
+ 
+  // x = 7
+  // y = 8
+  // z = 3
+ 
+  return x + y + z;
 }
 ```
 
