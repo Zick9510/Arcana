@@ -25,7 +25,17 @@ public:
   std::shared_ptr<ArcanaType> verificarDiv     (const Dt& izq, const Dt& der);
   std::shared_ptr<ArcanaType> verificarPotencia(const Dt& izq, const Dt& der);
 
+  // --- Utilidad ---
   bool esCasteoValido(const Dt& tipo_original, const Dt& tipo_destino);
+  std::unique_ptr<Expresion> forzarTipo(std::unique_ptr<Expresion> hijo, const Dt& tipoEsperado);
+
+  inline std::string generarFirma(const std::string& nombre, const std::vector<Dt>& tiposArgs) {
+    std::string firma = nombre;
+    for (const auto& tipo : tiposArgs) {
+      firma += "_" + tipo.tipoString();
+    }
+    return firma;
+  }
 
   // --- AST Visitor ---
 
@@ -160,12 +170,38 @@ public:
   }
 
 
-  void visitar(ExprUnaria* nodo) override {
+  void visitar(ExprUnaria* nodo) override { //...
     nodo->operando->accept(this);
-    nodo->tipo_resuelto = nodo->operando->tipo_resuelto;
-    //... Check if operando is a valid operand
-    //... Check if type is unsigned
-  }
+    Dt tipo_op = nodo->operando->tipo_resuelto;
+
+    if (tipo_op.valor->kind == TypeKind::DESCONOCIDO) {
+      nodo->tipo_resuelto = tipo_op;
+      return ;
+
+    }
+
+    switch (nodo->operador) { //...
+      case TipoOperador::LOGICO_NO: {
+        Dt tipo_bool = Dt(typeFactory.getBoolean());
+        nodo->tipo_resuelto = tipo_bool;
+
+        if (tipo_op != tipo_bool) {
+          if (esCasteoValido(tipo_op, tipo_bool)) {
+            nodo->operando = forzarTipo(std::move(nodo->operando), tipo_bool);
+
+          } else {
+            //... Error casteo inválido
+            std::cout << "[186, Checker.hpp] Error casteo inválido.";
+            exit(1);
+
+          }
+        }
+
+        nodo->tipo_resuelto = tipo_bool;
+        break;
+        }
+      }
+    }
 
   void visitar(ExprLlamadaArcano* nodo) override {
 
@@ -274,16 +310,51 @@ public:
   }
 
   void visitar(SentenciaReturn* nodo) override { //...
-    nodo->ret_type.valor = typeFactory.getUnknown(); //...
+    if (!nodo->ret_value) { return; }
+
     nodo->ret_value->accept(this);
+
+    InfoFuncion* info = tablas.getCurrentFunction();
+
+    if (info) {
+      nodo->ret_value = forzarTipo(std::move(nodo->ret_value), info->tipo_retorno);
+      nodo->ret_type.valor = nodo->ret_value->tipo_resuelto.valor;
+
+    } else {
+      std::cout << "[328, Checker.hpp] Bad Info"; //...
+      exit(1);
+
+    }
 
   }
 
-  void visitar(SentenciaFuncDecl* nodo) override { //...
+  void visitar(SentenciaFuncDecl* nodo) override {
+    std::vector<Dt> tipos_params;
+    for (const auto& [nombre, info] : nodo->args_type) {
+      tipos_params.push_back(info.tipo);
+    }
+
+    std::string firma = generarFirma(nodo->nombre_func, tipos_params);
+    nodo->firma_mangled = firma;
+
+    InfoFuncion info_func;
+    info_func.nombre = nodo->nombre_func;
+    info_func.tipo_retorno = nodo->ret_type;
+    info_func.tipos_parametros = nodo->args_type;
+    info_func.linea = nodo->linea;
+
+    if (!tablas.añadirFunction(firma, info_func)) {
+      std::cout << "[338, Checker.hpp] Error: Función redefinida\n";
+      exit(1);
+
+    }
+
+    InfoFuncion* ptr_func = tablas.buscarFuncion(firma);
+    tablas.pushFunction(ptr_func);
     tablas.entrarScope();
 
     for (const auto& [nombre, info] : nodo->args_type) {
-      tablas.añadirVariable(nombre, info, 0);
+      tablas.añadirVariable(nombre, info, nodo->linea);
     }
 
     if (nodo->cuerpo_func != nullptr) {
@@ -291,6 +362,7 @@ public:
     }
 
     tablas.salirScope();
+    tablas.popFunction();
 
   }
 

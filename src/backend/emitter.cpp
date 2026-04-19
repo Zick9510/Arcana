@@ -103,6 +103,35 @@ void Emitter::visitar(ExprArray* nodo) {
 }
 
 void Emitter::visitar(ExprUnaria* nodo) {
+  if (nodo->operador == TipoOperador::PTR_REF) {
+    if (auto* var = dynamic_cast<ExprVariable*>(nodo->operando.get())) {
+      if (llvm_scopes.back().count(var->nombre)) {
+        llvm_valor = llvm_scopes.back()[var->nombre];
+        return ;
+      }
+    }
+
+    return ;
+  }
+
+  nodo->operando->accept(this);
+  llvm::Value* val = llvm_valor;
+
+  if (!val) { return ; }
+
+  switch (nodo->operador) { //...
+
+    case TipoOperador::BITWISE_NO:
+    case TipoOperador::LOGICO_NO: {
+      llvm_valor = llvm_builder->CreateNot(val, "not_temp");
+      break;
+    }
+
+    default: {
+      std::cout << "[129, emitter.cpp] Error: Operador unario no implementado.";
+      exit(1);
+    }
+  }
 
 }
 
@@ -114,6 +143,7 @@ void Emitter::visitar(ExprBinaria* nodo) {
   llvm::Value* R = llvm_valor;
 
   bool es_float = nodo->tipo_resuelto.valor->kind == TypeKind::FLOAT;
+
   switch (nodo->operador) { //...
     case TipoOperador::A_SUMA: {
       llvm_valor = es_float ? llvm_builder->CreateFAdd(L, R, "addtemp")
@@ -141,6 +171,48 @@ void Emitter::visitar(ExprBinaria* nodo) {
 }
 
 void Emitter::visitar(ExprCasteo* nodo) {
+  nodo->expresion->accept(this);
+  llvm::Value* val = llvm_valor;
+
+  std::shared_ptr<ArcanaType> t_origen  = nodo->expresion->tipo_resuelto.valor;
+  std::shared_ptr<ArcanaType> t_destino = nodo->tipo_resuelto.valor;
+
+  if (t_destino->kind == TypeKind::BOOLEAN) {
+    switch (t_origen->kind) {
+
+      case TypeKind::INTEGER: {
+        llvm_valor = llvm_builder->CreateICmpNE(
+          val,
+          llvm::ConstantInt::get(val->getType(), 0),
+          "cast_temp"
+        );
+        break;
+      }
+
+      case TypeKind::FLOAT: {
+        llvm_valor = llvm_builder->CreateFCmpUNE(val,
+                                                 llvm::ConstantFP::get(val->getType(), 0.0),
+                                                 "cast_temp"
+        );
+        break;
+      }
+
+
+    }
+
+    return ;
+  }
+
+  llvm::Type* tipo_destino_llvm = obtenerTipoLLVM(t_destino);
+
+  bool origen_signo  = t_origen ->isSigned();
+  bool destino_signo = t_destino->isSigned();
+
+  llvm::Instruction::CastOps cast_op = llvm::CastInst::getCastOpcode(
+    val, origen_signo, tipo_destino_llvm, destino_signo
+  );
+
+  llvm_valor = llvm_builder->CreateCast(cast_op, val, tipo_destino_llvm, "cast_temp");
 
 }
 
@@ -385,7 +457,7 @@ void Emitter::visitar(SentenciaFuncDecl* nodo) {
     tipo_args.push_back((obtenerTipoLLVM(info.tipo.valor)));
   }
 
-  llvm::Type* tipo_ret = obtenerTipoLLVM(nodo->ret_type.tipo.valor);
+  llvm::Type* tipo_ret = obtenerTipoLLVM(nodo->ret_type.valor);
 
   llvm::FunctionType* ft = llvm::FunctionType::get(tipo_ret, tipo_args, false);
 
@@ -437,80 +509,142 @@ void Emitter::visitar(SentenciaArcano* nodo) {
 
 }
 
-void Emitter::visitar(SentenciaLlamadaArcano* nodo) { //...
-  ArcaneDef& def = contextoArcanos.buscarDefinicionPorKeyword(nodo->nombre);
+//void Emitter::visitar(SentenciaLlamadaArcano* nodo) { //...
+//  ArcaneDef& def = contextoArcanos.buscarDefinicionPorKeyword(nodo->nombre);
+//
+//  ArcaneBranch* rama_elegida = nullptr;
+//
+//  for (auto& branch : def.branches) {
+//    if (branch.segmentos[0].br_key == nodo->nombre) {
+//
+//      //... (por simplicidad, asumiendo un solo segmento por ahora)
+//      size_t params_esperados = branch.segmentos[0].br_args.size();
+//
+//      // Contamos cuántos argumentos convencionales hay
+//      // (descontando los bloques de código)
+//      size_t args_pasados = 0;
+//      for (auto const& [nom, ast] : nodo->argumentos) {
+//        bool es_codigo = false;
+//        for (auto const& arg_def : def.args) {
+//          if (arg_def.contenido == nom && arg_def.tipo_dato == TPA::CODE) {
+//            es_codigo = true;
+//            break;
+//          }
+//        }
+//        if (!es_codigo) { args_pasados++; }
+//      }
+//
+//      if (params_esperados == args_pasados) {
+//        rama_elegida = &branch;
+//        break;
+//      }
+//    }
+//  }
+//
+//  if (!rama_elegida) {
+//    std::cerr << "Error: No se pudo resolver la rama a emitir para el Arcano '" << nodo->nombre << "'.\n";
+//    return ;
+//  }
+//
+//  llvm_scopes.push_back(std::map<std::string, llvm::AllocaInst*>());
+//  auto backup_bloques = bloques_arcano_activos;
+//
+//
+//  for (const auto& [nombre_arg, ast_arg] : nodo->argumentos) {
+//    if (!ast_arg) { continue; }
+//
+//    bool es_lazy = false;
+//
+//    for (const auto& arg_def : def.args) {
+//      if (arg_def.contenido == nombre_arg &&
+//         (arg_def.tipo_dato == TPA::CODE || arg_def.tipo_dato == TPA::EXPR)) {
+//        es_lazy = true;
+//        break;
+//      }
+//    }
+//
+//    if (es_lazy) {
+//      bloques_arcano_activos[nombre_arg] = ast_arg.get();
+//
+//    } else {
+//      ast_arg->accept(this);
+//      llvm::Value* valor_arg = llvm_valor;
+//
+//      llvm::AllocaInst* alloca = llvm_builder->CreateAlloca(valor_arg->getType(), nullptr, nombre_arg);
+//      llvm_builder->CreateStore(valor_arg, alloca);
+//      llvm_scopes.back()[nombre_arg] = alloca;
+//
+//    }
+//  }
+//
+//  for (const auto& seg: rama_elegida->segmentos) {
+//    if (seg.br_cont) {
+//      seg.br_cont->accept(this);
+//    }
+//  }
+//
+//  bloques_arcano_activos = backup_bloques;
+//  llvm_scopes.pop_back();
+//}
 
-  ArcaneBranch* rama_elegida = nullptr;
+void Emitter::visitar(SentenciaLlamadaArcano* nodo) {
+// 1. Buscar la definición global del Arcano
+    ArcaneDef& def = contextoArcanos.buscarDefinicionPorKeyword(nodo->nombre);
 
-  for (auto& branch : def.branches) {
-    if (branch.segmentos[0].br_key == nodo->nombre) {
-
-      //... (por simplicidad, asumiendo un solo segmento por ahora)
-      size_t params_esperados = branch.segmentos[0].br_args.size();
-
-      // Contamos cuántos argumentos convencionales hay
-      // (descontando los bloques de código)
-      size_t args_pasados = 0;
-      for (auto const& [nom, ast] : nodo->argumentos) {
-        bool es_codigo = false;
-        for (auto const& arg_def : def.args) {
-          if (arg_def.contenido == nom && arg_def.tipo_dato == TPA::CODE) {
-            es_codigo = true;
+    // 2. Encontrar la rama (branch) que empieza con esta keyword
+    ArcaneBranch* rama_elegida = nullptr;
+    for (auto& branch : def.branches) {
+        if (branch.segmentos[0].br_key == nodo->nombre) {
+            rama_elegida = &branch;
             break;
-          }
         }
-        if (!es_codigo) args_pasados++;
-      }
-
-      if (params_esperados == args_pasados) {
-        rama_elegida = &branch;
-        break;
-      }
-    }
-  }
-
-  if (!rama_elegida) {
-    std::cerr << "Error: No se pudo resolver la rama a emitir para el Arcano '" << nodo->nombre << ".\n";
-    return ;
-  }
-
-  llvm_scopes.push_back(std::map<std::string, llvm::AllocaInst*>());
-  auto backup_bloques = bloques_arcano_activos;
-
-
-  for (const auto& [nombre_arg, ast_arg] : nodo->argumentos) {
-    if (!ast_arg) { continue; }
-
-    bool es_codigo = false;
-
-    for (const auto& arg_def : def.args) {
-      if (arg_def.contenido == nombre_arg && arg_def.tipo_dato == TPA::CODE) {
-        es_codigo = true;
-        break;
-      }
     }
 
-    if (es_codigo) {
-      bloques_arcano_activos[nombre_arg] = ast_arg.get();
-
-    } else {
-      ast_arg->accept(this);
-      llvm::Value* valor_arg = llvm_valor;
-
-      llvm::AllocaInst* alloca = llvm_builder->CreateAlloca(valor_arg->getType(), nullptr, nombre_arg);
-      llvm_builder->CreateStore(valor_arg, alloca);
-      llvm_scopes.back()[nombre_arg] = alloca;
-
+    if (!rama_elegida) {
+        std::cerr << "Error: No se encontró una rama para '" << nodo->nombre << "' en el Emitter.\n";
+        return;
     }
-  }
 
-  for (const auto& seg: rama_elegida->segmentos) {
-    if (seg.br_cont) {
-      seg.br_cont->accept(this);
+    // 3. Preparar el nuevo scope y respaldar bloques activos
+    llvm_scopes.push_back(std::map<std::string, llvm::AllocaInst*>());
+    auto backup_bloques = bloques_arcano_activos;
+
+    // 4. Mapear Argumentos (Inyectar ASTs o Evaluar Valores)
+    for (const auto& [nombre_arg, ast_arg] : nodo->argumentos) {
+        if (!ast_arg) { continue; }
+
+        // Buscamos si el argumento fue definido como EXPR o CODE
+        bool es_lazy = false;
+        for (const auto& arg_def : def.args) {
+            if (arg_def.contenido == nombre_arg &&
+               (arg_def.tipo_dato == TPA::CODE || arg_def.tipo_dato == TPA::EXPR)) {
+                es_lazy = true;
+                break;
+            }
+        }
+
+        if (es_lazy) {
+            // EXPR y CODE se guardan como ASTs para evaluarse cuando se usen (Lazy)
+            bloques_arcano_activos[nombre_arg] = ast_arg.get();
+        } else {
+            // Otros (como KEY) se evalúan en el acto (Eager)
+            ast_arg->accept(this);
+            llvm::Value* valor_arg = llvm_valor;
+
+            llvm::AllocaInst* alloca = llvm_builder->CreateAlloca(valor_arg->getType(), nullptr, nombre_arg);
+            llvm_builder->CreateStore(valor_arg, alloca);
+            llvm_scopes.back()[nombre_arg] = alloca;
+        }
     }
-  }
 
-  bloques_arcano_activos = backup_bloques;
-  llvm_scopes.pop_back();
+    // 5. Emitir el código de cada segmento de la rama
+    for (const auto& seg : rama_elegida->segmentos) {
+        if (seg.br_cont) {
+            seg.br_cont->accept(this);
+        }
+    }
 
+    // 6. Limpieza: Restaurar estado previo
+    bloques_arcano_activos = backup_bloques;
+    llvm_scopes.pop_back();
 }

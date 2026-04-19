@@ -19,6 +19,8 @@ bool UnknownType::esIgual(const ArcanaType* otro) const {
   return (otro->kind == TypeKind::DESCONOCIDO);
 }
 
+bool UnknownType::isSigned()        const { return false   ; }
+
 // --- VoidType ---
 VoidType::VoidType()
   : ArcanaType(TypeKind::VOID) {}
@@ -29,7 +31,10 @@ int VoidType::getBitSize()       const { return 0     ; }
 
 bool VoidType::esIgual(const ArcanaType* otro) const {
   return (otro->kind == TypeKind::VOID);
+
 }
+
+bool VoidType::isSigned()        const { return false ; }
 
 // --- PointerType ---
 PointerType::PointerType(std::shared_ptr<ArcanaType> t_a)
@@ -37,7 +42,7 @@ PointerType::PointerType(std::shared_ptr<ArcanaType> t_a)
 
 std::string PointerType::toString() const { return tipo_apuntado->toString() + "*"; }
 
-int PointerType::getBitSize() const { return 64; }
+int PointerType::getBitSize()       const { return 64                             ; }
 
 bool PointerType::esIgual(const ArcanaType* otro) const {
   if (otro->kind != TypeKind::POINTER) { return false; }
@@ -47,6 +52,23 @@ bool PointerType::esIgual(const ArcanaType* otro) const {
   return (this->tipo_apuntado == o->tipo_apuntado);
 
 }
+
+bool PointerType::isSigned() const { return false; }
+
+// --- BooleanType ---
+BooleanType::BooleanType()
+  : ArcanaType(TypeKind::BOOLEAN) {}
+
+std::string BooleanType::toString() const { return "bool"; }
+
+int BooleanType::getBitSize()       const { return 8     ; }
+
+bool BooleanType::esIgual(const ArcanaType* otro) const {
+  return (otro->kind == TypeKind::BOOLEAN);
+
+}
+
+bool BooleanType::isSigned()        const { return false ; }
 
 // --- IntegerType ---
 IntegerType::IntegerType(int b, bool u)
@@ -68,6 +90,8 @@ bool IntegerType::esIgual(const ArcanaType* otro) const {
 
 }
 
+bool IntegerType::isSigned() const { return !is_unsigned; }
+
 // --- FloatType ---
 FloatType::FloatType(int b)
   : ArcanaType(TypeKind::FLOAT), bits(b) {}
@@ -88,6 +112,8 @@ bool FloatType::esIgual(const ArcanaType* otro) const {
 
   return (this->bits == otroFloat->bits);
 }
+
+bool FloatType::isSigned() const { return true; }
 
 // --- MorphType ---
 MorphType::MorphType(std::vector<std::shared_ptr<ArcanaType>> st)
@@ -113,6 +139,8 @@ bool MorphType::esIgual(const ArcanaType* otro) const {
   return true; //...
 }
 
+bool MorphType::isSigned() const { return false; }
+
 // --- ShapeType ---
 ShapeType::ShapeType(std::vector<CampoShape> c)
   : ArcanaType(TypeKind::SHAPE), campos(c) {}
@@ -130,6 +158,8 @@ int ShapeType::getBitSize() const {
 bool ShapeType::esIgual(const ArcanaType* otro) const {
   return true; //...
 }
+
+bool ShapeType::isSigned() const { return false; }
 
 /* --- Factory --- */
 
@@ -159,14 +189,28 @@ std::shared_ptr<VoidType> TypeFactory::getVoid() {
 
 }
 
+
 std::shared_ptr<PointerType> TypeFactory::getPointer(std::shared_ptr<ArcanaType> base) {
 
   if (cachePointer.find(base) != cachePointer.end()) {
     return cachePointer[base];
+
   }
 
   auto nueva_instancia = std::make_shared<PointerType>(base);
   cachePointer[base] = nueva_instancia;
+  return nueva_instancia;
+
+}
+
+std::shared_ptr<BooleanType> TypeFactory::getBoolean() {
+  if (cacheBoolean != nullptr)  {
+    return cacheBoolean;
+
+  }
+
+  auto nueva_instancia = std::make_shared<BooleanType>();
+  cacheBoolean = nueva_instancia;
   return nueva_instancia;
 
 }

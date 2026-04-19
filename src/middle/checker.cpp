@@ -27,12 +27,14 @@ bool GestorTablas::añadirVariable(const std::string& nombre, InfoVariable info,
     scopes.push_back(Scope());
     scopes.back().variables[nombre] = info;
     return true;
+
   }
 
   if (scopes.back().variables.count(nombre)) {
     std::vector<std::string> detalle = {nombre};
     errHandler.reportar(CE::ERR_VARIABLE_REDECLARADA, linea, detalle);
     return false;
+
   }
 
   //... Añadir comprobación de shadiwing en otros scopes
@@ -52,12 +54,80 @@ InfoVariable* GestorTablas::buscarVariable(const std::string& nombre) {
   }
 
   return nullptr; // No encontrada
+
+}
+
+// --- Functions ---
+
+bool GestorTablas::añadirFunction(const std::string& nombre, InfoFuncion info) {
+  if (scopes.back().funciones.count(nombre)) { return false; }
+  scopes.back().funciones[nombre] = info;
+  return true;
+
+}
+
+InfoFuncion* GestorTablas::buscarFuncion(const std::string& nombre) {
+  for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
+    if (it->funciones.count(nombre)) { return &it->funciones[nombre]; }
+
+  }
+
+  return nullptr;
+
+}
+
+InfoFuncion* GestorTablas::getCurrentFunction() {
+
+  if (!pilaFuncs.empty()) {
+    return pilaFuncs.back();
+
+  }
+
+  return nullptr;
+
+}
+
+void GestorTablas::pushFunction(InfoFuncion* function) { pilaFuncs.push_back(function);   }
+
+void GestorTablas::popFunction() {
+  if (!pilaFuncs.empty()) { pilaFuncs.pop_back(); }
+
 }
 
 /* --- Checker --- */
 
 Checker::Checker(GestorTablas& t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e, TypeFactory& tf)
   : tablas(t), ast(a), errHandler(e), typeFactory(tf) {}
+
+
+// --- Casteos --- //
+std::unique_ptr<Expresion> Checker::forzarTipo(std::unique_ptr<Expresion> hijo, const Dt& tipoEsperado) {
+
+  if (!hijo || !hijo->tipo_resuelto.valor || !tipoEsperado.valor) { return hijo; }
+
+  Dt tipo_actual = hijo->tipo_resuelto;
+
+  if (tipo_actual == tipoEsperado) {
+    return hijo;
+
+  }
+
+  if (esCasteoValido(tipo_actual, tipoEsperado)) {
+    auto casteo = std::make_unique<ExprCasteo>(std::move(hijo), tipoEsperado);
+    casteo->tipo_resuelto = tipoEsperado;
+    casteo->es_implicito  = true;
+
+    //... Warning, implicit cast
+
+    return casteo;
+
+  }
+
+  //... Error, bad cast
+
+  return hijo;
+
+}
 
 // --- Verificar Expresiones ---
 std::shared_ptr<ArcanaType> Checker::verificarSuma(const Dt& izq, const Dt& der) {
@@ -251,6 +321,14 @@ bool Checker::esCasteoValido(const Dt& origen, const Dt& destino) {
       return true;
     }
 
+    if (esNum(pO) && pD == TypeKind::BOOLEAN) {
+      return true;
+    }
+
+    if (pO == TypeKind::BOOLEAN && esNum(pD)) {
+      return true;
+    }
+
     //... Char -> int
  
   }
@@ -263,7 +341,12 @@ bool Checker::esCasteoValido(const Dt& origen, const Dt& destino) {
 }
 
 void Checker::verificarPrograma() {
+
+  tablas.entrarScope(Scope());
+
   for (auto& nodo : ast) {
     nodo->accept(this);
   }
+
+  tablas.salirScope();
 }

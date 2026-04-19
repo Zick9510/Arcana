@@ -72,12 +72,14 @@ bool Dt::operator==(const Dt& otro) const { //... Comparar this.es_const
 
 bool Dt::esPrimitivo() const { //...
   switch(valor->kind) {
-    case TypeKind::VOID:
+    case TypeKind::VOID   :
+    case TypeKind::BOOLEAN:
     case TypeKind::INTEGER:
-    case TypeKind::FLOAT:
-    case TypeKind::ARRAY: {
+    case TypeKind::FLOAT  :
+    case TypeKind::ARRAY  : {
       return true;
     }
+
     default: {
       return false;
     }

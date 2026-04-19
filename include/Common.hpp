@@ -148,6 +148,7 @@ inline int obtenerRangoNum(TypeKind t) { //... Distinguir entre tamaño de bits
   switch (t) {
     case TypeKind::INTEGER: { return 1; }
     case TypeKind::FLOAT  : { return 2; }
+    case TypeKind::BOOLEAN: { return 3; }
     default               : { return 0; }
   }
 }
@@ -176,6 +177,15 @@ inline std::shared_ptr<ArcanaType> promoverTipos(std::shared_ptr<ArcanaType> izq
   int tipoDer = obtenerRangoNum(der->kind);
   if (tipoDer >= tipoIzq) { return der; }
   return izq;
+}
+
+template<typename... Args>
+inline std::shared_ptr<ArcanaType> promoverN(std::shared_ptr<ArcanaType> prim, Args... resto) {
+  if constexpr (sizeof...(resto) == 0) {
+    return prim;
+  } else {
+    return promoverTipos(prim, promoverN(resto...));
+  }
 }
 
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
@@ -356,21 +366,21 @@ struct InfoVariable {
   bool es_const = false;
 };
 
-enum class TPA { NULO, CODE, EXPR, KEY };
+enum class TPA { NULO, KEY, EXPR, CODE };
 
 struct ReglaArcano {
 
   std::string keyword;
   std::vector<std::pair<Token, uint8_t>> componentes;
-  std::vector<std::pair<std::string, InfoVariable>> argumentos;
+  //std::vector<std::pair<std::string, InfoVariable>> argumentos;
 
   /*
-   * Propiedades:
+   * uint8_t:
    *
-   * 0b00 = 0 o más veces
-   * 0b01 = 1 o más veces
-   * 0b10 = 0 o 1 vez
-   * 0b11 = Exactamente 1 vez
+   * (*) 0b00 = 0 or more
+   * (+) 0b01 = 1 or more
+   * (?) 0b10 = 0 o 1
+   * ( ) 0b11 = Exactly 1 time
    *
    * */
 
@@ -388,7 +398,6 @@ bool esModificador(Tt);
 bool esInfiere(Tt);
 bool esTipoComp(Tt);
 bool esTipo(Tt);
-
 
 
 // Declaraciones previas
@@ -476,6 +485,9 @@ public:
 /* --- AST --- */
 class NodoAST {
 public:
+
+  int linea = 0;
+
   virtual ~NodoAST() = default;
   virtual void imprimir(int nivel = 0) const = 0;
   virtual void accept(ASTVisitor* visitor) = 0;
@@ -500,9 +512,7 @@ public:
 class Expresion : public NodoAST {
 public:
   Dt tipo_resuelto;
-  int linea;
 
-  //virtual void accept(ASTVisitor* visitor) = 0;
   virtual std::unique_ptr<Expresion> clonar() const = 0;
 
 };
@@ -517,7 +527,8 @@ public:
 
 struct ArcaneSegment {
   std::string                                       br_key ;
-  std::vector<std::pair<std::string, InfoVariable>> br_args;
+  std::vector<std::pair<std::string, InfoVariable>> br_args; // Variables
+  std::vector<std::string>                          br_expr; // Expressions
   std::unique_ptr<Sentencia>                        br_cont;
 
   ArcaneSegment() = default;
@@ -525,7 +536,7 @@ struct ArcaneSegment {
   ArcaneSegment& operator=(ArcaneSegment&&) = default;
 
   ArcaneSegment(const ArcaneSegment& otra)
-    : br_key(otra.br_key), br_args(otra.br_args) {
+    : br_key(otra.br_key), br_args(otra.br_args), br_expr(otra.br_expr) {
     if (otra.br_cont) {
       br_cont = otra.br_cont->clonar();
     }
@@ -548,7 +559,7 @@ struct ArcaneSegment {
 };
 
 struct ArcaneBranch {
-  std::string rule_tag;
+  std::string rule_tag; // @rule
   std::vector<ArcaneSegment> segmentos;
 
   //...
@@ -556,10 +567,10 @@ struct ArcaneBranch {
 };
 
 struct ArcaneDef {
-  std::string name;
+  std::string name; // CustomIf
 
-  std::vector<ParteArcano>  args    ;
-  std::vector<ReglaArcano>  rules   ;
+  std::vector<ParteArcano>  args    ; // Arcane args
+  std::vector<ReglaArcano>  rules   ; // @rule1, @rule2, ... , @ruleN
   std::vector<ArcaneBranch> branches;
 
   ArcaneDef() = default;
@@ -587,7 +598,7 @@ struct ArcaneDef {
 
 class ContextoArcanos { //...
 private:
-  std::unordered_map<std::string, ArcaneDef> activos;
+  std::unordered_map<std::string, ArcaneDef>   activos;
   std::unordered_map<std::string, ReglaArcano> reglas;
   std::unordered_map<std::string, std::unique_ptr<Sentencia>> ramas;
   std::unordered_map<std::string, std::string> keywordArcano;
@@ -609,7 +620,8 @@ public:
 
   ArcaneDef& buscarDefinicionPorKeyword(const std::string& key) {
     if (keywordArcano.find(key) == keywordArcano.end()) {
-      throw std::runtime_error("Error interno: Se intentó buscar la definición de una keyword inexistente: " + key);
+      throw
+        std::runtime_error("Error interno: Se intentó buscar la definición de una keyword inexistente: " + key);
     }
     return activos.at(keywordArcano.at(key));
   }
@@ -797,6 +809,7 @@ class ExprCasteo : public NodoBase<Expresion, ExprCasteo> {
 public:
   std::unique_ptr<Expresion> expresion;
   Dt tipo_casteo;
+  bool es_implicito = false;
 
   ExprCasteo(std::unique_ptr<Expresion> e, Dt t_c)
     : expresion(std::move(e)), tipo_casteo(t_c) {}
@@ -812,7 +825,8 @@ public:
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
-    std::cout << sangria << "+- Cast (" << tipo_casteo.tipoString() << ")\n";
+    std::cout << sangria << "+- Cast (impl = " << es_implicito << ") [" << tipo_casteo.tipoString() << "]\n";
+    expresion->imprimir(nivel + 1);
   }
 
 };
@@ -1157,13 +1171,15 @@ public:
   bool es_pure;
   std::vector<std::pair<std::string, InfoVariable>> args_type;
   std::unique_ptr<Sentencia> cuerpo_func;
-  InfoVariable ret_type;
+  Dt ret_type;
+
+  std::string firma_mangled;
 
   SentenciaFuncDecl(std::string n,
                     bool pure,
                     std::vector<std::pair<std::string, InfoVariable>> a,
                     std::unique_ptr<Sentencia> c,
-                    InfoVariable r)
+                    Dt r)
   : nombre_func(n), es_pure(pure), args_type(a), cuerpo_func(std::move(c)), ret_type(r) {}
 
   SentenciaFuncDecl(const SentenciaFuncDecl& otra)
@@ -1171,7 +1187,8 @@ public:
       es_pure(otra.es_pure),
       args_type(otra.args_type),
       cuerpo_func(otra.cuerpo_func->clonar()),
-      ret_type(otra.ret_type) {}
+      ret_type(otra.ret_type),
+      firma_mangled(otra.firma_mangled) {}
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
@@ -1185,7 +1202,7 @@ public:
     for (const auto [n, i] : args_type) {
       std::cout << " " << i.tipo.valor->toString() << " " << n << " |";
     }
-    std::cout << ") -> " << ret_type.tipo.valor->toString() << '\n';
+    std::cout << ") -> " << ret_type.valor->toString() << '\n';
 
     std::cout << sangria << "| ";
 
@@ -1262,6 +1279,16 @@ public:
 
     // --- Sección 2: Cuerpo / Ramas ---
     std::cout << sangria << "| [ Implementación ]\n";
+    for (const auto& branch : def.branches) {
+      std::cout << sangria << branch.rule_tag << '\n';
+
+      for (const auto& seg : branch.segmentos) {
+        
+
+      }
+
+      std::cout << sangria;
+    }
     //for (const auto& branch : def.branches) {
     //  std::cout << sangria << "|   +- Rama contextual: '" << branch.segmentos.br_key << " (| ";
 
@@ -1295,7 +1322,7 @@ public:
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
-    std::cout << sangria << "+- Llamada a Arcano: " << nombre << "\n";
+    std::cout << sangria << "Llamada a Arcano: " << nombre << "\n";
     for (const auto& par : argumentos) {
       std::cout << sangria << "| +- Param: " << par.first << "\n";
       if (par.second) {
@@ -1422,15 +1449,24 @@ struct Clase {
   std::unordered_map<std::string, Dt> campos;
 };
 
+struct InfoFuncion {
+  std::string nombre;
+  Dt tipo_retorno;
+  std::vector<std::pair<std::string, InfoVariable>> tipos_parametros;
+  int linea;
+};
+
 struct Scope {
-  std::unordered_map<std::string, InfoVariable> variables = std::unordered_map<std::string, InfoVariable>();
+  std::unordered_map<std::string, InfoVariable> variables;
+  std::unordered_map<std::string, InfoFuncion > funciones;
 };
 
 
 class GestorTablas {
 private:
   ErrorHandler& errHandler;
-  std::vector<Scope> scopes = std::vector<Scope>();
+  std::vector<Scope> scopes;
+  std::vector<InfoFuncion*> pilaFuncs;
 
 public:
   GestorTablas(ErrorHandler& err, std::vector<Scope> scopes);
@@ -1441,6 +1477,15 @@ public:
   // --- Variables ---
   bool añadirVariable(const std::string& nombre, InfoVariable info, int linea);
   InfoVariable* buscarVariable(const std::string& nombre);
+
+  // --- Functions ---
+  bool añadirFunction(const std::string& nombre, InfoFuncion info);
+  InfoFuncion* buscarFuncion(const std::string& nombre);
+  InfoFuncion* getCurrentFunction();
+
+  void pushFunction(InfoFuncion* function);
+  void popFunction();
+
 };
 
 

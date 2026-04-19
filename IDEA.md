@@ -76,3 +76,13 @@ for common types and control structures that can be typed entirely with the left
 ### Rationale:
 While some aliases might result in more verbose expressions (e.g., ac se ... ee add se ... ee ae), they
 eliminate the need for complex hand movements and key combinations, making programming accessible to everyone.
+
+## Casting: A different approach
+### More casting options...
+Everyone is familiar with the C-style casting:
+[(Type)(Expression)]
+
+But what if you had multiple options?
+#### Old Style Cast Syntax:    (Type)(Expression)
+#### Static Cast Syntax:       {Type}(Expression)
+#### Reinterpret Cast Syntax: \[Type](Expression)
