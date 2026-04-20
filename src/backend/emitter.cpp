@@ -509,142 +509,84 @@ void Emitter::visitar(SentenciaArcano* nodo) {
 
 }
 
-//void Emitter::visitar(SentenciaLlamadaArcano* nodo) { //...
-//  ArcaneDef& def = contextoArcanos.buscarDefinicionPorKeyword(nodo->nombre);
-//
-//  ArcaneBranch* rama_elegida = nullptr;
-//
-//  for (auto& branch : def.branches) {
-//    if (branch.segmentos[0].br_key == nodo->nombre) {
-//
-//      //... (por simplicidad, asumiendo un solo segmento por ahora)
-//      size_t params_esperados = branch.segmentos[0].br_args.size();
-//
-//      // Contamos cuántos argumentos convencionales hay
-//      // (descontando los bloques de código)
-//      size_t args_pasados = 0;
-//      for (auto const& [nom, ast] : nodo->argumentos) {
-//        bool es_codigo = false;
-//        for (auto const& arg_def : def.args) {
-//          if (arg_def.contenido == nom && arg_def.tipo_dato == TPA::CODE) {
-//            es_codigo = true;
-//            break;
-//          }
-//        }
-//        if (!es_codigo) { args_pasados++; }
-//      }
-//
-//      if (params_esperados == args_pasados) {
-//        rama_elegida = &branch;
-//        break;
-//      }
-//    }
-//  }
-//
-//  if (!rama_elegida) {
-//    std::cerr << "Error: No se pudo resolver la rama a emitir para el Arcano '" << nodo->nombre << "'.\n";
-//    return ;
-//  }
-//
-//  llvm_scopes.push_back(std::map<std::string, llvm::AllocaInst*>());
-//  auto backup_bloques = bloques_arcano_activos;
-//
-//
-//  for (const auto& [nombre_arg, ast_arg] : nodo->argumentos) {
-//    if (!ast_arg) { continue; }
-//
-//    bool es_lazy = false;
-//
-//    for (const auto& arg_def : def.args) {
-//      if (arg_def.contenido == nombre_arg &&
-//         (arg_def.tipo_dato == TPA::CODE || arg_def.tipo_dato == TPA::EXPR)) {
-//        es_lazy = true;
-//        break;
-//      }
-//    }
-//
-//    if (es_lazy) {
-//      bloques_arcano_activos[nombre_arg] = ast_arg.get();
-//
-//    } else {
-//      ast_arg->accept(this);
-//      llvm::Value* valor_arg = llvm_valor;
-//
-//      llvm::AllocaInst* alloca = llvm_builder->CreateAlloca(valor_arg->getType(), nullptr, nombre_arg);
-//      llvm_builder->CreateStore(valor_arg, alloca);
-//      llvm_scopes.back()[nombre_arg] = alloca;
-//
-//    }
-//  }
-//
-//  for (const auto& seg: rama_elegida->segmentos) {
-//    if (seg.br_cont) {
-//      seg.br_cont->accept(this);
-//    }
-//  }
-//
-//  bloques_arcano_activos = backup_bloques;
-//  llvm_scopes.pop_back();
-//}
+void Emitter::visitar(SentenciaLlamadaArcano* nodo) { //...
+  ArcaneDef& def = contextoArcanos.buscarDefinicionPorKeyword(nodo->nombre);
 
-void Emitter::visitar(SentenciaLlamadaArcano* nodo) {
-// 1. Buscar la definición global del Arcano
-    ArcaneDef& def = contextoArcanos.buscarDefinicionPorKeyword(nodo->nombre);
+  if (nodo->indice_rama >= def.branches.size()) {
+    std::cerr << "Error interno (AST corrupto): Índice de rama fuera de rango para '" << nodo->nombre << "'.\n";
+    exit(1);
+  }
 
-    // 2. Encontrar la rama (branch) que empieza con esta keyword
-    ArcaneBranch* rama_elegida = nullptr;
-    for (auto& branch : def.branches) {
-        if (branch.segmentos[0].br_key == nodo->nombre) {
-            rama_elegida = &branch;
-            break;
-        }
+  ArcaneBranch* rama_elegida = &def.branches[nodo->indice_rama];
+
+  //for (auto& branch : def.branches) {
+  //  if (branch.segmentos[0].br_key == nodo->nombre) {
+
+  //    size_t params_esperados = branch.segmentos[0].br_args.size();
+
+  //    size_t args_pasados = 0;
+  //    for (auto const& [nom, ast] : nodo->argumentos) {
+  //      bool es_codigo = false;
+  //      for (auto const& arg_def : def.args) {
+  //        if (arg_def.contenido == nom && arg_def.tipo_dato == TPA::CODE) {
+  //          es_codigo = true;
+  //          break;
+  //        }
+  //      }
+  //      if (!es_codigo) { args_pasados++; }
+  //    }
+
+  //    if (params_esperados == args_pasados) {
+  //      rama_elegida = &branch;
+  //      break;
+  //    }
+  //  }
+  //}
+
+  //if (!rama_elegida) {
+  //  std::cerr << "Error: No se pudo resolver la rama a emitir para el Arcano '" << nodo->nombre << "'.\n";
+  //  return ;
+  //}
+
+  llvm_scopes.push_back(std::map<std::string, llvm::AllocaInst*>());
+  auto backup_bloques = bloques_arcano_activos;
+
+  for (const auto& [nombre_arg, ast_arg] : nodo->argumentos) {
+    if (!ast_arg) { continue; }
+
+    bool es_lazy = false;
+
+    for (const auto& arg_def : def.args) {
+      if (arg_def.contenido == nombre_arg &&
+         (arg_def.tipo_dato == TPA::CODE  ||
+          arg_def.tipo_dato == TPA::EXPR  )) {
+        es_lazy = true;
+        break;
+      }
     }
 
-    if (!rama_elegida) {
-        std::cerr << "Error: No se encontró una rama para '" << nodo->nombre << "' en el Emitter.\n";
-        return;
+    if (es_lazy) {
+      bloques_arcano_activos[nombre_arg] = ast_arg.get();
+
+    } else {
+      ast_arg->accept(this);
+      llvm::Value* valor_arg = llvm_valor;
+
+      llvm::AllocaInst* alloca = llvm_builder->CreateAlloca(valor_arg->getType(), nullptr, nombre_arg);
+      llvm_builder->CreateStore(valor_arg, alloca);
+      llvm_scopes.back()[nombre_arg] = alloca;
+
     }
 
-    // 3. Preparar el nuevo scope y respaldar bloques activos
-    llvm_scopes.push_back(std::map<std::string, llvm::AllocaInst*>());
-    auto backup_bloques = bloques_arcano_activos;
+  }
 
-    // 4. Mapear Argumentos (Inyectar ASTs o Evaluar Valores)
-    for (const auto& [nombre_arg, ast_arg] : nodo->argumentos) {
-        if (!ast_arg) { continue; }
-
-        // Buscamos si el argumento fue definido como EXPR o CODE
-        bool es_lazy = false;
-        for (const auto& arg_def : def.args) {
-            if (arg_def.contenido == nombre_arg &&
-               (arg_def.tipo_dato == TPA::CODE || arg_def.tipo_dato == TPA::EXPR)) {
-                es_lazy = true;
-                break;
-            }
-        }
-
-        if (es_lazy) {
-            // EXPR y CODE se guardan como ASTs para evaluarse cuando se usen (Lazy)
-            bloques_arcano_activos[nombre_arg] = ast_arg.get();
-        } else {
-            // Otros (como KEY) se evalúan en el acto (Eager)
-            ast_arg->accept(this);
-            llvm::Value* valor_arg = llvm_valor;
-
-            llvm::AllocaInst* alloca = llvm_builder->CreateAlloca(valor_arg->getType(), nullptr, nombre_arg);
-            llvm_builder->CreateStore(valor_arg, alloca);
-            llvm_scopes.back()[nombre_arg] = alloca;
-        }
+  for (const auto& seg: rama_elegida->segmentos) {
+    if (seg.br_cont) {
+      seg.br_cont->accept(this);
     }
+  }
 
-    // 5. Emitir el código de cada segmento de la rama
-    for (const auto& seg : rama_elegida->segmentos) {
-        if (seg.br_cont) {
-            seg.br_cont->accept(this);
-        }
-    }
+  bloques_arcano_activos = backup_bloques;
+  llvm_scopes.pop_back();
 
-    // 6. Limpieza: Restaurar estado previo
-    bloques_arcano_activos = backup_bloques;
-    llvm_scopes.pop_back();
 }

@@ -1283,12 +1283,19 @@ public:
       std::cout << sangria << branch.rule_tag << '\n';
 
       for (const auto& seg : branch.segmentos) {
-        
+        std::cout << seg.br_key << '\n';
+
+        for (const auto& info : seg.br_args) {
+          std::cout << info.first << ": " << info.second.tipo.tipoString() << ", ";
+
+        }
+
+        std::cout << '\n';
 
       }
 
-      std::cout << sangria;
     }
+
     //for (const auto& branch : def.branches) {
     //  std::cout << sangria << "|   +- Rama contextual: '" << branch.segmentos.br_key << " (| ";
 
@@ -1310,14 +1317,13 @@ class SentenciaLlamadaArcano : public NodoBase<Sentencia, SentenciaLlamadaArcano
 public:
   std::string nombre;
   std::map<std::string, std::unique_ptr<Sentencia>> argumentos;
+  size_t indice_rama;
 
-  SentenciaLlamadaArcano(std::string n, std::map<std::string, std::unique_ptr<Sentencia>> args)
-    : nombre(std::move(n)), argumentos(std::move(args)) {}
+  SentenciaLlamadaArcano(std::string n, std::map<std::string, std::unique_ptr<Sentencia>> args, size_t idx)
+    : nombre(std::move(n)), argumentos(std::move(args)), indice_rama(idx) {}
 
-  SentenciaLlamadaArcano(const SentenciaLlamadaArcano& otra)
-    : nombre(otra.nombre) {
-
-    }
+  SentenciaLlamadaArcano(const SentenciaLlamadaArcano& otra) //... Todo: Clone args
+    : nombre(otra.nombre), indice_rama(otra.indice_rama) {}
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";

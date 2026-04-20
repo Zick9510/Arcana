@@ -1,7 +1,6 @@
 arcane CustomIf (si: key, sino: key, expr_if: expr, block_if: code, block_else: code) {
   rules [
-    @si_rule : si   [ expr_if block_if ];
-    @no_rule : sino [ block_else       ];
+    @si_rule : si [ expr_if block_if ];
 
   ];
 
@@ -10,14 +9,6 @@ arcane CustomIf (si: key, sino: key, expr_if: expr, block_if: code, block_else: 
       if (expr_if) {
         block_if;
       }
-	};
-  }
-
-  @no_rule {
-    sino <=> {
-      if (!expr_if) {
-		    block_else;
-	    }
     };
   }
 }
@@ -25,13 +16,21 @@ arcane CustomIf (si: key, sino: key, expr_if: expr, block_if: code, block_else: 
 func main() -> int {
 
   int x = 1;
+  int y = 10;
+  int z = 100;
 
   si (0) {
     x = 10;
-  } sino {
-    x = 20;
   }
 
-  return x;
+  si (1) {
+    y = 20;
+  }
+
+  si (1 + !1) {
+    z = 30;
+  }
+
+  return x + y + z;
 
 }

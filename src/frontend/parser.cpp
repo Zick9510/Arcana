@@ -634,12 +634,12 @@ std::unique_ptr<Sentencia> Parser::parsearReturn() {
   return std::make_unique<SentenciaReturn>(ret_value->tipo_resuelto, std::move(ret_value));
 }
 
-std::vector<std::pair<std::string, InfoVariable>> Parser::parsearFuncArgs() {
+std::vector<std::pair<std::string, InfoVariable>> Parser::parsearFuncArgs(Tt tEnd) {
 
   std::vector<std::pair<std::string, InfoVariable>> args;
   std::set<std::string> nombre_args;
 
-  while (peek().tipo != Tt::PAREN_R && peek().tipo != Tt::FIN_ARCHIVO) {
+  while (peek().tipo != tEnd && peek().tipo != Tt::FIN_ARCHIVO) {
 
     InfoVariable tipo = parsearTipo();
     Token nombre = check(Tt::IDENTIFICADOR);
@@ -852,7 +852,7 @@ std::vector<ArcaneBranch> Parser::parsearCuerpoArcano(
 
         if (peek().tipo == Tt::CORCH_L) { // Argument parsing
           get();
-          segmento.br_args = parsearFuncArgs();
+          segmento.br_args = parsearFuncArgs(Tt::CORCH_R);
           check(Tt::CORCH_R);
 
         }
@@ -864,6 +864,7 @@ std::vector<ArcaneBranch> Parser::parsearCuerpoArcano(
             segmento.br_expr.push_back(get().lexema);
 
             if (peek().tipo == Tt::COMA) { get(); }
+
           }
 
           check(Tt::PAREN_R);
@@ -890,11 +891,12 @@ std::vector<ArcaneBranch> Parser::parsearCuerpoArcano(
       ramas_totales.push_back(std::move(rama_actual));
     }
 
-    check(Tt::LLAVE_R); // End of this rule
+    check(Tt::LLAVE_R);
 
   }
 
   return ramas_totales;
+
 }
 
 std::unique_ptr<Sentencia> Parser::parsearArcano() {
@@ -953,31 +955,43 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() { //...
   std::vector<std::unique_ptr<Expresion>> local_args;
   if (peek().tipo == Tt::CORCH_L) {
     get();
+
     while (peek().tipo != Tt::CORCH_R && peek().tipo != Tt::FIN_ARCHIVO) {
       local_args.push_back(parsearExpresion(Pr::MINIMA));
       if (peek().tipo == Tt::COMA) { get(); }
+
     }
+
     check(Tt::CORCH_R);
+
   }
 
 
   std::vector<std::unique_ptr<Expresion>> expr_args;
   while (peek().tipo == Tt::PAREN_L) {
     get();
+
     while (peek().tipo != Tt::PAREN_R && peek().tipo != Tt::FIN_ARCHIVO) {
       expr_args.push_back(parsearExpresion(Pr::MINIMA));
       if (peek().tipo == Tt::COMA) { get(); }
+
     }
+
     check(Tt::PAREN_R);
+
   }
 
   ArcaneBranch* rama_elegida = nullptr;
-  for (auto& branch : def.branches) {
+  size_t indice_rama_elegida = 0;
+
+  for (size_t i = 0; i < def.branches.size(); ++i) {
+    auto& branch = def.branches[i];
     auto& primer_seg = branch.segmentos[0];
-    if (primer_seg.br_key == key  &&
+    if (primer_seg.br_key == key &&
         primer_seg.br_args.size() == local_args.size() &&
         primer_seg.br_expr.size() ==  expr_args.size()) {
       rama_elegida = &branch;
+      indice_rama_elegida = i;
       break;
     }
   }
@@ -1026,7 +1040,7 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() { //...
 
   if (peek().tipo == Tt::PUNTO_COMA) { get(); }
 
-  return std::make_unique<SentenciaLlamadaArcano>(key, std::move(mapa_argumentos));
+  return std::make_unique<SentenciaLlamadaArcano>(key, std::move(mapa_argumentos), indice_rama_elegida);
 
 }
 

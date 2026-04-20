@@ -47,7 +47,7 @@ public:
   std::unique_ptr<Sentencia> parsearContinue();
 
   std::unique_ptr<Sentencia> parsearReturn();
-  std::vector<std::pair<std::string, InfoVariable>> parsearFuncArgs();
+  std::vector<std::pair<std::string, InfoVariable>> parsearFuncArgs(Tt end = Tt::PAREN_R);
   std::unique_ptr<Sentencia> parsearFuncDecl();
 
   std::pair<std::string, ReglaArcano> parsearReglaArcano();
