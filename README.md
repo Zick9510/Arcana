@@ -8,9 +8,8 @@ In Arcana, syntax is not a law-it is a malleable tool.
 
 ---
 
-## Project Status: Early Alpha (Experimental) [v0.0.2]
-Arcana is currently in a heavy development phase. The core Lexer and Parser are capable of handling expressions,
-and the Semantic Checker is currently being implemented. **Not suitable for production use yet.**
+## Project Status: Early Alpha (Experimental) [v0.0.3]
+Arcana is currently in a heavy development phase. **Not suitable for production use yet.**
 
 ## The Philosophy
 Most languages force you to wait for a committee to add a new feature. Arcana gives you the **Arcane** system:

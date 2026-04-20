@@ -25,6 +25,8 @@ public:
   std::shared_ptr<ArcanaType> verificarDiv     (const Dt& izq, const Dt& der);
   std::shared_ptr<ArcanaType> verificarPotencia(const Dt& izq, const Dt& der);
 
+  std::shared_ptr<ArcanaType> verificarCmpMenor(const Dt& izq, const Dt& der);
+
   // --- Utilidad ---
   bool esCasteoValido(const Dt& tipo_original, const Dt& tipo_destino);
   std::unique_ptr<Expresion> forzarTipo(std::unique_ptr<Expresion> hijo, const Dt& tipoEsperado);
@@ -238,7 +240,7 @@ public:
     }
   }
 
-  void visitar(SentenciaVar* nodo) override { //... Implementar líneas en los NodoAST
+  void visitar(SentenciaVar* nodo) override {
     if (nodo->valor_inicial) { nodo->valor_inicial->accept(this); }
 
     InfoVariable* info = tablas.buscarVariable(nodo->nombre);
@@ -375,14 +377,19 @@ public:
       tablas.entrarScope();
 
       for (const auto& segment : branch.segmentos) {
+
         for (const auto& [name, info] : segment.br_args) {
           tablas.añadirVariable(name, info, 0);
+
         }
 
         if (segment.br_cont != nullptr) {
           segment.br_cont->accept(this);
+
         }
+
       }
+
       tablas.salirScope();
     }
   }

@@ -49,14 +49,15 @@ Token Parser::check(Tt tipoEsperado) {
   }
 
   //... We have to report this error and call the not implemented yet error recovery function
-  std::cerr << "Error: Se esperaba " << nombreTipo(tipoEsperado)
-            << " pero se encontró " << nombreTipo(peek().tipo)
-            << " ('" << peek().lexema << "') en linea " << peek().linea << std::endl;
+  std::cerr << "Error: Se esperaba "  << nombreTipo(tipoEsperado)
+            << " pero se encontró "   << nombreTipo(peek().tipo)  << " ('"
+            << peek().lexema          << "') en linea "                 << peek().linea << std::endl;
 
   std::cout << "Backtrace:\n";
   std::cout << std::stacktrace::current() << '\n';
 
   exit(1);
+
 }
 
 Parser::Parser(std::vector<Token> t, ContextoArcanos& ca, TypeFactory& tf)
@@ -98,14 +99,12 @@ InfoVariable Parser::parsearTipo() {
   }
 
   Token t_base = peek();
-  std::cout << "[101 parser.cpp] " << t_base.lexema << '\n';
 
   switch (t_base.tipo) {
 
     // --- Tipos Compuestos (ADTs) ---
 
     case Tt::CORCH_L: { // Morphs
-      std::cout << "[108, parser.cpp]\n";
       get();
 
       std::vector<std::shared_ptr<ArcanaType>> subtipos;
@@ -120,15 +119,12 @@ InfoVariable Parser::parsearTipo() {
 
       get();
 
-      std::cout << "[123, parser.cpp]\n";
       tipo_actual = typeFactory.getMorph(subtipos);
-      std::cout << "[125, parser.cpp]\n";
       break;
 
     }
 
     case Tt::LLAVE_L: { // Shapes
-      std::cout << "[131, parser.cpp]\n";
       get();
 
       std::vector<CampoShape> campos;
@@ -159,14 +155,12 @@ InfoVariable Parser::parsearTipo() {
     // --- Tipos Primitivos ---
 
     case Tt::VOID: {
-      std::cout << "[162, parser.cpp]\n";
       get();
       tipo_actual = typeFactory.getVoid();
       break;
     }
 
     case Tt::INT: {
-      std::cout << "[169, parser.cpp]\n";
       get();
       int bits = extraerBits(t_base.lexema, 32);
       tipo_actual = typeFactory.getInteger(bits, es_unsigned);
@@ -174,7 +168,6 @@ InfoVariable Parser::parsearTipo() {
     }
 
     case Tt::UINT: {
-      std::cout << "[177, parser.cpp]\n";
       get();
       int bits = extraerBits(t_base.lexema, 32);
       tipo_actual = typeFactory.getInteger(bits, true);
@@ -182,7 +175,6 @@ InfoVariable Parser::parsearTipo() {
     }
 
     case Tt::FLOAT: {
-      std::cout << "[185, parser.cpp]\n";
       get();
       int bits = extraerBits(t_base.lexema, 64);
       tipo_actual = typeFactory.getFloat(bits);
@@ -190,8 +182,6 @@ InfoVariable Parser::parsearTipo() {
     }
 
     default: {
-      std::cout << "[193, parser.cpp]\n";
-      std::cout << peek().lexema << '\n';
       get(); //...
       break;
     }
@@ -690,8 +680,6 @@ std::unique_ptr<Sentencia> Parser::parsearFuncDecl() {
 
   std::unique_ptr<Sentencia> cuerpo_func = nullptr;
 
-  std::cout << "[670, parser.cpp] " << firma << '\n';
-
   if (firma) { // Firma
     get();
 
@@ -798,7 +786,6 @@ std::vector<std::pair<std::string, ReglaArcano>> Parser::parsearReglasArcano() {
 
   while (peek().tipo != Tt::CORCH_R && peek().tipo != Tt::FIN_ARCHIVO) {
     par = parsearReglaArcano();
-    std::cout << "[818, parser.cpp] par.first: " << par.first << '\n';
     rules.push_back(par);
   }
 
@@ -828,12 +815,6 @@ std::vector<ArcaneBranch> Parser::parsearCuerpoArcano(
 
     std::string tag_name = "@" + t_label.lexema; // @rule
     if (!existe_regla(tag_name)) {
-      std::cout << "[847, parser.cpp]: " << tag_name << '\n'; //... Debug
-
-      for (const auto& rule : reglas_declaradas) {
-        std::cout << rule.first << '\n';
-      }
-
       throw std::runtime_error("Error: La regla '" + tag_name + "' no ha sido declarada en el bloque rules.");
 
     }
@@ -931,7 +912,7 @@ std::unique_ptr<Sentencia> Parser::parsearArcano() {
   for (const auto& rule : rules) {
     contextoArcanos.registrarRegla(rule.first, rule.second);
     def.rules.push_back(rule.second);
-    std::cout << "[925, parser.cpp]: " << rule.first << '\n';
+
   }
 
   // Cuerpo
@@ -1154,7 +1135,7 @@ std::unique_ptr<Expresion> Parser::parsearExpresion(Pr precedenciaMinima) {
 
     // Casos Binarios
     Pr prec_propia = obtenerPrecedencia(op.tipo);
-    Pr prec_derecha = (op.tipo == Tt::POTENCIA) ?  static_cast<Pr>(prec_propia - 1) : prec_propia;
+    Pr prec_derecha = (op.tipo == Tt::POTENCIA) ? static_cast<Pr>(prec_propia - 1) : prec_propia;
  
     auto derecha = parsearExpresion(prec_derecha);
  

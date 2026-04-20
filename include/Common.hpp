@@ -177,15 +177,19 @@ inline std::shared_ptr<ArcanaType> promoverTipos(std::shared_ptr<ArcanaType> izq
   int tipoDer = obtenerRangoNum(der->kind);
   if (tipoDer >= tipoIzq) { return der; }
   return izq;
+
 }
 
 template<typename... Args>
 inline std::shared_ptr<ArcanaType> promoverN(std::shared_ptr<ArcanaType> prim, Args... resto) {
   if constexpr (sizeof...(resto) == 0) {
     return prim;
+
   } else {
     return promoverTipos(prim, promoverN(resto...));
+
   }
+
 }
 
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
@@ -252,7 +256,11 @@ inline TipoOperador convertirEnTipoOperador(Tt op) { //... Agregar los demás ca
     case Tt::ASTERISCO: { return TipoOperador::A_MULT     ; }
     case Tt::DIV      : { return TipoOperador::A_DIV      ; }
     case Tt::POTENCIA : { return TipoOperador::A_POT      ; }
+
+    case Tt::MENOR    : { return TipoOperador::CMP_MENOR  ; }
+
     default           : { return TipoOperador::DESCONOCIDO; }
+
   }
 }
 
@@ -974,7 +982,7 @@ public:
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
 
-    std::cout << sangria << "Asignar Variable:\n";
+    std::cout << sangria << "+- Asignar Variable:\n";
     std::cout << sangria << "| +- " << nombre << " [" << tipo_explicito.tipo.tipoString() << "]\n";
 
     if (valor_inicial) {
@@ -1091,22 +1099,25 @@ public:
   ) : condicion(std::move(cond)), rama_while(std::move(r_while)), rama_sino(std::move(r_sino)) {}
 
   SentenciaMientras(const SentenciaMientras& otra)
-    : condicion  (otra.condicion->clonar()),
-      rama_while (otra.rama_while  ->clonar()),
+    : condicion  (otra.condicion ->clonar()),
+      rama_while (otra.rama_while->clonar()),
       rama_sino  (otra.rama_sino ? otra.rama_sino->clonar() : nullptr) {}
-
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
     std::cout << sangria << "+- Mientras\n";
+
     std::cout << sangria << "| +- Condición:\n";
-    condicion->imprimir(nivel + 1);
+    condicion->imprimir(nivel + 2);
+
     std::cout << sangria << "| +- Cuerpo:\n";
-    rama_while->imprimir(nivel + 1);
+    rama_while->imprimir(nivel + 2);
+
     if (rama_sino) {
       std::cout << sangria << "| +- Sino:\n";
-      rama_sino->imprimir(nivel + 1);
+      rama_sino->imprimir(nivel + 2);
+
     }
   }
 
@@ -1265,32 +1276,31 @@ public:
 
     std::cout << sangria << "+- Arcane: " << def.name << "\n";
  
-    // --- Sección 1: Interfaz / Esqueleto ---
-    std::cout << sangria << "| [ Interfaz ]\n";
+    std::cout << sangria << "| [ Args ]\n";
     for (const auto& arg : def.args) {
-        std::cout << sangria << "|   +- ";
+        std::cout << sangria << "| +- ";
         std::string t_str = (arg.tipo_dato == TPA::CODE ? "code" :
                              arg.tipo_dato == TPA::EXPR ? "expr" :
                              arg.tipo_dato == TPA::KEY  ? "key"  : "unknown");
         std::cout << arg.contenido << " <" << t_str << ">";
         std::cout << "\n";
     }
-    std::cout << "\n";
 
-    // --- Sección 2: Cuerpo / Ramas ---
-    std::cout << sangria << "| [ Implementación ]\n";
+    std::cout << sangria << "| [ Logic ]\n";
     for (const auto& branch : def.branches) {
-      std::cout << sangria << branch.rule_tag << '\n';
+      std::cout << sangria << "| +- Rule: " << branch.rule_tag << '\n';
 
       for (const auto& seg : branch.segmentos) {
-        std::cout << seg.br_key << '\n';
+        std::cout << sangria << "| | +- Keyword: " << seg.br_key << " [";
 
         for (const auto& info : seg.br_args) {
           std::cout << info.first << ": " << info.second.tipo.tipoString() << ", ";
 
         }
 
-        std::cout << '\n';
+        std::cout << "]\n";
+
+        seg.br_cont->imprimir(nivel + 1);
 
       }
 

@@ -1,0 +1,16 @@
+func main() -> int {
+
+  1 < 2;
+
+  int a = 1;
+  int b = 2;
+
+  a < 2;
+  1 < b;
+  a < b;
+
+  return 0;
+
+}
+
+

@@ -14,8 +14,13 @@ llvm::Type* Emitter::obtenerTipoLLVM(std::shared_ptr<ArcanaType> tipo) {
   if (!tipo) { return nullptr; }
 
   switch (tipo->kind) {
+
     case TypeKind::VOID: {
       return llvm::Type::getVoidTy(llvm_ctx);
+    }
+
+    case TypeKind::BOOLEAN: {
+      return llvm::Type::getInt1Ty(llvm_ctx);
     }
 
     case TypeKind::INTEGER: {
@@ -163,7 +168,15 @@ void Emitter::visitar(ExprBinaria* nodo) {
       break;
     }
 
+    case TipoOperador::CMP_MENOR: { //... Add signed / unsigned cmp support
+      std::cout << "[172, emitter.cpp]\n";
+      llvm_valor = es_float ? llvm_builder->CreateFCmpULT(L, R, "lesstemp")
+                            : llvm_builder->CreateICmpULT(L, R, "lesstemp");
+      break;
+    }
+
     default: {
+      std::cout << "[179, emitter.cpp]\n";
       break;
     }
   }
@@ -269,6 +282,7 @@ void Emitter::visitar(Bloque* nodo) {
 }
 
 void Emitter::visitar(SentenciaVar* nodo) {
+
   llvm::Type* tipoLLVM = obtenerTipoLLVM(nodo->tipo_explicito.tipo.valor);
 
   llvm::AllocaInst* alloca = llvm_builder->CreateAlloca(tipoLLVM, nullptr, nodo->nombre);
@@ -513,40 +527,12 @@ void Emitter::visitar(SentenciaLlamadaArcano* nodo) { //...
   ArcaneDef& def = contextoArcanos.buscarDefinicionPorKeyword(nodo->nombre);
 
   if (nodo->indice_rama >= def.branches.size()) {
-    std::cerr << "Error interno (AST corrupto): Índice de rama fuera de rango para '" << nodo->nombre << "'.\n";
+    std::cerr << "Error interno: Índice de rama fuera de rango para '" << nodo->nombre << "'.\n";
     exit(1);
+
   }
 
   ArcaneBranch* rama_elegida = &def.branches[nodo->indice_rama];
-
-  //for (auto& branch : def.branches) {
-  //  if (branch.segmentos[0].br_key == nodo->nombre) {
-
-  //    size_t params_esperados = branch.segmentos[0].br_args.size();
-
-  //    size_t args_pasados = 0;
-  //    for (auto const& [nom, ast] : nodo->argumentos) {
-  //      bool es_codigo = false;
-  //      for (auto const& arg_def : def.args) {
-  //        if (arg_def.contenido == nom && arg_def.tipo_dato == TPA::CODE) {
-  //          es_codigo = true;
-  //          break;
-  //        }
-  //      }
-  //      if (!es_codigo) { args_pasados++; }
-  //    }
-
-  //    if (params_esperados == args_pasados) {
-  //      rama_elegida = &branch;
-  //      break;
-  //    }
-  //  }
-  //}
-
-  //if (!rama_elegida) {
-  //  std::cerr << "Error: No se pudo resolver la rama a emitir para el Arcano '" << nodo->nombre << "'.\n";
-  //  return ;
-  //}
 
   llvm_scopes.push_back(std::map<std::string, llvm::AllocaInst*>());
   auto backup_bloques = bloques_arcano_activos;

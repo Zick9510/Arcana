@@ -214,19 +214,19 @@ std::shared_ptr<ArcanaType> Checker::verificarDiv(const Dt& izq, const Dt& der) 
 std::shared_ptr<ArcanaType> Checker::verificarPotencia(const Dt& izq, const Dt& der) {
 
   if (izq.esPrimitivo() && der.esPrimitivo()) {
-    std::cout << "[143 checker.cpp]\n";
+    std::cout << "[217 checker.cpp]\n";
     TypeKind pIzq = izq.valor->kind;
     TypeKind pDer = der.valor->kind;
-    std::cout << "[146 checker.cpp]\n";
+    std::cout << "[220 checker.cpp]\n";
 
     // Regla 1: Potenciación de números
     if (esNum(pIzq) && esNum(pDer)) { //... Ojo con (-x) ** ( 1 / (2n) )
 
       // Obtenemos el tipo más preciso de los dos
       std::shared_ptr<ArcanaType> promovido = promoverTipos(izq.valor, der.valor);
-      std::cout << "[152 checker.cpp]\n";
+      std::cout << "[227 checker.cpp]\n";
       TypeKind pProm = promovido->kind;
-      std::cout << "[154 checker.cpp]\n";
+      std::cout << "[229 checker.cpp]\n";
 
       if (esFloat(pProm)) {
         // Si es flotante, el piso es double
@@ -255,26 +255,48 @@ std::shared_ptr<ArcanaType> Checker::verificarPotencia(const Dt& izq, const Dt& 
 
 }
 
+std::shared_ptr<ArcanaType> Checker::verificarCmpMenor(const Dt& izq, const Dt& der) {
+
+  if (izq.esPrimitivo() && der.esPrimitivo()) {
+    TypeKind pIzq = izq.valor->kind;
+    TypeKind pDer = der.valor->kind;
+
+    // Regla 1: Comparación de números
+    if (esNum(pIzq) && esNum(pDer)) {
+      return typeFactory.getBoolean();
+      return promoverTipos(izq.valor, der.valor); //...
+
+    }
+
+  }
+
+  //... Reportar al errHandler
+  return nullptr;
+
+}
+
 Dt Checker::verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador op) { //...
 
   //... Añadir comprobación de error o desconocido en izq y der
 
   //...
   if (!izq.valor) {
-    std::cout << "[194, checker.cpp] izq null\n";
+    std::cout << "[282, checker.cpp] izq null\n";
   }
 
   if (!der.valor) {
-    std::cout << "[198, checker.cpp] der null\n";
+    std::cout << "[286, checker.cpp] der null\n";
   }
 
   if (izq.valor->kind == TypeKind::DESCONOCIDO || der.valor->kind == TypeKind::DESCONOCIDO) {
     //...
-    std::cout << "[203, checker.cpp]\n";
+    std::cout << "[291, checker.cpp]\n";
 
   }
 
   switch(op) { //... Añadir más casos
+
+    // Aritméticos
 
     case TipoOperador::A_SUMA: {
       return verificarSuma(izq, der);
@@ -296,8 +318,14 @@ Dt Checker::verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador 
       return verificarPotencia(izq, der);
     }
 
+    // Comparadores
+
+    case TipoOperador::CMP_MENOR: {
+      return verificarCmpMenor(izq, der);
+    }
+
     default: {
-      std::cout << "[230 checker.cpp] Operador desconocido: " << operadorString(op) << "\n";
+      std::cout << "[326 checker.cpp] Operador desconocido: " << operadorString(op) << '\n';
       //... Retornar algo
     }
   }
