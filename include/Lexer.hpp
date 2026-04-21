@@ -31,5 +31,7 @@ public:
   void leerNumero();
   void leerStringChar();
 
+  void captureSymbol();
+
   std::vector<Token> tokenize();
 };

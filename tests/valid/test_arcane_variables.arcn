@@ -13,7 +13,7 @@ arcane Twice_TwiceIf (twice: key, twice_if: key, expr1: expr, block1: code) {
   }
 
   @eval {
-    twice_if (expr1) <=> {
+    twice_if <=> {
       if (expr1) {
         block1;
         block1;

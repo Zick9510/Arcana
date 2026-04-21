@@ -1,12 +1,21 @@
 import os
 import subprocess
 
+class Color:
+    GREEN = '\033[92m'
+    RED   = '\033[91m'
+    CYAN  = '\033[96m'
+    BOLD  = '\033[1m'
+    END   = '\033[0m'
+
 COMPILER_PATH: str = "./bin/arcana"
 VALID_TESTS_DIR: str = "tests/valid/"
 OUTPUT_TESTS_DIR: str = "tests/build/"
 
-def run_valid_tests():
-    print("Running valid tests...")
+failed_tests: list = []
+
+def run_tests():
+    print(f"{Color.BOLD}{Color.CYAN}Running tests...{Color.END}\n")
 
     passed: int = 0
     failed: int = 0
@@ -25,21 +34,32 @@ def run_valid_tests():
         result = subprocess.run(command, capture_output=True)
 
         if (result.returncode == 0):
-            print(f"[OK] {filename}")
+            print(f"{Color.GREEN}[OK]{Color.END} {filename}")
             passed += 1
 
         else:
-            print(f"[BAD] {filename}")
-            print(result.stderr.decode('utf-8'))
+            failed_tests.append([filename, result])
             failed += 1
 
-            if (result.stdout):
-                print(result.stdout.decode('utf-8'))
+    print()
+
+    for f, r in failed_tests:
+        print(f"{Color.RED}[BAD]{Color.END} {f}")
+        print(r.stderr.decode('utf-8'))
+
+        if (r.stdout):
+            print(r.stdout.decode('utf-8'))
 
 
-    print("-" * 20)
-    print(f"GOOD: {passed}")
-    print(f"BAD : {failed}")
+    print("\n" + "-" * 20)
+    print(f"{Color.BOLD }{Color.CYAN}Summary:{Color.END}")
+    print(f"{Color.GREEN}  PASSED: {passed}{Color.END}")
+    print(f"{Color.RED  }  FAILED: {failed}{Color.END}")
+    print("\n" + "-" * 20)
+
+    if (failed):
+        for f, _ in failed_tests:
+            print(f"{Color.RED}[BAD]{Color.END} {f}")
 
 if (__name__ == "__main__"):
-    run_valid_tests()
+    run_tests()

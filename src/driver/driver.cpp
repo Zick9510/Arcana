@@ -29,12 +29,12 @@ bool Driver::compile(const CompilerConfig& config) {
   std::vector<Token> tokens = lexer.tokenize();
 
   //... Debug
-  std::cout << "\n --- TOKENS --- \n\n";
-  for (const auto& t : tokens) {
-    std::cout << "< Token: '" << t.lexema << "' | "
-              << "L: " << t.linea
-              << " >\n";
-  }
+  //std::cout << "\n --- TOKENS --- \n\n";
+  //for (const auto& t : tokens) {
+  //  std::cout << "< Token: '" << t.lexema << "' | "
+  //            << "L: " << t.linea
+  //            << " >\n";
+  //}
 
   // 4. Syntactic Analysis (Tokens -> AST)
   TypeFactory factory;
@@ -46,7 +46,7 @@ bool Driver::compile(const CompilerConfig& config) {
   std::vector<Scope> scopes;
   GestorTablas tablas(errHandler, scopes);
 
-  Checker checker(tablas, ast, errHandler, factory);
+  Checker checker(tablas, ast, errHandler, factory, contexto_arcanos);
   checker.verificarPrograma();
 
   if (errHandler.notificar()) { //... Hay al menos un error

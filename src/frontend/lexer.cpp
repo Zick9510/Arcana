@@ -184,6 +184,10 @@ void Lexer::leerStringChar() { //...
 
 }
 
+void Lexer::captureSymbol() { //...
+
+}
+
 /* --- Main Tokenization Loop --- */
 
 std::vector<Token> Lexer::tokenize() {
@@ -207,9 +211,9 @@ std::vector<Token> Lexer::tokenize() {
 
       // Encontrar dónde empiezan los números (si existen)
       auto it_digito = std::find_if(texto.begin(), texto.end(), ::isdigit);
-      std::string_view prefijo = texto.substr(0, std::distance(texto.begin(), it_digito));
-      std::string_view sufijo  = texto.substr(std::distance(texto.begin(), it_digito));
-      auto es_keyword = keywords.find(std::string(prefijo));
+      std::string_view prefijo     = texto.substr(0, std::distance(texto.begin(), it_digito));
+      std::string_view sufijo      = texto.substr(std::distance(texto.begin(), it_digito));
+      auto es_keyword    = keywords.find(std::string(prefijo));
 
       // Se asume identificador a menos que cumpla todos los requisitos de ser una keyword
       Tt tipo_final = Tt::IDENTIFICADOR;
@@ -318,7 +322,7 @@ std::vector<Token> Lexer::tokenize() {
           while (!esFin()) {
 
             if (actual() == '-' && peek() == '/') {
-              get(); get(); // Consume - and /
+              get(); get();
               comment_closed = true;
               break;
 

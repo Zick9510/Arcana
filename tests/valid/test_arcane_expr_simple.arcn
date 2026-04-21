@@ -1,16 +1,17 @@
-arcane CustomIf (si: key, sino: key, expr_if: expr, block_if: code, block_else: code) {
+arcane CustomIf (si: key, siempre: key, expr_if: expr, block_if: code, block_always: code) {
   rules [
     @si_rule : si [ expr_if block_if ];
 
   ];
 
   @si_rule {
-    si (expr_if) <=> {
+    si <=> {
       if (expr_if) {
         block_if;
       }
     };
   }
+
 }
 
 func main() -> int {
@@ -31,6 +32,6 @@ func main() -> int {
     z = 30;
   }
 
-  return x + y + z;
+  return x + y + z; // 1 + 20 + 30
 
 }

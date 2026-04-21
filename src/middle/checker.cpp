@@ -95,9 +95,8 @@ void GestorTablas::popFunction() {
 }
 
 /* --- Checker --- */
-
-Checker::Checker(GestorTablas& t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e, TypeFactory& tf)
-  : tablas(t), ast(a), errHandler(e), typeFactory(tf) {}
+Checker::Checker(GestorTablas& t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e, TypeFactory& tf, ContextoArcanos& ca)
+  : tablas(t), ast(a), errHandler(e), typeFactory(tf), contextoArcanos(ca) {}
 
 
 // --- Casteos --- //

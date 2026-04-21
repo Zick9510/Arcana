@@ -237,10 +237,6 @@ void Emitter::visitar(ExprAcceso* nodo) {
 
 }
 
-void Emitter::visitar(ExprLlamadaArcano* nodo) {
-
-}
-
 void Emitter::visitar(ExprFuncCall* nodo) {
   auto* var_callee = dynamic_cast<ExprVariable*>(nodo->callee.get());
   if (!var_callee) {
@@ -537,33 +533,22 @@ void Emitter::visitar(SentenciaLlamadaArcano* nodo) { //...
   llvm_scopes.push_back(std::map<std::string, llvm::AllocaInst*>());
   auto backup_bloques = bloques_arcano_activos;
 
-  for (const auto& [nombre_arg, ast_arg] : nodo->argumentos) {
-    if (!ast_arg) { continue; }
+  for (const auto& [nombre_arg, ast_arg] : nodo->args) {
+    ast_arg->accept(this);
+    llvm::Value* valor_arg = llvm_valor;
 
-    bool es_lazy = false;
+    llvm::AllocaInst* alloca = llvm_builder->CreateAlloca(valor_arg->getType(), nullptr, nombre_arg);
+    llvm_builder->CreateStore(valor_arg, alloca);
+    llvm_scopes.back()[nombre_arg] = alloca;
 
-    for (const auto& arg_def : def.args) {
-      if (arg_def.contenido == nombre_arg &&
-         (arg_def.tipo_dato == TPA::CODE  ||
-          arg_def.tipo_dato == TPA::EXPR  )) {
-        es_lazy = true;
-        break;
-      }
-    }
+  }
 
-    if (es_lazy) {
-      bloques_arcano_activos[nombre_arg] = ast_arg.get();
+  for (const auto& [nombre_arg, ast_arg] : nodo->expr) {
+    bloques_arcano_activos[nombre_arg] = ast_arg.get();
+  }
 
-    } else {
-      ast_arg->accept(this);
-      llvm::Value* valor_arg = llvm_valor;
-
-      llvm::AllocaInst* alloca = llvm_builder->CreateAlloca(valor_arg->getType(), nullptr, nombre_arg);
-      llvm_builder->CreateStore(valor_arg, alloca);
-      llvm_scopes.back()[nombre_arg] = alloca;
-
-    }
-
+  for (const auto& [nombre_arg, ast_arg] : nodo->code) {
+    bloques_arcano_activos[nombre_arg] = ast_arg.get();
   }
 
   for (const auto& seg: rama_elegida->segmentos) {

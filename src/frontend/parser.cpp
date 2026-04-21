@@ -208,7 +208,7 @@ InfoVariable Parser::parsearTipo() {
 }
 
 std::unique_ptr<Expresion> Parser::parsearCasteo() {
-  std::cerr << "[140 parser.cpp] NO IMPLEMENTADO (parsearCasteo)\n";
+  std::cerr << "[211 parser.cpp] NO IMPLEMENTADO (parsearCasteo)\n";
   exit(1);
 }
 
@@ -747,26 +747,9 @@ std::pair<std::string, ReglaArcano> Parser::parsearReglaArcano() { //...
   while (peek().tipo != Tt::CORCH_R && peek().tipo != Tt::FIN_ARCHIVO) {
     t = get();
 
-    Token s = peek();
+    Token comp = t;
 
-    uint8_t pattern = 3; // 1
-
-    if        (s.tipo == Tt::PREGUNTA ) { // 1 or 0
-      get();
-      pattern = 2;
-    } else if (s.tipo == Tt::MAS      ) { // +1
-      get();
-      pattern = 1;
-    } else if (s.tipo == Tt::ASTERISCO) { // +0
-      get();
-      pattern = 0;
-    }
-
-    std::pair<Token, uint8_t> par_rule;
-    par_rule.first  = t;
-    par_rule.second = pattern;
-
-    par.second.componentes.push_back(par_rule);
+    par.second.componentes.push_back(comp);
 
   }
 
@@ -909,11 +892,17 @@ std::unique_ptr<Sentencia> Parser::parsearArcano() {
 
   // Reglas
   std::vector<std::pair<std::string, ReglaArcano>> rules = parsearReglasArcano();
+
+  std::cout << "[896, parser.cpp]\n";
+
   for (const auto& rule : rules) {
     contextoArcanos.registrarRegla(rule.first, rule.second);
+    std::cout << rule.first << ' ';
     def.rules.push_back(rule.second);
 
   }
+
+  std::cout << '\n';
 
   // Cuerpo
   def.branches = parsearCuerpoArcano(rules);
@@ -926,12 +915,11 @@ std::unique_ptr<Sentencia> Parser::parsearArcano() {
 
 }
 
-std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() { //...
-  Token t_trigger = check(Tt::IDENTIFICADOR);
-  std::string key = t_trigger.lexema;
+std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() {
+  Token trigger = check(Tt::IDENTIFICADOR);
+  std::string key = trigger.lexema;
 
   ArcaneDef& def = contextoArcanos.buscarDefinicionPorKeyword(key);
-
 
   std::vector<std::unique_ptr<Expresion>> local_args;
   if (peek().tipo == Tt::CORCH_L) {
@@ -947,7 +935,6 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() { //...
 
   }
 
-
   std::vector<std::unique_ptr<Expresion>> expr_args;
   while (peek().tipo == Tt::PAREN_L) {
     get();
@@ -962,66 +949,104 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() { //...
 
   }
 
-  ArcaneBranch* rama_elegida = nullptr;
-  size_t indice_rama_elegida = 0;
+  std::vector<std::unique_ptr<Sentencia>> code_args;
+  while (peek().tipo == Tt::LLAVE_L) {
+    code_args.push_back(parsearBloque());
+
+  }
+
+  ArcaneBranch* rama = nullptr;
+  size_t indice_rama = 0;
 
   for (size_t i = 0; i < def.branches.size(); ++i) {
     auto& branch = def.branches[i];
+    ReglaArcano rule = contextoArcanos.obtenerRegla(branch.rule_tag);
     auto& primer_seg = branch.segmentos[0];
-    if (primer_seg.br_key == key &&
-        primer_seg.br_args.size() == local_args.size() &&
-        primer_seg.br_expr.size() ==  expr_args.size()) {
-      rama_elegida = &branch;
-      indice_rama_elegida = i;
+
+    size_t expected_expr = 0;
+    size_t expected_code = 0;
+
+    for (const auto& comp : rule.componentes) {
+      for (const auto& arg_def : def.args) {
+        if (arg_def.contenido == comp.lexema) {
+          if (arg_def.tipo_dato == TPA::EXPR) { expected_expr++; }
+          if (arg_def.tipo_dato == TPA::CODE) { expected_code++; }
+        }
+      }
+    }
+
+    if (rule.keyword  == key              &&
+        expected_expr == expr_args.size() &&
+        expected_code == code_args.size() &&
+        primer_seg.br_args.size()         == local_args.size()) {
+
+      rama = &branch;
+      indice_rama = i;
       break;
+
     }
   }
 
-  if (!rama_elegida) {
-    throw std::runtime_error("Firma no encontrada para '" + key + "'" +
-                             " con [" + std::to_string(local_args.size()) +
-                             "] argumentos y (" + std::to_string(expr_args.size()) + ") expresiones.");
+  if (!rama) {
+    std::cout << "[991, parser.cpp]\n";
+    throw std::runtime_error("Firma no encontrada para '" + key + "'"                   +
+                                  " con [" + std::to_string(local_args.size())          +
+                                  "] argumentos y (" + std::to_string(expr_args.size()) +
+                                  ") expresiones."
+    );
   }
-  std::map<std::string, std::unique_ptr<Sentencia>> mapa_argumentos;
 
-  std::vector<std::string> expr_params;
+  ReglaArcano rule = contextoArcanos.obtenerRegla(rama->rule_tag);
+
+  std::unordered_map<std::string, std::unique_ptr<Sentencia>> mapa_args;
+  std::unordered_map<std::string, std::unique_ptr<Sentencia>> mapa_code;
+  std::unordered_map<std::string, std::unique_ptr<Sentencia>> mapa_expr;
+
   std::vector<std::string> code_params;
+  std::vector<std::string> expr_params;
+
   for (const auto& arg : def.args) {
     if (arg.tipo_dato == TPA::EXPR) { expr_params.push_back(arg.contenido); }
     if (arg.tipo_dato == TPA::CODE) { code_params.push_back(arg.contenido); }
   }
 
+  std::cout << "[1013, parser.cpp]\n";
   for (size_t i = 0; i < expr_args.size(); ++i) {
     if (i < expr_params.size()) {
-      mapa_argumentos[expr_params[i]] = std::make_unique<SentenciaExpr>(std::move(expr_args[i]));
+      std::cout << "[1016, parser.cpp]\n";
+      mapa_expr[expr_params[i]] = std::make_unique<SentenciaExpr>(std::move(expr_args[i]));
     }
   }
 
+  std::cout << "[1021, parser.cpp]\n";
   for (size_t i = 0; i < local_args.size(); ++i) {
-    std::string nombre_local = rama_elegida->segmentos[0].br_args[i].first;
-    mapa_argumentos[nombre_local] = std::make_unique<SentenciaExpr>(std::move(local_args[i]));
+    std::cout << "[1023, parser.cpp]\n";
+    std::string nombre_local = rama->segmentos[0].br_args[i].first;
+    std::cout << "[1025, parser.cpp]\n";
+    mapa_args[nombre_local] = std::make_unique<SentenciaExpr>(std::move(local_args[i]));
+    std::cout << "[1027, parser.cpp]\n";
   }
 
-  int bloque_actual_idx = 0;
-  for (size_t i = 0; i < rama_elegida->segmentos.size(); ++i) {
-    auto& seg = rama_elegida->segmentos[i];
-
-    if (i > 0) {
-      check(Tt::IDENTIFICADOR);
-      //...
-    }
-
-    std::unique_ptr<Sentencia> bloque = parsearBloque();
-
-    if (bloque_actual_idx < code_params.size()) {
-      mapa_argumentos[code_params[bloque_actual_idx]] = std::move(bloque);
-      bloque_actual_idx++;
+  std::cout << "[1030, parser.cpp]\n";
+  for (size_t i = 0; i < code_args.size(); ++i) {
+    if (i < code_params.size()) {
+      std::cout << "[1033, parser.cpp]\n";
+      mapa_code[code_params[i]] = std::move(code_args[i]);
     }
   }
 
-  if (peek().tipo == Tt::PUNTO_COMA) { get(); }
+  std::cout << "[1038, parser.cpp]\n";
+  if (mapa_code.empty()) {
+    check(Tt::PUNTO_COMA);
 
-  return std::make_unique<SentenciaLlamadaArcano>(key, std::move(mapa_argumentos), indice_rama_elegida);
+  }
+
+  return std::make_unique<SentenciaLlamadaArcano>(key,
+                                                  std::move(mapa_args),
+                                                  std::move(mapa_code),
+                                                  std::move(mapa_expr),
+                                                  indice_rama
+  );
 
 }
 

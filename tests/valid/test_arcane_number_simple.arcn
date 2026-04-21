@@ -1,0 +1,22 @@
+arcane CustomNumber (num: key) {
+
+  rules [
+    @simple: num [];
+  ];
+
+  @simple {
+
+    num <=> {
+      2;
+    };
+
+  }
+
+}
+
+func main() -> int {
+
+  num;
+
+  return 0;
+}

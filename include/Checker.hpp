@@ -10,9 +10,10 @@ private:
   std::vector<std::unique_ptr<Sentencia>>& ast;
   ErrorHandler& errHandler;
   TypeFactory& typeFactory;
+  ContextoArcanos& contextoArcanos;
 
 public:
-  Checker(GestorTablas& t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e, TypeFactory& tf);
+  Checker(GestorTablas& t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e, TypeFactory& tf, ContextoArcanos& ca);
 
   void verificarNodo(std::unique_ptr<Sentencia>& nodo);
   Dt verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador op);
@@ -103,11 +104,14 @@ public:
       }
     }
 
+    std::cout << "[106, Checker.hpp]\n";
+
     if (tipo.valor != typeFactory.getUnknown()) {
       nodo->tipo_resuelto = tipo;
       return ;
     }
 
+    std::cout << "[113, Checker.hpp]\n";
 
     //... Añadir comprobaciones de tamaño
     if (tiene_punto || scientific) {
@@ -204,10 +208,6 @@ public:
         }
       }
     }
-
-  void visitar(ExprLlamadaArcano* nodo) override {
-
-  }
 
   void visitar(ExprRango* nodo) override {
 
@@ -323,7 +323,7 @@ public:
       nodo->ret_type.valor = nodo->ret_value->tipo_resuelto.valor;
 
     } else {
-      std::cout << "[328, Checker.hpp] Bad Info"; //...
+      std::cout << "[325, Checker.hpp] Bad Info"; //...
       exit(1);
 
     }
@@ -372,30 +372,66 @@ public:
 
   }
 
+  //void visitar(SentenciaArcano* nodo) override {
+  //  for (const auto& branch : nodo->def.branches) {
+  //    tablas.entrarScope();
+
+  //    for (const auto& segment : branch.segmentos) {
+
+  //      for (const auto& [name, info] : segment.br_args) {
+  //        tablas.añadirVariable(name, info, 0);
+
+  //      }
+
+  //      if (segment.br_cont != nullptr) {
+  //        segment.br_cont->accept(this);
+
+  //      }
+
+  //    }
+
+  //    tablas.salirScope();
+  //  }
+
+  //}
+
   void visitar(SentenciaArcano* nodo) override {
+    ArcaneDef& def = contextoArcanos.buscarDefinicionPorNombre(nodo->def.name);
+
     for (const auto& branch : nodo->def.branches) {
-      tablas.entrarScope();
+      //tablas.entrarScope();
 
       for (const auto& segment : branch.segmentos) {
-
-        for (const auto& [name, info] : segment.br_args) {
+        /*for (const auto& [name, info] : segment.br_args) {
           tablas.añadirVariable(name, info, 0);
-
-        }
+        }*/
 
         if (segment.br_cont != nullptr) {
           segment.br_cont->accept(this);
-
         }
-
       }
 
-      tablas.salirScope();
+      //tablas.salirScope();
+
     }
+
+    def = nodo->def;
   }
 
   void visitar(SentenciaLlamadaArcano* nodo) override {
-    for (const auto& [name, arg_nodo] : nodo->argumentos) {
+    for (const auto& [name, arg_nodo] : nodo->args) {
+      if (arg_nodo != nullptr) {
+        arg_nodo->accept(this);
+      }
+    }
+
+    for (const auto& [name, arg_nodo] : nodo->expr) {
+      if (arg_nodo != nullptr) {
+        arg_nodo->accept(this);
+      }
+    }
+
+    for (const auto& [name, arg_nodo] : nodo->code) {
       if (arg_nodo != nullptr) {
         arg_nodo->accept(this);
       }

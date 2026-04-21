@@ -1,10 +1,17 @@
-arcane Test (inc: key, boo: key, block1: code, block2: code) {
+arcane Test (inc: key, block1: code, block2: code) {
   rules [
     @simple: inc [ block1 ];
-    @alter : inc [ block1 boo block2 ];
+    @alter : inc [ block1 block2 ];
   ];
 
   @simple {
+    inc <=> {
+      block1;
+      block1;
+      block1;
+
+    };
+
     inc [int a] <=> {
       block1;
     };
@@ -26,10 +33,6 @@ arcane Test (inc: key, boo: key, block1: code, block2: code) {
 
       }
 
-    }
-
-    boo [int x] <=> {
-		  block2;
     };
 
   }
@@ -42,13 +45,24 @@ func main() -> int {
 	int y = 2;
 	int z = 3;
 
+  inc {
+    z = z + 1; // z = 6
+  }
+
 	inc [x] {
-		y = y + 18;
-	};
+		y = y + 18; // y = 20
+	}
 
 	inc [x, z] {
-		y = y - 3;
-	};
+		y = y - 3; // y = 14
+	}
+
+  inc [x, y, z] {
+    x = 5; // x = 5
+  } {
+    x = 10;
+  }
 
 	return y;
+
 }

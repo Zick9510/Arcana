@@ -378,19 +378,9 @@ enum class TPA { NULO, KEY, EXPR, CODE };
 
 struct ReglaArcano {
 
-  std::string keyword;
-  std::vector<std::pair<Token, uint8_t>> componentes;
-  //std::vector<std::pair<std::string, InfoVariable>> argumentos;
-
-  /*
-   * uint8_t:
-   *
-   * (*) 0b00 = 0 or more
-   * (+) 0b01 = 1 or more
-   * (?) 0b10 = 0 o 1
-   * ( ) 0b11 = Exactly 1 time
-   *
-   * */
+  //std::string rule_tag; // @rule
+  std::string keyword; // trigger keyword
+  std::vector<Token> componentes;
 
 };
 
@@ -419,8 +409,6 @@ class ExprCasteo;
 
 class ExprRango;
 class ExprAcceso;
-
-class ExprLlamadaArcano;
 
 class ExprFuncCall;
 
@@ -459,8 +447,6 @@ public:
 
   virtual void visitar(ExprRango* nodo)  = 0;
   virtual void visitar(ExprAcceso* nodo) = 0;
-
-  virtual void visitar(ExprLlamadaArcano* nodo) = 0;
 
   virtual void visitar(ExprFuncCall* nodo) = 0;
 
@@ -606,7 +592,7 @@ struct ArcaneDef {
 
 class ContextoArcanos { //...
 private:
-  std::unordered_map<std::string, ArcaneDef>   activos;
+  std::unordered_map<std::string, ArcaneDef  > activos;
   std::unordered_map<std::string, ReglaArcano> reglas;
   std::unordered_map<std::string, std::unique_ptr<Sentencia>> ramas;
   std::unordered_map<std::string, std::string> keywordArcano;
@@ -617,13 +603,21 @@ public:
     return keywordArcano.find(key) != keywordArcano.end();
   }
 
-  void registrarDefinicion(const std::string& nombre, const ArcaneDef def) {
+  void registrarDefinicion(const std::string& nombre, ArcaneDef def) {
     for (const auto& arg : def.args) {
       if (arg.tipo_dato == TPA::KEY) {
         keywordArcano[arg.contenido] = nombre;
       }
     }
     activos[nombre] = std::move(def);
+  }
+
+  ArcaneDef& buscarDefinicionPorNombre(const std::string& name) {
+    if (activos.find(name) == activos.end()) {
+      throw std::runtime_error("Error interno: No se encontró la definición del Arcano: " + name);
+    }
+
+    return activos.at(name);
   }
 
   ArcaneDef& buscarDefinicionPorKeyword(const std::string& key) {
@@ -902,30 +896,6 @@ public:
     contenedor->imprimir(nivel + 1);
     rango->imprimir(nivel + 1);
   }
-
-};
-
-class ExprLlamadaArcano : public NodoBase<Expresion, ExprLlamadaArcano> {
-public:
-  std::string nombre;
-  std::vector<std::unique_ptr<Expresion>> args_expr;
-  std::vector<std::unique_ptr<Bloque>> args_bloque;
-
-  ExprLlamadaArcano(std::string n) : nombre(std::move(n)) {}
-
-  ExprLlamadaArcano(const ExprLlamadaArcano& otra)
-    : nombre(otra.nombre) {
-    for (const auto& e : otra.args_expr  ) { args_expr.push_back(e->clonar()); }
-    for (const auto& b    : otra.args_bloque) {
-      args_bloque.push_back(std::unique_ptr<Bloque>(static_cast<Bloque*>(b->clonar().release())));
-    }
-
-    this->tipo_resuelto = otra.tipo_resuelto;
-    this->linea         = otra.linea        ;
-
-  }
-
-  void imprimir(int nivel = 0) const override {}
 
 };
 
@@ -1306,19 +1276,6 @@ public:
 
     }
 
-    //for (const auto& branch : def.branches) {
-    //  std::cout << sangria << "|   +- Rama contextual: '" << branch.segmentos.br_key << " (| ";
-
-    //  for (const auto& type : branch.segmentos.br_args) {
-    //    std::cout << type.second.tipo.tipoString() << ' ';
-    //    std::cout << type.first << " |";
-    //  }
-
-    //  std::cout << ")\n";
-
-    //  branch.br_cont->imprimir(nivel + 1);
-
-    //}
   }
 
 };
@@ -1326,11 +1283,17 @@ public:
 class SentenciaLlamadaArcano : public NodoBase<Sentencia, SentenciaLlamadaArcano> {
 public:
   std::string nombre;
-  std::map<std::string, std::unique_ptr<Sentencia>> argumentos;
+  std::unordered_map<std::string, std::unique_ptr<Sentencia>> args;
+  std::unordered_map<std::string, std::unique_ptr<Sentencia>> code;
+  std::unordered_map<std::string, std::unique_ptr<Sentencia>> expr;
   size_t indice_rama;
 
-  SentenciaLlamadaArcano(std::string n, std::map<std::string, std::unique_ptr<Sentencia>> args, size_t idx)
-    : nombre(std::move(n)), argumentos(std::move(args)), indice_rama(idx) {}
+  SentenciaLlamadaArcano(std::string n,
+                         std::unordered_map<std::string, std::unique_ptr<Sentencia>> a,
+                         std::unordered_map<std::string, std::unique_ptr<Sentencia>> c,
+                         std::unordered_map<std::string, std::unique_ptr<Sentencia>> e,
+                         size_t idx)
+    : nombre(std::move(n)), args(std::move(a)), code(std::move(c)), expr(std::move(e)), indice_rama(idx) {}
 
   SentenciaLlamadaArcano(const SentenciaLlamadaArcano& otra) //... Todo: Clone args
     : nombre(otra.nombre), indice_rama(otra.indice_rama) {}
@@ -1339,14 +1302,6 @@ public:
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
     std::cout << sangria << "Llamada a Arcano: " << nombre << "\n";
-    for (const auto& par : argumentos) {
-      std::cout << sangria << "| +- Param: " << par.first << "\n";
-      if (par.second) {
-        par.second->imprimir(nivel + 1);
-      } else {
-        std::cout << sangria << "|    (vacío/ no provisto)\n";
-      }
-    }
   }
 
 };

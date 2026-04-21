@@ -1,0 +1,26 @@
+arcane Test (test: key, block1: code) {
+
+  rules [
+    @simple: test [ block1 ];
+  ];
+
+  @simple {
+
+    test <=> {
+      block1;
+    };
+
+  }
+}
+
+func main() -> int {
+
+  int x = 2;
+
+  test {
+    int x = 3;
+  }
+
+  return x;
+
+}
