@@ -18,14 +18,14 @@ char Lexer::actual() const {
 
 }
 
-// Returns the next character (lookahead) without advaincing the cursor
+// Returns the next character (lookahead) without advancing the cursor
 char Lexer::peek() const {
   if (cursor + 1 >= source.size()) { return '\0'; }
   return source[cursor + 1];
 
 }
 
-// Consumes and returns the current character, advaincing the cursor
+// Consumes and returns the current character, advancing the cursor
 // Also increments the line counter if a newline is found
 char Lexer::get() {
   char c = source[cursor++];
@@ -401,9 +401,9 @@ std::vector<Token> Lexer::tokenize() {
         break;
       }
 
-      case '~': { //... x ~= y has no sense. We could use the "~=" symbol for flaots comparations
-        if   (match('=')) { tokens.push_back( {Tt::NO_BIT_IGUAL, "~=", linea} ); }
-        else                   { tokens.push_back( {Tt::NO_BITWISE  , "~" , linea} ); }
+      case '~': { //... x ~= y has no sense. We could use the "~=" symbol for float comparations
+        if   (match('=')) { tokens.push_back( {Tt::FLOAT_EQUAL, "~=", linea} ); }
+        else                   { tokens.push_back( {Tt::NO_BITWISE , "~" , linea} ); }
 
         break;
       }
