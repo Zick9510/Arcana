@@ -25,16 +25,15 @@ a way to expand the compiler's Abstract Syntax Tree (AST) directly from your sou
 arcane Twice_TwiceIf (twice: key, twice_if: key, expr1: expr, block1: code) {
 
   rules [
-    @simple: twice [ block1 ];
-    @eval  : twice [ expr1 block1 ];
+    @simple : twice [       block1 ];
+    @eval   : twice [ expr1 block1 ];
   ];
 
   @simple {
     twice () <=> {
       block1;
       block1;
-      };
-
+    };
   }
 
   @eval {
@@ -66,6 +65,7 @@ func main() -> int {
   }
  
   return x + y + z;
+
 }
 ```
 
@@ -78,18 +78,13 @@ arcane CustomLoop (loop: key, block: code) {
   ];
 
   @simple {
-
     loop [int a] <=> {
-
       while (a) {
         block;
         a = a - 1;
       }
-
     };
-
   }
-
 }
 
 func main() -> int {
