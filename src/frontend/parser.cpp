@@ -15,7 +15,7 @@ Token Parser::resolverAlias(Token t) {
 // Look the next token and return it. If its the EOF, give me the last token
 Token Parser::peek(size_t offset) {
   if (pos + offset >= tokens.size()) { return tokens.back(); } // EOF
-  return resolverAlias(tokens[pos]);
+  return resolverAlias(tokens[pos + offset]);
 }
 
 // Consume the next token and return it
@@ -456,7 +456,7 @@ std::unique_ptr<Sentencia> Parser::parsearDeclaracionVar() {
 
   check(Tt::PUNTO_COMA);
 
-  return std::make_unique<SentenciaVar>(nombre.lexema, tipo, std::move(valor));
+  return std::make_unique<SentenciaAsignarVar>(nombre.lexema, tipo, std::move(valor));
 
 }
 
@@ -469,7 +469,7 @@ std::unique_ptr<Sentencia> Parser::parsearSentenciaExpresion() {
     std::unique_ptr<Expresion> derecha = parsearExpresion(Pr::MINIMA);
     check(Tt::PUNTO_COMA);
 
-    return std::make_unique<SentenciaAsignacion>(std::move(izquierda), std::move(derecha));
+    return std::make_unique<SentenciaReasignacionVar>(std::move(izquierda), std::move(derecha));
 
   }
 
@@ -1140,14 +1140,30 @@ std::unique_ptr<Expresion> Parser::parsearExpresion(Pr precedenciaMinima) {
       continue;
     }
 
-    if (op.tipo == Tt::CORCH_L) {
-      izquierda = parsearAcceso(std::move(izquierda));
+    // Casting
+    /*
+      :type: Const
+
+      (type) C-style
+
+      {type} Static
+
+      ¿type? Dynamic
+
+      [type] Reinterpret
+
+      |type| Bit-Cast
+
+     */
+
+    // C-Style
+    if (op.tipo == Tt::PAREN_L && esTipo(peek().tipo)) {
+      izquierda = parsearCasteo();
       continue;
     }
 
-    // Un casteo
-    if (op.tipo == Tt::PAREN_L && esTipo(peek().tipo)) {
-      izquierda = parsearCasteo();
+    if (op.tipo == Tt::CORCH_L) {
+      izquierda = parsearAcceso(std::move(izquierda));
       continue;
     }
 
@@ -1156,7 +1172,6 @@ std::unique_ptr<Expresion> Parser::parsearExpresion(Pr precedenciaMinima) {
       izquierda = parsearFunctionCall(std::move(izquierda));
       continue;
     }
-
 
     // Casos Binarios
     Pr prec_propia = obtenerPrecedencia(op.tipo);

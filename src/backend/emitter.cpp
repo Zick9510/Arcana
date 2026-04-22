@@ -50,7 +50,7 @@ void Emitter::generarArchivoIR(const std::filesystem::path& nombreArchivo) {
   llvm::raw_fd_ostream archivo(std::string(nombreArchivo), ec, llvm::sys::fs::OF_None);
 
   if (ec) {
-    std::cerr << "Error al abrir el archivo apra escribir IR: " << ec.message() << '\n';
+    std::cerr << "Error al abrir el archivo para escribir IR: " << ec.message() << '\n';
     return ;
 
   }
@@ -66,6 +66,9 @@ void Emitter::generarArchivoIR(const std::filesystem::path& nombreArchivo) {
 
 // --- Expresiones --- //
 void Emitter::visitar(ExprNumero* nodo) { //...
+  std::cout << "[69, emitter.cpp] ExprNumero\n";
+  std::cout << nodo->valor << '\n';
+
   if (nodo->tipo_resuelto.valor->kind == TypeKind::FLOAT) {
     llvm_valor = llvm::ConstantFP::get(llvm_ctx, llvm::APFloat(std::stod(nodo->valor)));
 
@@ -76,13 +79,36 @@ void Emitter::visitar(ExprNumero* nodo) { //...
   }
 }
 
+//void Emitter::visitar(ExprVariable* nodo) {
+//
+//  if (bloques_arcano_activos.count(nodo->nombre)) {
+//    bloques_arcano_activos[nodo->nombre]->accept(this);
+//    return ;
+//  }
+//
+//  llvm::AllocaInst* alloca = nullptr;
+//  for (auto it = llvm_scopes.rbegin(); it != llvm_scopes.rend(); ++it) {
+//    if (it->count(nodo->nombre)) {
+//      alloca = (*it)[nodo->nombre];
+//      break;
+//    }
+//  }
+//
+//  if (!alloca) {
+//    std::cerr << "Error: Variable '" << nodo->nombre << "' no encontrada.\n";
+//    return;
+//  }
+//
+//  //llvm::Type* tipoLLVM = obtenerTipoLLVM(nodo->tipo_resuelto.valor);
+//  llvm::Type* tipoLLVM = alloca->getAllocatedType();
+//
+//  llvm_valor = llvm_builder->CreateLoad(tipoLLVM, alloca, nodo->nombre + "_val");
+//
+//}
+
 void Emitter::visitar(ExprVariable* nodo) {
-
-  if (bloques_arcano_activos.count(nodo->nombre)) {
-    bloques_arcano_activos[nodo->nombre]->accept(this);
-    return ;
-  }
-
+  std::cout << "[108, emitter.cpp] ExprVariable\n";
+  std::cout << nodo->nombre << '\n';
   llvm::AllocaInst* alloca = nullptr;
   for (auto it = llvm_scopes.rbegin(); it != llvm_scopes.rend(); ++it) {
     if (it->count(nodo->nombre)) {
@@ -91,15 +117,18 @@ void Emitter::visitar(ExprVariable* nodo) {
     }
   }
 
-  if (!alloca) {
-    std::cerr << "Error: Variable '" << nodo->nombre << "' no encontrada.\n";
-    return;
+  if (alloca) {
+    llvm::Type* tipo_llvm = alloca->getAllocatedType();
+    llvm_valor = llvm_builder->CreateLoad(tipo_llvm, alloca, nodo->nombre + "_val");
+    return ;
   }
 
-  //llvm::Type* tipoLLVM = obtenerTipoLLVM(nodo->tipo_resuelto.valor);
-  llvm::Type* tipoLLVM = alloca->getAllocatedType();
+  if (bloques_arcano_activos.count(nodo->nombre)) {
+    bloques_arcano_activos[nodo->nombre]->accept(this);
+    return ;
+  }
 
-  llvm_valor = llvm_builder->CreateLoad(tipoLLVM, alloca, nodo->nombre + "_val");
+  std::cerr << "Error: Variable '" << nodo->nombre << "' no encontrada.\n";
 
 }
 
@@ -108,6 +137,7 @@ void Emitter::visitar(ExprArray* nodo) {
 }
 
 void Emitter::visitar(ExprUnaria* nodo) {
+  std::cout << "[137, emitter.cpp] ExprUnaria\n";
   if (nodo->operador == TipoOperador::PTR_REF) {
     if (auto* var = dynamic_cast<ExprVariable*>(nodo->operando.get())) {
       if (llvm_scopes.back().count(var->nombre)) {
@@ -133,7 +163,7 @@ void Emitter::visitar(ExprUnaria* nodo) {
     }
 
     default: {
-      std::cout << "[129, emitter.cpp] Error: Operador unario no implementado.";
+      std::cout << "[136, emitter.cpp] Error: Operador unario no implementado.";
       exit(1);
     }
   }
@@ -141,6 +171,7 @@ void Emitter::visitar(ExprUnaria* nodo) {
 }
 
 void Emitter::visitar(ExprBinaria* nodo) {
+  std::cout << "[171, emitter.cpp] ExprBinaria\n";
   nodo->izquierda->accept(this);
   llvm::Value* L = llvm_valor;
 
@@ -152,11 +183,12 @@ void Emitter::visitar(ExprBinaria* nodo) {
   switch (nodo->operador) { //...
     case TipoOperador::A_SUMA: {
       llvm_valor = es_float ? llvm_builder->CreateFAdd(L, R, "addtemp")
-                            : llvm_builder->CreateAdd (L, R, "addtemp");
+                            : llvm_builder->CreateAdd(L, R, "addtemp");
       break;
     }
 
     case TipoOperador::A_RESTA: {
+      std::cout << "[160, emitter.cpp]\n";
       llvm_valor = es_float ? llvm_builder->CreateFSub(L, R, "subtemp")
                             : llvm_builder->CreateSub(L, R, "subtemp");
       break;
@@ -169,14 +201,14 @@ void Emitter::visitar(ExprBinaria* nodo) {
     }
 
     case TipoOperador::CMP_MENOR: { //... Add signed / unsigned cmp support
-      std::cout << "[172, emitter.cpp]\n";
+      std::cout << "[173, emitter.cpp]\n";
       llvm_valor = es_float ? llvm_builder->CreateFCmpULT(L, R, "lesstemp")
                             : llvm_builder->CreateICmpULT(L, R, "lesstemp");
       break;
     }
 
     default: {
-      std::cout << "[179, emitter.cpp]\n";
+      std::cout << "[180, emitter.cpp]\n";
       break;
     }
   }
@@ -184,6 +216,7 @@ void Emitter::visitar(ExprBinaria* nodo) {
 }
 
 void Emitter::visitar(ExprCasteo* nodo) {
+  std::cout << "[216, emitter] ExprCasteo\n";
   nodo->expresion->accept(this);
   llvm::Value* val = llvm_valor;
 
@@ -238,6 +271,7 @@ void Emitter::visitar(ExprAcceso* nodo) {
 }
 
 void Emitter::visitar(ExprFuncCall* nodo) {
+  std::cout << "[271, emitter] ExprFuncCall\n";
   auto* var_callee = dynamic_cast<ExprVariable*>(nodo->callee.get());
   if (!var_callee) {
     //...
@@ -266,6 +300,7 @@ void Emitter::visitar(ExprFuncCall* nodo) {
 // --- Sentencias --- //
 
 void Emitter::visitar(Bloque* nodo) {
+  std::cout << "[300, emitter] Bloque\n";
   llvm_scopes.push_back(std::map<std::string, llvm::AllocaInst*>());
 
   for (const auto& i : nodo->instrucciones) {
@@ -277,7 +312,10 @@ void Emitter::visitar(Bloque* nodo) {
 
 }
 
-void Emitter::visitar(SentenciaVar* nodo) {
+void Emitter::visitar(SentenciaAsignarVar* nodo) {
+  std::cout << "[316, emitter] SentenciaAsignarVar\n";
+  std::cout << nodo->nombre << '\n';
+  nodo->valor_inicial->imprimir();
 
   llvm::Type* tipoLLVM = obtenerTipoLLVM(nodo->tipo_explicito.tipo.valor);
 
@@ -296,31 +334,56 @@ void Emitter::visitar(SentenciaVar* nodo) {
 }
 
 void Emitter::visitar(SentenciaExpr* nodo) {
+  std::cout << "[332, emitter] SentenciaExpr\n";
   if (nodo->expresion) {
     nodo->expresion->accept(this);
   }
 
 }
 
-void Emitter::visitar(SentenciaAsignacion* nodo) {
-  nodo->derecha->accept(this);
-  llvm::Value* valor_der = llvm_valor;
+//void Emitter::visitar(SentenciaReasignacionVar* nodo) {
+//  nodo->derecha->accept(this);
+//  llvm::Value* valor_der = llvm_valor;
+//
+//  auto* var_izq = dynamic_cast<ExprVariable*>(nodo->izquierda.get());
+//
+//  if (var_izq) {
+//    llvm::AllocaInst* alloca = nullptr;
+//    for (auto it = llvm_scopes.rbegin(); it != llvm_scopes.rend(); ++it) {
+//      if (it->count(var_izq->nombre)) {
+//        alloca = (*it)[var_izq->nombre];
+//        break;
+//      }
+//    }
+//
+//  llvm_builder->CreateStore(valor_der, alloca);
+//
+//  }
+//
+//}
 
+void Emitter::visitar(SentenciaReasignacionVar* nodo) {
+  std::cout << "[361, emitter] SentenciaReasignacionVar\n";
   auto* var_izq = dynamic_cast<ExprVariable*>(nodo->izquierda.get());
+  if (!var_izq) { return ; }
 
-  if (var_izq) {
-    llvm::AllocaInst* alloca = nullptr;
-    for (auto it = llvm_scopes.rbegin(); it != llvm_scopes.rend(); ++it) {
-      if (it->count(var_izq->nombre)) {
-        alloca = (*it)[var_izq->nombre];
-        break;
-      }
+  std::cout << var_izq->nombre << '\n';
+  nodo->derecha->imprimir();
+
+  llvm::AllocaInst* alloca = nullptr;
+  for (auto it = llvm_scopes.rbegin(); it != llvm_scopes.rend(); ++it) {
+    if (it->count(var_izq->nombre)) {
+      alloca = (*it)[var_izq->nombre];
+      break;
     }
-
-  llvm_builder->CreateStore(valor_der, alloca);
-
   }
 
+  nodo->derecha->accept(this);
+  llvm::Value* valor = llvm_valor;
+
+  if (alloca && valor) {
+    llvm_builder->CreateStore(valor, alloca);
+  }
 }
 
 void Emitter::visitar(SentenciaSi* nodo) { //...
@@ -399,15 +462,13 @@ void Emitter::visitar(SentenciaMientras* nodo) {
 
   llvm_builder->CreateCondBr(cond_v, loop_bb, else_bb);
 
-  pila_continues.push_back(cond_bb);
   pila_breaks.push_back(merge_bb);
+  pila_continues.push_back(cond_bb);
 
   funcion_actual->insert(funcion_actual->end(), loop_bb);
   llvm_builder->SetInsertPoint(loop_bb);
 
-  if (nodo->rama_while) {
-    nodo->rama_while->accept(this);
-  }
+  nodo->rama_while->accept(this);
 
   if (!llvm_builder->GetInsertBlock()->getTerminator()) {
     llvm_builder->CreateBr(cond_bb);
@@ -455,12 +516,14 @@ void Emitter::visitar(SentenciaContinue* nodo) {
 }
 
 void Emitter::visitar(SentenciaReturn* nodo) {
+  std::cout << "[511, emitter] SentenciaReturn\n";
   nodo->ret_value->accept(this);
   llvm_builder->CreateRet(llvm_valor);
 
 }
 
 void Emitter::visitar(SentenciaFuncDecl* nodo) {
+  std::cout << "[518, emitter] SentenciaFuncDecl\n";
   std::vector<llvm::Type*> tipo_args;
 
   for (auto const& [nombre, info] : nodo->args_type) {
@@ -516,10 +579,12 @@ void Emitter::visitar(SentenciaEscritura* nodo) {
 }
 
 void Emitter::visitar(SentenciaArcano* nodo) {
+  std::cout << "[572, emitter] SentenciaArcano\n";
 
 }
 
 void Emitter::visitar(SentenciaLlamadaArcano* nodo) { //...
+  std::cout << "[577, emitter] SentenciaLlamadaArcano\n";
   ArcaneDef& def = contextoArcanos.buscarDefinicionPorKeyword(nodo->nombre);
 
   if (nodo->indice_rama >= def.branches.size()) {

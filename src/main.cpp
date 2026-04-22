@@ -70,6 +70,7 @@ CompilerConfig parsearArgumentos(int argc, const char *argv[]) {
   }
 
   return config;
+
 }
 
 int main(int argc, const char *argv[]) { //... I am still translating the code to english

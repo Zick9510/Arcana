@@ -1,0 +1,9 @@
+func main() -> int {
+
+  int i = 5;
+
+  i = i - 1;
+
+  return i;
+
+}

@@ -1,0 +1,27 @@
+arcane Test (test: key) {
+
+  rules [
+    @simple: test [];
+  ];
+
+  @simple {
+
+    test <=> {
+      int a = 10;
+      a = 20;
+    };
+
+  }
+
+}
+
+func main() -> int {
+
+  test;
+
+  int x = 30;
+  x = 40;
+
+  return 0;
+
+}

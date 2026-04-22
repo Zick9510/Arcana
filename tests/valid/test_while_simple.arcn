@@ -1,11 +1,10 @@
 func main() -> int {
 
-  int x = 5;
-  int y = 1;
-
+  int x = 6;
+  int y = 5;
 
   while (x) {
-    y = y * 2;
+    y = y + 10;
     x = x - 1;
   }
 

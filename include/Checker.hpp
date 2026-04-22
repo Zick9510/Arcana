@@ -240,7 +240,7 @@ public:
     }
   }
 
-  void visitar(SentenciaVar* nodo) override {
+  void visitar(SentenciaAsignarVar* nodo) override {
     if (nodo->valor_inicial) { nodo->valor_inicial->accept(this); }
 
     InfoVariable* info = tablas.buscarVariable(nodo->nombre);
@@ -269,7 +269,7 @@ public:
     nodo->expresion->accept(this);
   }
 
-  void visitar(SentenciaAsignacion* nodo) override {
+  void visitar(SentenciaReasignacionVar* nodo) override {
     nodo->izquierda->accept(this);
     nodo->derecha  ->accept(this);
 
@@ -278,6 +278,8 @@ public:
 
   void visitar(SentenciaSi* nodo) override {
     nodo->condicion->accept(this);
+    nodo->condicion = forzarTipo(std::move(nodo->condicion), Dt(typeFactory.getBoolean()));
+
     nodo->rama_si  ->accept(this);
 
     if (nodo->rama_sino) {
@@ -294,6 +296,8 @@ public:
 
   void visitar(SentenciaMientras* nodo) override {
     nodo->condicion ->accept(this);
+    nodo->condicion = forzarTipo(std::move(nodo->condicion), Dt(typeFactory.getBoolean()));
+
     nodo->rama_while->accept(this);
 
     if (nodo->rama_sino) {
@@ -399,19 +403,19 @@ public:
     ArcaneDef& def = contextoArcanos.buscarDefinicionPorNombre(nodo->def.name);
 
     for (const auto& branch : nodo->def.branches) {
-      //tablas.entrarScope();
+      tablas.entrarScope();
 
       for (const auto& segment : branch.segmentos) {
-        /*for (const auto& [name, info] : segment.br_args) {
+        for (const auto& [name, info] : segment.br_args) {
           tablas.añadirVariable(name, info, 0);
-        }*/
+        }
 
         if (segment.br_cont != nullptr) {
           segment.br_cont->accept(this);
         }
       }
 
-      //tablas.salirScope();
+      tablas.salirScope();
 
     }
 
@@ -419,6 +423,7 @@ public:
   }
 
   void visitar(SentenciaLlamadaArcano* nodo) override {
+
     for (const auto& [name, arg_nodo] : nodo->args) {
       if (arg_nodo != nullptr) {
         arg_nodo->accept(this);
@@ -436,5 +441,7 @@ public:
         arg_nodo->accept(this);
       }
     }
+
   }
+
 };

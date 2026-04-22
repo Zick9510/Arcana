@@ -7,16 +7,16 @@ arcane CustomLoop (loop: key, block: code) {
   @simple {
 
     loop [int a] <=> {
-      int i = a;
 
-      while (i) {
+      while (a) {
         block;
-        i = i - 1;
+        a = a - 1;
       }
 
     };
 
   }
+
 }
 
 func main() -> int {

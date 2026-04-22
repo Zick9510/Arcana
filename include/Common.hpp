@@ -414,9 +414,9 @@ class ExprFuncCall;
 
 class Bloque;
 
-class SentenciaVar;
+class SentenciaAsignarVar;
 class SentenciaExpr;
-class SentenciaAsignacion;
+class SentenciaReasignacionVar;
 class SentenciaSi;
 class SentenciaSino;
 class SentenciaMientras;
@@ -453,10 +453,10 @@ public:
   // Sentencias
   virtual void visitar(Bloque* nodo)        = 0;
 
-  virtual void visitar(SentenciaVar* nodo)  = 0;
+  virtual void visitar(SentenciaAsignarVar* nodo)  = 0;
   virtual void visitar(SentenciaExpr* nodo) = 0;
 
-  virtual void visitar(SentenciaAsignacion* nodo) = 0;
+  virtual void visitar(SentenciaReasignacionVar* nodo) = 0;
 
   virtual void visitar(SentenciaSi* nodo)   = 0;
   virtual void visitar(SentenciaSino* nodo) = 0;
@@ -935,16 +935,16 @@ public:
 };
 
 // Sentencias
-class SentenciaVar : public NodoBase<Sentencia, SentenciaVar> {
+class SentenciaAsignarVar : public NodoBase<Sentencia, SentenciaAsignarVar> {
 public:
   std::string nombre;
   InfoVariable tipo_explicito;
   std::unique_ptr<Expresion> valor_inicial;
 
-  SentenciaVar(std::string nom, InfoVariable tipo, std::unique_ptr<Expresion> val)
+  SentenciaAsignarVar(std::string nom, InfoVariable tipo, std::unique_ptr<Expresion> val)
     : nombre(nom), tipo_explicito(tipo), valor_inicial(std::move(val)) {}
 
-  SentenciaVar(const SentenciaVar& otra)
+  SentenciaAsignarVar(const SentenciaAsignarVar& otra)
     : nombre(otra.nombre), tipo_explicito(otra.tipo_explicito),
       valor_inicial(otra.valor_inicial ? otra.valor_inicial->clonar() : nullptr) {}
 
@@ -952,7 +952,7 @@ public:
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
 
-    std::cout << sangria << "+- Asignar Variable:\n";
+    std::cout << sangria << "Asignar Variable:\n";
     std::cout << sangria << "| +- " << nombre << " [" << tipo_explicito.tipo.tipoString() << "]\n";
 
     if (valor_inicial) {
@@ -985,23 +985,23 @@ public:
 
 };
 
-class SentenciaAsignacion : public NodoBase<Sentencia, SentenciaAsignacion> {
+class SentenciaReasignacionVar : public NodoBase<Sentencia, SentenciaReasignacionVar> {
 public:
   std::unique_ptr<Expresion> izquierda;
-  std::unique_ptr<Expresion> derecha;
+  std::unique_ptr<Expresion> derecha  ;
 
-  SentenciaAsignacion(std::unique_ptr<Expresion> izq, std::unique_ptr<Expresion> val)
+  SentenciaReasignacionVar(std::unique_ptr<Expresion> izq, std::unique_ptr<Expresion> val)
     : izquierda(std::move(izq)), derecha(std::move(val)) {}
 
-  SentenciaAsignacion(const SentenciaAsignacion& otra)
-    : izquierda(otra.izquierda->clonar()), derecha(otra.izquierda->clonar()) {}
+  SentenciaReasignacionVar(const SentenciaReasignacionVar& otra)
+    : izquierda(otra.izquierda->clonar()), derecha(otra.derecha->clonar()) {}
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
     std::cout << sangria << "Reasignación:\n";
     izquierda->imprimir(nivel + 1);
-    derecha->imprimir(nivel + 1);
+    derecha  ->imprimir(nivel + 1);
   }
 
 };
@@ -1220,6 +1220,7 @@ public:
 };
 
 class SentenciaArcano : public NodoBase<Sentencia, SentenciaArcano> {
+
 public:
   ArcaneDef def;
 

@@ -41,10 +41,10 @@ public:
 
   void visitar(Bloque* nodo) override;
  
-  void visitar(SentenciaVar * nodo) override;
+  void visitar(SentenciaAsignarVar * nodo) override;
   void visitar(SentenciaExpr* nodo) override;
  
-  void visitar(SentenciaAsignacion* nodo) override;
+  void visitar(SentenciaReasignacionVar* nodo) override;
  
   void visitar(SentenciaSi  * nodo) override;
   void visitar(SentenciaSino* nodo) override;
