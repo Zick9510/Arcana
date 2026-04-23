@@ -95,3 +95,24 @@ def run_tests():
 
 if (__name__ == "__main__"):
     run_tests()
+
+
+"""
+Benchmark Environment
+
+    CPU: AMD FX-6300 (6 Cores @ 3.5GHz)
+
+    RAM: 16 GB DDR3 (800 MT/s)
+
+    OS: Linux (Kernel 6.x-lts)
+
+
+Reproducible Benchmarks:
+
+    deploy   build: 0.9 - 1.0 seconds
+
+    shy      build: 1.0 - 1.3 seconds
+
+    segfault build: 1.4 - 1.6 seconds
+
+"""
