@@ -37,7 +37,7 @@ def run_tests():
         command = [COMPILER_PATH, filepath, "-o", output_filepath]
 
         try:
-            comp_result = subprocess.run(command, capture_output=True, timeout=0.5)
+            comp_result = subprocess.run(command, capture_output=True, timeout=0.100)
 
         except subprocess.TimeoutExpired:
             print(f"{Color.RED}[TIME] {filename} (Exceeded 100ms)")
