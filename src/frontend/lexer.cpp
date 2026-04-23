@@ -57,11 +57,11 @@ bool Lexer::validarCaracterBase(char caracter, char base) {
   switch (base) {
 
     case 'b': {
-      return  (caracter == '0' || caracter == '1'  || caracter == '_');
+      return  (caracter == '0' || caracter == '1' || caracter == '_');
     }
 
     case 'o': {
-      return  (caracter >= '0' && caracter <= '7'  || caracter == '_');
+      return  (caracter >= '0' && caracter <= '7' || caracter == '_');
     }
 
     case 'x': {

@@ -1,0 +1,49 @@
+arcane TwiceOrThrice (decide: key, expr1: expr, block1: code) {
+
+  rules [
+    @simple : decide [ expr1 block1 ];
+
+  ];
+
+  @simple {
+    decide <=> {
+      block1;
+
+      if (expr1) {
+        block1;
+        block1;
+
+      } else {
+        block1;
+
+      }
+
+    };
+
+  }
+
+}
+
+func main() -> int {
+
+  int x = 0;
+
+  decide (1) {
+    x = x + 1; // x = 3
+
+    decide (0) {
+      x = x + 10; // x = 63
+
+      decide (1) {
+        x = x - 1; // x = 45
+      }
+
+    }
+
+    x = x - 3; // x = 45
+
+  }
+
+  return x; // x = 36
+
+}

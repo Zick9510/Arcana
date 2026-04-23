@@ -1,4 +1,5 @@
-arcane CustomIf (si: key, siempre: key, expr_if: expr, block_if: code, block_always: code) {
+arcane CustomIf (si: key, siempre: key, expr_if: expr, block_if: code) {
+
   rules [
     @si_rule : si [ expr_if block_if ];
 
