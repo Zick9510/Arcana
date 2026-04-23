@@ -18,22 +18,22 @@ a way to expand the compiler's Abstract Syntax Tree (AST) directly from your sou
 ### Side-Effect Clarity: Strict visual separation between code blocks '{}' (actions) and expressions '()' (values).
 #### Note: An expression can change and/or assign the value of a variable (e.g., ++i, (j = 2), etc. )
 
-### Example 1: Custom Keyword
+### The Arcane System
+#### Example 1: Custom Keyword
 
 ```arcn
 arcane Twice_TwiceIf (twice: key, twice_if: key, expr1: expr, block1: code) {
 
   rules [
-    @simple: twice [ block1 ];
-    @eval  : twice [ expr1 block1 ];
+    @simple : twice [       block1 ];
+    @eval   : twice [ expr1 block1 ];
   ];
 
   @simple {
     twice () <=> {
       block1;
       block1;
-      };
-
+    };
   }
 
   @eval {
@@ -53,27 +53,24 @@ func main() -> int {
   int z = 3;
  
   twice {
-  x = x + 3;
+    x = x + 1;
   }
  
   twice_if (1) {
-  y = y + 3;
+    y = y + 2;
   }
  
   twice_if (0) {
-  z = z + 3;
+    z = z + 3;
   }
  
-  // x = 7
-  // y = 8
-  // z = 3
- 
   return x + y + z;
+
 }
 ```
 
-### Example 2: Custom Loop
-```arc
+#### Example 2: Custom Loop
+```arcn
 arcane CustomLoop (loop: key, block: code) {
 
   rules [
@@ -81,18 +78,13 @@ arcane CustomLoop (loop: key, block: code) {
   ];
 
   @simple {
-
     loop [int a] <=> {
-
       while (a) {
         block;
         a = a - 1;
       }
-
     };
-
   }
-
 }
 
 func main() -> int {
@@ -103,7 +95,7 @@ func main() -> int {
     x = x + 9;
   }
 
-  return x; // 100
+  return x;
 
 }
 ```
