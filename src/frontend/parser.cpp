@@ -893,16 +893,16 @@ std::unique_ptr<Sentencia> Parser::parsearArcano() {
   // Reglas
   std::vector<std::pair<std::string, ReglaArcano>> rules = parsearReglasArcano();
 
-  std::cout << "[896, parser.cpp]\n";
+  //std::cout << "[896, parser.cpp]\n";
 
   for (const auto& rule : rules) {
     contextoArcanos.registrarRegla(rule.first, rule.second);
-    std::cout << rule.first << ' ';
+    //std::cout << rule.first << ' ';
     def.rules.push_back(rule.second);
 
   }
 
-  std::cout << '\n';
+  //std::cout << '\n';
 
   // Cuerpo
   def.branches = parsearCuerpoArcano(rules);
@@ -988,7 +988,7 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() {
   }
 
   if (!rama) {
-    std::cout << "[991, parser.cpp]\n";
+    //std::cout << "[991, parser.cpp]\n";
     throw std::runtime_error("Firma no encontrada para '" + key + "'"                   +
                                   " con [" + std::to_string(local_args.size())          +
                                   "] argumentos y (" + std::to_string(expr_args.size()) +
@@ -1010,32 +1010,32 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() {
     if (arg.tipo_dato == TPA::CODE) { code_params.push_back(arg.contenido); }
   }
 
-  std::cout << "[1013, parser.cpp]\n";
+  //std::cout << "[1013, parser.cpp]\n";
   for (size_t i = 0; i < expr_args.size(); ++i) {
     if (i < expr_params.size()) {
-      std::cout << "[1016, parser.cpp]\n";
+      //std::cout << "[1016, parser.cpp]\n";
       mapa_expr[expr_params[i]] = std::make_unique<SentenciaExpr>(std::move(expr_args[i]));
     }
   }
 
-  std::cout << "[1021, parser.cpp]\n";
+  //std::cout << "[1021, parser.cpp]\n";
   for (size_t i = 0; i < local_args.size(); ++i) {
-    std::cout << "[1023, parser.cpp]\n";
+    //std::cout << "[1023, parser.cpp]\n";
     std::string nombre_local = rama->segmentos[0].br_args[i].first;
-    std::cout << "[1025, parser.cpp]\n";
+    //std::cout << "[1025, parser.cpp]\n";
     mapa_args[nombre_local] = std::make_unique<SentenciaExpr>(std::move(local_args[i]));
-    std::cout << "[1027, parser.cpp]\n";
+    //std::cout << "[1027, parser.cpp]\n";
   }
 
-  std::cout << "[1030, parser.cpp]\n";
+  //std::cout << "[1030, parser.cpp]\n";
   for (size_t i = 0; i < code_args.size(); ++i) {
     if (i < code_params.size()) {
-      std::cout << "[1033, parser.cpp]\n";
+      //std::cout << "[1033, parser.cpp]\n";
       mapa_code[code_params[i]] = std::move(code_args[i]);
     }
   }
 
-  std::cout << "[1038, parser.cpp]\n";
+  //std::cout << "[1038, parser.cpp]\n";
   if (mapa_code.empty()) {
     check(Tt::PUNTO_COMA);
 

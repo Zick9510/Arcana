@@ -104,14 +104,14 @@ public:
       }
     }
 
-    std::cout << "[106, Checker.hpp]\n";
+    //std::cout << "[106, Checker.hpp]\n";
 
     if (tipo.valor != typeFactory.getUnknown()) {
       nodo->tipo_resuelto = tipo;
       return ;
     }
 
-    std::cout << "[113, Checker.hpp]\n";
+    //std::cout << "[113, Checker.hpp]\n";
 
     //... Añadir comprobaciones de tamaño
     if (tiene_punto || scientific) {
@@ -350,7 +350,7 @@ public:
     info_func.linea = nodo->linea;
 
     if (!tablas.añadirFunction(firma, info_func)) {
-      std::cout << "[338, Checker.hpp] Error: Función redefinida\n";
+      //std::cout << "[338, Checker.hpp] Error: Función redefinida\n";
       exit(1);
 
     }
