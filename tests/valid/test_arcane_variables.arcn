@@ -20,8 +20,8 @@ arcane Twice_TwiceIf (twice: key, twice_if: key, expr1: expr, block1: code) {
       }
     };
   }
- 
- }
+
+}
 
 func main() -> int {
 
@@ -46,4 +46,5 @@ func main() -> int {
   // z = 3
  
   return x + y + z; // 18
+
 }
