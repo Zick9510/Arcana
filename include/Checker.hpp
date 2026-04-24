@@ -205,9 +205,14 @@ public:
 
         nodo->tipo_resuelto = tipo_bool;
         break;
-        }
+      }
+
+      case TipoOperador::PTR_DEREF: {
+
+        break;
       }
     }
+  }
 
   void visitar(ExprRango* nodo) override {
 

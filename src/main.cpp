@@ -32,7 +32,7 @@
  *
  */
 
-CompilerConfig parsearArgumentos(int argc, const char *argv[]) {
+CompilerConfig parseArguments(int argc, const char *argv[]) {
   CompilerConfig config;
 
   std::vector<std::string> args(argv + 1, argv + argc);
@@ -78,7 +78,7 @@ int main(int argc, const char *argv[]) { //... I am still translating the code t
   //... Debug. Just measuring speed
   auto inicio = std::chrono::high_resolution_clock::now();
 
-  CompilerConfig config = parsearArgumentos(argc, argv);
+  CompilerConfig config = parseArguments(argc, argv);
 
   std::filesystem::path archivo_entrada;
   std::filesystem::path archivo_salida;
@@ -108,7 +108,7 @@ int main(int argc, const char *argv[]) { //... I am still translating the code t
   auto fin = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double, std::milli> tiempo = fin - inicio;
 
-  std::cout << "En " << tiempo.count() << " ms.\n";
+  std::cout << "Time: " << tiempo.count() << " ms.\n";
 
   if (resultado) {
     return 0;

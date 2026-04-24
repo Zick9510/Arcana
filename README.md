@@ -27,7 +27,7 @@ Strict visual separation between logic and data:
 * Code Blocks {}: Represent actions and side effects.
 * Expressions (): Represent values.
 
-#### Note: An expression can change and/or assign the value of a variable (e.g., ++i, (j = 2), (int k = 3)).
+#### Note: An expression can modify or assign values (e.g., ++i, (j = 2), (int k = 3)).
 
 ---
 
@@ -129,8 +129,8 @@ func main() -> int {
 
 ## Join the Arcane
 
-Arcana is a call to action for anyone who believes a language should adapt to the programmer, no the other way around. We aren't just building a tool to write
-code--we are building a way to **redefine the relationship between the developer and the machine**.
+Arcana is a call to action for anyone who believes a language should adapt to the programmer, not the other way around. We aren't just building a tool to write
+code-we are building a way to **redefine the relationship between the developer and the machine**.
 
 **We are looking for contributors.** Whether you are just starting your journey or you're someone who wants to break and rewrite the rules of what a language
 should look like, **your perspective is what moves this project forward**.

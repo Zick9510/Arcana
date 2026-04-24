@@ -1142,13 +1142,9 @@ std::unique_ptr<Expresion> Parser::parsearExpresion(Pr precedenciaMinima) {
 
     // Casting
     /*
-      :type: Const
-
       (type) C-style
 
       {type} Static
-
-      ¿type? Dynamic
 
       [type] Reinterpret
 
