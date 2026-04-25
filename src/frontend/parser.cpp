@@ -181,8 +181,9 @@ InfoVariable Parser::parsearTipo() {
       break;
     }
 
-    default: {
-      get(); //...
+    default: { //...
+      std::cout << "[185, parser.cpp] Type not implemented: " << peek().lexema << '\n';
+      exit(1);
       break;
     }
 
@@ -202,6 +203,7 @@ InfoVariable Parser::parsearTipo() {
 
   }
 
+  std::cout << "[205, parser.cpp] Tipo: " << tipo_actual->toString() << '\n';
   info.tipo = Dt(tipo_actual);
   return info;
 

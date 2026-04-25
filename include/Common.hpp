@@ -373,13 +373,14 @@ struct DatosPesados {
 struct InfoVariable {
   Dt tipo;
   bool es_const = false;
+
+  llvm::AllocaInst* alloca = nullptr;
+
 };
 
 enum class TPA { NULO, KEY, EXPR, CODE };
 
 struct ReglaArcano {
-
-  //std::string rule_tag; // @rule
   std::string keyword; // trigger keyword
   std::vector<Token> componentes;
 
@@ -509,6 +510,8 @@ public:
   Dt tipo_resuelto;
 
   virtual std::unique_ptr<Expresion> clonar() const = 0;
+
+  virtual bool isLValue() const { return false; }
 
 };
 
@@ -705,6 +708,8 @@ public:
 
   ExprVariable(std::string nom)
     : nombre(nom) {}
+
+  bool isLValue() const override { return true; }
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";

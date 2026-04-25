@@ -37,11 +37,12 @@ public:
   ArcanaType(TypeKind k)
     : kind(k) {}
 
-  virtual ~ArcanaType()                                 ;
-  virtual std::string toString()               const = 0;
-  virtual int getBitSize()                     const = 0;
-  virtual bool esIgual(const ArcanaType* otro) const = 0;
-  virtual bool isSigned()                      const = 0;
+  virtual ~ArcanaType()                                            ;
+  virtual std::string toString()                          const = 0;
+  virtual int getBitSize()                                const = 0;
+  virtual bool esIgual(const ArcanaType* otro)            const = 0;
+  virtual bool isSigned()                                 const = 0;
+  virtual std::shared_ptr<ArcanaType> getUnderlyingType() const { return nullptr; }
 
 };
 
@@ -89,6 +90,8 @@ public:
   int getBitSize()                     const override;
   bool esIgual(const ArcanaType* otro) const override;
   bool isSigned()                      const override;
+
+  std::shared_ptr<ArcanaType> getUnderlyingType() const override;
 
 };
 
@@ -162,7 +165,7 @@ private:
 
   std::map<std::shared_ptr<ArcanaType>, std::shared_ptr<PointerType>> cachePointer;
   std::map<std::tuple<int, bool>      , std::shared_ptr<IntegerType>> cacheInteger;
-  std::map<float                      , std::shared_ptr<FloatType>> cacheFloat;
+  std::map<float                      , std::shared_ptr<FloatType>>   cacheFloat  ;
 
   std::map<std::string, std::shared_ptr<MorphType>> cacheMorph;
 

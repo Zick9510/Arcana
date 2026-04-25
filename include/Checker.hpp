@@ -209,7 +209,44 @@ public:
 
       case TipoOperador::PTR_DEREF: {
 
+        if (tipo_op.valor->kind != TypeKind::POINTER) {
+          //... Error
+          std::cout << "[214, Checker.hpp] Error de tipo en punteros\n";
+          nodo->tipo_resuelto = Dt(typeFactory.getUnknown());
+          break;
+
+        }
+
+        auto tipo_base = tipo_op.valor->getUnderlyingType();
+
+        if (tipo_base == nullptr) {
+          //... Error
+          std::cout << "[223, Checker.hpp] Error, puntero es nullptr\n";
+          nodo->tipo_resuelto = Dt(typeFactory.getUnknown());
+          break;
+
+        }
+
+        nodo->tipo_resuelto = Dt(tipo_base);
+
         break;
+
+      }
+
+      case TipoOperador::PTR_REF: {
+
+        if (!nodo->operando->isLValue()) {
+          //... Error, no se pueden tomar direcciones de una expresión temporal
+          std::cout << "[240, Checker.hpp] Error: Dirección de R-Value\n";
+          nodo->tipo_resuelto = Dt(typeFactory.getUnknown());
+          break;
+
+        }
+
+        auto tipo_puntero = typeFactory.getPointer(tipo_op.valor);
+        nodo->tipo_resuelto = Dt(tipo_puntero);
+        break;
+
       }
     }
   }
@@ -355,7 +392,7 @@ public:
     info_func.linea = nodo->linea;
 
     if (!tablas.añadirFunction(firma, info_func)) {
-      //std::cout << "[338, Checker.hpp] Error: Función redefinida\n";
+      std::cout << "[338, Checker.hpp] Error: Función redefinida\n";
       exit(1);
 
     }

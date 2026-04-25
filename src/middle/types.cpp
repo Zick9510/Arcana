@@ -55,6 +55,10 @@ bool PointerType::esIgual(const ArcanaType* otro) const {
 
 bool PointerType::isSigned() const { return false; }
 
+std::shared_ptr<ArcanaType> PointerType::getUnderlyingType() const {
+  return tipo_apuntado;
+}
+
 // --- BooleanType ---
 BooleanType::BooleanType()
   : ArcanaType(TypeKind::BOOLEAN) {}
@@ -212,7 +216,6 @@ std::shared_ptr<BooleanType> TypeFactory::getBoolean() {
   auto nueva_instancia = std::make_shared<BooleanType>();
   cacheBoolean = nueva_instancia;
   return nueva_instancia;
-
 }
 
 std::shared_ptr<IntegerType> TypeFactory::getInteger(int bits, bool is_unsigned) {

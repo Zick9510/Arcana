@@ -55,7 +55,7 @@ bool Driver::compile(const CompilerConfig& config) {
   }
 
   // 6. Generación de Código (AST Check -> Source)
-  Emitter emitter(contexto_arcanos);
+  Emitter emitter(contexto_arcanos, tablas);
   for (auto& nodo : ast) {
     nodo->accept(&emitter);
   }

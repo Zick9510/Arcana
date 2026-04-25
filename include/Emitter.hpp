@@ -16,12 +16,13 @@ private:
   std::vector<llvm::BasicBlock*> pila_continues;
 
   ContextoArcanos& contextoArcanos;
+  GestorTablas&    tablas         ;
 
   std::map<std::string, Sentencia*> bloques_arcano_activos;
 
 public:
 
-  Emitter(ContextoArcanos& ca);
+  Emitter(ContextoArcanos& ca, GestorTablas& t);
 
   void generarArchivoIR(const std::filesystem::path& nombreArchivo);
   llvm::Type* obtenerTipoLLVM(std::shared_ptr<ArcanaType> tipo);

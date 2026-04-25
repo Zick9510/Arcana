@@ -1,9 +1,10 @@
 # ==========================================
 # Configuración del Compilador
 # ==========================================
-CXX      := ccache g++
-CXXFLAGS := -MMD -MP
-LDFLAGS  :=
+CXX       := ccache g++
+CXXFLAGS  := -MMD -MP
+LDFLAGS   :=
+LTO_FLAGS := -flto -fno-fat-lto-objects
 
 # ==========================================
 # Configuración de LLVM
@@ -45,7 +46,8 @@ debug: CXXFLAGS += -g3 -Og -D_GLIBCXX_DEBUG -D_GLIBCXX_ASSERTIONS -U_FORTIFY_SOU
 debug: $(TARGET)
 
 # Perfil Fast: Optimizaciones agresivas para velocidad de ejecución
-fast: CXXFLAGS += -O0 -pipe
+fast: CXXFLAGS += -O3 $(LTO_FLAGS) -fno-fat-lto-objects -pipe
+fast: LDFLAGS  += -O3 $(LTO_FLAGS)
 fast: $(TARGET)
 
 # Perfil Segfault debug: Para cuando ocurre un Segmentation fault
