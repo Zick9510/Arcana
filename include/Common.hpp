@@ -35,6 +35,8 @@ enum class Precedencia : int {
 
   //USER_OPERATOR, //... Operadores del usuario
 
+  SWAP,         // ><
+
   PREFIJO,      // ++ -- *expr &expr !expr
   SUFIJO,       // ++ --
 
@@ -128,8 +130,8 @@ enum class Tt {
 
   // Delimitadores
   LLAVE_L, LLAVE_R,
-  PAREN_L, PAREN_R,
   CORCH_L, CORCH_R,
+  PAREN_L, PAREN_R,
 
   // Arcanos
   ARCANE, ARCANITO,
@@ -147,9 +149,9 @@ enum class Tt {
 
 inline int obtenerRangoNum(TypeKind t) { //... Distinguir entre tamaño de bits
   switch (t) {
-    case TypeKind::INTEGER: { return 1; }
-    case TypeKind::FLOAT  : { return 2; }
-    case TypeKind::BOOLEAN: { return 3; }
+    case TypeKind::BOOLEAN: { return 1; }
+    case TypeKind::INTEGER: { return 2; }
+    case TypeKind::FLOAT  : { return 3; }
     default               : { return 0; }
   }
 }
@@ -225,6 +227,7 @@ enum class TipoOperador {
   A_MOD,
   A_POT,
   A_RAIZ,
+  A_SWAP,
 
   INC_PREF,
   DEC_PREF,
@@ -246,6 +249,7 @@ inline std::string operadorString(TipoOperador op) { //... Agregar los demás ca
     case TipoOperador::A_MULT : { return "*"      ; }
     case TipoOperador::A_DIV  : { return "/"      ; }
     case TipoOperador::A_POT  : { return "**"     ; }
+    case TipoOperador::A_SWAP : { return "><"     ; }
     default                   : { return "unknown"; }
   }
 }
@@ -257,6 +261,7 @@ inline TipoOperador convertirEnTipoOperador(Tt op) { //... Agregar los demás ca
     case Tt::ASTERISCO: { return TipoOperador::A_MULT     ; }
     case Tt::DIV      : { return TipoOperador::A_DIV      ; }
     case Tt::POTENCIA : { return TipoOperador::A_POT      ; }
+    case Tt::SWAP     : { return TipoOperador::A_SWAP     ; }
 
     case Tt::MENOR    : { return TipoOperador::CMP_MENOR  ; }
 

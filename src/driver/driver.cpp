@@ -42,7 +42,7 @@ bool Driver::compile(const CompilerConfig& config) {
   Parser parser(tokens, contexto_arcanos, factory);
   std::vector<std::unique_ptr<Sentencia>> ast = std::move(parser.parsearPrograma());
 
-  // 5. Semántic Analysis (AST Check)
+  // 5. Semantic Analysis (AST Check)
   std::vector<Scope> scopes;
   GestorTablas tablas;
 
@@ -54,7 +54,7 @@ bool Driver::compile(const CompilerConfig& config) {
     return false;
   }
 
-  // 6. Generación de Código (AST Check -> Source)
+  // 6. Code Generation (AST Check -> Source)
   Emitter emitter(contexto_arcanos, tablas);
   for (auto& nodo : ast) {
     nodo->accept(&emitter);

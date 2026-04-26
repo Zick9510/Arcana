@@ -164,6 +164,19 @@ std::shared_ptr<ArcanaType> Checker::verificarPotencia(const Dt& izq, const Dt& 
 
 }
 
+std::shared_ptr<ArcanaType> Checker::verificarSwap(const Dt& izq, const Dt& der) {
+
+  if (izq.esPrimitivo() && der.esPrimitivo()) {
+    if (izq == der) {
+      return der.valor;
+
+    }
+  }
+
+  return nullptr;
+
+}
+
 std::shared_ptr<ArcanaType> Checker::verificarCmpMenor(const Dt& izq, const Dt& der) {
 
   if (izq.esPrimitivo() && der.esPrimitivo()) {
@@ -227,6 +240,9 @@ Dt Checker::verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador 
       return verificarPotencia(izq, der);
     }
 
+    case TipoOperador::A_SWAP: {
+      return verificarSwap(izq, der);
+    }
     // Comparadores
 
     case TipoOperador::CMP_MENOR: {

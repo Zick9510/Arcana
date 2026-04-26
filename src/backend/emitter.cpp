@@ -171,38 +171,77 @@ void Emitter::visitar(ExprUnaria* nodo) {
 void Emitter::visitar(ExprBinaria* nodo) {
   //std::cout << "[146, emitter.cpp] ExprBinaria\n";
   nodo->izquierda->accept(this);
-  llvm::Value* L = llvm_valor;
+  llvm::Value* left = llvm_valor;
 
   nodo->derecha->accept(this);
-  llvm::Value* R = llvm_valor;
+  llvm::Value* right = llvm_valor;
 
   bool es_float = nodo->tipo_resuelto.valor->kind == TypeKind::FLOAT;
 
   switch (nodo->operador) { //...
     case TipoOperador::A_SUMA: {
-      llvm_valor = es_float ? llvm_builder->CreateFAdd(L, R, "")
-                            : llvm_builder->CreateAdd(L, R, "");
+      std::cout << "[183, emitter.cpp]\n";
+      llvm_valor = es_float ? llvm_builder->CreateFAdd(left, right, "")
+                            : llvm_builder->CreateAdd(left, right, "");
       break;
     }
 
     case TipoOperador::A_RESTA: {
-      std::cout << "[163, emitter.cpp]\n";
-      llvm_valor = es_float ? llvm_builder->CreateFSub(L, R, "")
-                            : llvm_builder->CreateSub(L, R, "");
+      std::cout << "[189, emitter.cpp]\n";
+      llvm_valor = es_float ? llvm_builder->CreateFSub(left, right, "")
+                            : llvm_builder->CreateSub(left, right, "");
       break;
     }
 
     case TipoOperador::A_MULT: {
-      std::cout << "[170, emitter.cpp]\n";
-      llvm_valor = es_float ? llvm_builder->CreateFMul(L, R, "")
-                            : llvm_builder->CreateMul(L, R, "");
+      std::cout << "[196, emitter.cpp]\n";
+      llvm_valor = es_float ? llvm_builder->CreateFMul(left, right, "")
+                            : llvm_builder->CreateMul(left, right, "");
       break;
     }
 
     case TipoOperador::CMP_MENOR: { //... Add signed / unsigned cmp support
-      std::cout << "[177, emitter.cpp]\n";
-      llvm_valor = es_float ? llvm_builder->CreateFCmpULT(L, R, "")
-                            : llvm_builder->CreateICmpULT(L, R, "");
+      std::cout << "[203, emitter.cpp]\n";
+      llvm_valor = es_float ? llvm_builder->CreateFCmpULT(left, right, "")
+                            : llvm_builder->CreateICmpULT(left, right, "");
+      break;
+    }
+
+    case TipoOperador::A_SWAP: {
+      std::cout << "[211, emitter.cpp]\n";
+
+      llvm::Value* ptr_l = nullptr;
+      llvm::Value* ptr_r = nullptr;
+
+      if (auto* var_izq = dynamic_cast<ExprVariable*>(nodo->izquierda.get())) {
+        InfoVariable* info = tablas.buscarVariable(var_izq->nombre);
+        if (info) { ptr_l = info->alloca; }
+
+      } else if (auto* unaria = dynamic_cast<ExprUnaria*>(nodo->izquierda.get())) {
+        if (unaria->operador == TipoOperador::PTR_DEREF) {
+          unaria->operando->accept(this);
+          ptr_l = llvm_valor;
+        }
+      }
+
+      if (auto* var_der = dynamic_cast<ExprVariable*>(nodo->derecha.get())) {
+        InfoVariable* info = tablas.buscarVariable(var_der->nombre);
+        if (info) { ptr_r = info->alloca; }
+
+      } else if (auto* unaria = dynamic_cast<ExprUnaria*>(nodo->derecha.get())) {
+        if (unaria->operador == TipoOperador::PTR_DEREF) {
+          unaria->operando->accept(this);
+          ptr_r = llvm_valor;
+        }
+      }
+
+      if (ptr_l && ptr_r) {
+        llvm_builder->CreateStore(right, ptr_l);
+        llvm_builder->CreateStore(left, ptr_r);
+        llvm_valor = right;
+
+      }
+
       break;
     }
 

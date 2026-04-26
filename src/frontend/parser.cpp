@@ -477,7 +477,7 @@ std::unique_ptr<Sentencia> Parser::parsearSentenciaExpresion() {
 
   // If you get a "Expected ';', got [something else]"
   // Please check this line and inc the counter
-  // 22. Yikes.
+  // 23. Yikes.
   // Also, the bug you are looking for is most certainly not in this function.
   // Cheers
 
@@ -1116,6 +1116,9 @@ Pr Parser::obtenerPrecedencia(Tt tipo) {
     case Tt::DECREMENTAR:
       return Pr::SUFIJO ;
 
+    case Tt::SWAP    :
+      return Pr::SWAP;
+
     // --- Extra ---
     case Tt::CORCH_L   :
       return Pr::ACCESO;
@@ -1156,7 +1159,7 @@ std::unique_ptr<Expresion> Parser::parsearExpresion(Pr precedenciaMinima) {
 
       |type| Bit-Cast
 
-     */
+    */
 
     // C-Style
     if (op.tipo == Tt::PAREN_L && esTipo(peek().tipo)) {

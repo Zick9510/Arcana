@@ -25,6 +25,7 @@ public:
   std::shared_ptr<ArcanaType> verificarMult    (const Dt& izq, const Dt& der);
   std::shared_ptr<ArcanaType> verificarDiv     (const Dt& izq, const Dt& der);
   std::shared_ptr<ArcanaType> verificarPotencia(const Dt& izq, const Dt& der);
+  std::shared_ptr<ArcanaType> verificarSwap    (const Dt& izq, const Dt& der);
 
   std::shared_ptr<ArcanaType> verificarCmpMenor(const Dt& izq, const Dt& der);
 
