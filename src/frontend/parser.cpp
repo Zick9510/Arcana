@@ -680,13 +680,17 @@ std::unique_ptr<Sentencia> Parser::parsearFuncDecl() {
 
   }
 
-  std::unique_ptr<Sentencia> cuerpo_func = nullptr;
+  std::vector<std::unique_ptr<Sentencia>> cuerpo_func;
 
   if (firma) { // Firma
     get();
 
   } else     { // Implementación
-    cuerpo_func = parsearBloque();
+    auto bloque = std::unique_ptr<Bloque>(
+      static_cast<Bloque*>(parsearBloque().release())
+    );
+
+    cuerpo_func = std::move(bloque->instrucciones);
 
   }
 

@@ -9,7 +9,7 @@
 /*
  * Style Guide:
  *
- * Soruce : camelCase.cpp
+ * Source : camelCase.cpp
  * Haeders: PascalCase.hpp
  *
  * Classes: PascalCase
@@ -18,8 +18,8 @@
  * Argumentos (Clases, privados): camelCase
  * Argumentos (Clases, publicos): snake_case
  *
- * Funciones : camelCase
- * Métodos   : camelCase
+ * Functions : camelCase
+ * Methods   : camelCase
  *
  * Argumentos (Funciones): camelCase
  *
@@ -28,7 +28,7 @@
  *
  * Variables: snake_case
  *
- * //... Means "There is something in this line that should be checked out later"
+ * //... Its a comment to self. "Check this part later"
  *
  */
 

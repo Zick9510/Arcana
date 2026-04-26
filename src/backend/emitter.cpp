@@ -7,6 +7,9 @@ Emitter::Emitter(ContextoArcanos& ca, GestorTablas& t)
   : contextoArcanos(ca), tablas(t) {
   llvm_modulo  = std::make_unique<llvm::Module>("ArcanaModulo", llvm_ctx);
   llvm_builder = std::make_unique<llvm::IRBuilder<>>(llvm_ctx);
+
+  tablas.prepareForEmitter();
+
 }
 
 // --- LLVM --- //
@@ -89,8 +92,7 @@ void Emitter::visitar(ExprVariable* nodo) {
   InfoVariable* info = tablas.buscarVariable(nodo->nombre);
 
   if (info && info->alloca) {
-    llvm::Type* tipo_llvm = info->alloca->getAllocatedType();
-    llvm_valor = llvm_builder->CreateLoad(tipo_llvm, info->alloca, "");
+    llvm_valor = llvm_builder->CreateLoad(info->alloca->getAllocatedType(), info->alloca, "");
     return ;
 
   }
@@ -111,10 +113,10 @@ void Emitter::visitar(ExprArray* nodo) {
 void Emitter::visitar(ExprUnaria* nodo) {
   //std::cout << "[112, emitter.cpp] ExprUnaria\n";
 
-  //nodo->operando->accept(this);
-  //llvm::Value* val = llvm_valor;
+  nodo->operando->accept(this);
+  llvm::Value* val = llvm_valor;
 
-  //if (!val) { return ; }
+  if (!val) { return ; }
 
   switch (nodo->operador) { //...
 
@@ -125,8 +127,7 @@ void Emitter::visitar(ExprUnaria* nodo) {
     }
 
     case TipoOperador::PTR_DEREF: {
-      nodo->operando->accept(this);
-      llvm::Value* ptr_val = llvm_valor;
+      llvm::Value* ptr_val = val;
 
       auto tipo_base = nodo->operando->tipo_resuelto.valor->getUnderlyingType();
       llvm::Type* tipo_llvm = obtenerTipoLLVM(tipo_base);
@@ -146,22 +147,23 @@ void Emitter::visitar(ExprUnaria* nodo) {
         }
       }
 
-      nodo->operando->accept(this);
-      llvm::Value* valor_temp = llvm_valor;
+      if (auto* unaria = dynamic_cast<ExprUnaria*>(nodo->operando.get())) {
+        if (unaria->operador == TipoOperador::PTR_DEREF) {
+          unaria->operando->accept(this);
+          return ;
+        }
+      }
 
-      llvm::AllocaInst* temp_alloca = llvm_builder->CreateAlloca(valor_temp->getType(), nullptr, "");
+      std::cerr << "Error: Solo se puede tomar la dirección de L-Values\n";
+      exit(1);
 
-      llvm_builder->CreateStore(valor_temp, temp_alloca);
-
-      llvm_valor = temp_alloca;
-
-      break;
     }
 
     default: {
       std::cout << "[138, emitter.cpp] Error: Operador unario no implementado.";
       exit(1);
     }
+
   }
 
 }
@@ -300,14 +302,12 @@ void Emitter::visitar(Bloque* nodo) {
   //std::cout << "[276, emitter.cpp] Bloque\n";
 
   tablas.entrarScope();
-  llvm_scopes.push_back(std::map<std::string, llvm::AllocaInst*>());
 
   for (const auto& i : nodo->instrucciones) {
     i->accept(this);
 
   }
 
-  llvm_scopes.pop_back();
   tablas.salirScope();
 
 }
@@ -315,9 +315,9 @@ void Emitter::visitar(Bloque* nodo) {
 void Emitter::visitar(SentenciaAsignarVar* nodo) {
   //std::cout << "[289, emitter.cpp] SentenciaAsignarVar\n";
 
-  llvm::Type* tipoLLVM = obtenerTipoLLVM(nodo->tipo_explicito.tipo.valor);
+  llvm::Type* tipo_llvm = obtenerTipoLLVM(nodo->tipo_explicito.tipo.valor);
 
-  llvm::AllocaInst* alloca = llvm_builder->CreateAlloca(tipoLLVM, nullptr, nodo->nombre);
+  llvm::AllocaInst* alloca = llvm_builder->CreateAlloca(tipo_llvm, nullptr, nodo->nombre);
 
   InfoVariable* info = tablas.buscarVariable(nodo->nombre);
 
@@ -518,16 +518,18 @@ void Emitter::visitar(SentenciaFuncDecl* nodo) {
     llvm_modulo.get()
   );
 
-  if (!nodo->cuerpo_func) {
+  if (nodo->cuerpo_func.empty()) {
     return ;
   }
 
   llvm::BasicBlock* bb = llvm::BasicBlock::Create(llvm_ctx, "entry", f);
   llvm_builder->SetInsertPoint(bb);
 
-  llvm_scopes.push_back(std::map<std::string, llvm::AllocaInst*>());
+  //llvm_scopes.push_back(std::map<std::string, llvm::AllocaInst*>());
 
-  auto it_args_name = nodo->args_type.rbegin();
+  tablas.entrarScope();
+
+  auto it_args_name = nodo->args_type.begin();
   for (auto &arg : f->args()) {
     const std::string& nombre_arg = it_args_name->first;
 
@@ -538,13 +540,20 @@ void Emitter::visitar(SentenciaFuncDecl* nodo) {
     if (info) { info->alloca = alloca; }
 
     it_args_name++;
+
   }
 
-  nodo->cuerpo_func->accept(this);
+  if (!nodo->cuerpo_func.empty()) {
+    for (const auto& inst : nodo->cuerpo_func) {
+      inst->accept(this);
+    }
+  }
 
-  llvm_scopes.pop_back();
+  //llvm_scopes.pop_back();
 
   llvm::verifyFunction(*f);
+
+  tablas.salirScope();
 
 }
 
@@ -569,7 +578,7 @@ void Emitter::visitar(SentenciaLlamadaArcano* nodo) { //...
 
   ArcaneBranch* rama_elegida = &def.branches[nodo->indice_rama];
 
-  llvm_scopes.push_back(std::map<std::string, llvm::AllocaInst*>());
+  //llvm_scopes.push_back(std::map<std::string, llvm::AllocaInst*>());
   auto backup_bloques = bloques_arcano_activos;
 
   for (const auto& [nombre_arg, ast_arg] : nodo->args) {
@@ -578,7 +587,7 @@ void Emitter::visitar(SentenciaLlamadaArcano* nodo) { //...
 
     llvm::AllocaInst* alloca = llvm_builder->CreateAlloca(valor_arg->getType(), nullptr, nombre_arg);
     llvm_builder->CreateStore(valor_arg, alloca);
-    llvm_scopes.back()[nombre_arg] = alloca;
+    //llvm_scopes.back()[nombre_arg] = alloca;
 
   }
 
@@ -597,6 +606,6 @@ void Emitter::visitar(SentenciaLlamadaArcano* nodo) { //...
   }
 
   bloques_arcano_activos = backup_bloques;
-  llvm_scopes.pop_back();
+  //llvm_scopes.pop_back();
 
 }

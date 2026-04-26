@@ -10,7 +10,7 @@ private:
   std ::unique_ptr<llvm::Module>                         llvm_modulo         ;
   std ::unique_ptr<llvm::IRBuilder<>>                    llvm_builder        ;
   llvm::Value*                                           llvm_valor = nullptr;
-  std ::vector<std::map<std::string, llvm::AllocaInst*>> llvm_scopes         ;
+  //std ::vector<std::map<std::string, llvm::AllocaInst*>> llvm_scopes         ;
 
   std::vector<llvm::BasicBlock*> pila_breaks   ;
   std::vector<llvm::BasicBlock*> pila_continues;

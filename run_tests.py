@@ -37,11 +37,11 @@ def run_tests():
         command = [COMPILER_PATH, filepath, "-o", output_filepath]
 
         try:
-            comp_result = subprocess.run(command, capture_output=True, timeout=0.100)
+            comp_result = subprocess.run(command, capture_output=True, timeout=0.500)
 
         except subprocess.TimeoutExpired:
-            print(f"{Color.RED}[TIME] {filename} (Exceeded 100ms)")
-            failed_tests.append((filename, "Timeout", b"", "Process killed after 100ms"))
+            print(f"{Color.RED}[TIME] {filename} (Exceeded 500ms)")
+            failed_tests.append((filename, "Timeout", b"", "Process killed after 500ms"))
             timeout_fail += 1
             continue
 

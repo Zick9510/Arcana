@@ -16,7 +16,7 @@ public:
   Checker(GestorTablas& t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e, TypeFactory& tf, ContextoArcanos& ca);
 
   void verificarNodo(std::unique_ptr<Sentencia>& nodo);
-  Dt verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador op);
+  Dt   verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador op);
   void verificarPrograma();
 
   // --- Verificadores ---
@@ -277,9 +277,15 @@ public:
   }
 
   void visitar(Bloque* nodo) override {
+
+    tablas.entrarScope();
+
     for (const auto& i : nodo->instrucciones) {
       i->accept(this);
     }
+
+    tablas.salirScope();
+
   }
 
   void visitar(SentenciaAsignarVar* nodo) override {
@@ -289,7 +295,7 @@ public:
     if (info == nullptr) { // Si la variable no existe, creamos una
       InfoVariable nueva_info;
       nueva_info.tipo = nodo->tipo_explicito.tipo.valor;
-      tablas.añadirVariable(nodo->nombre, nueva_info, 0);
+      tablas.añadirVariable(nodo->nombre, nueva_info);
       return ;
 
     } else { // Si existe, error
@@ -397,16 +403,18 @@ public:
 
     }
 
-    InfoFuncion* ptr_func = tablas.buscarFuncion(firma);
+    InfoFuncion* ptr_func = tablas.buscarFunction(firma);
     tablas.pushFunction(ptr_func);
     tablas.entrarScope();
 
     for (const auto& [nombre, info] : nodo->args_type) {
-      tablas.añadirVariable(nombre, info, nodo->linea);
+      tablas.añadirVariable(nombre, info);
     }
 
-    if (nodo->cuerpo_func != nullptr) {
-      nodo->cuerpo_func->accept(this);
+    if (!nodo->cuerpo_func.empty()) {
+      for (const auto& inst : nodo->cuerpo_func) {
+        inst->accept(this);
+      }
     }
 
     tablas.salirScope();
@@ -449,7 +457,7 @@ public:
 
       for (const auto& segment : branch.segmentos) {
         for (const auto& [name, info] : segment.br_args) {
-          tablas.añadirVariable(name, info, 0);
+          tablas.añadirVariable(name, info);
         }
 
         if (segment.br_cont != nullptr) {

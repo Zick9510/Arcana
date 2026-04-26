@@ -91,6 +91,118 @@ std::string Dt::tipoString() const {
   return (es_const? "const": "") + valor->toString();
 }
 
+/* --- Gestor de Tablas Maestro --- */
+
+GestorTablas::GestorTablas() {
+  root = std::make_unique<Scope>(nullptr);
+  scopeActual = root.get();
+
+}
+
+void GestorTablas::prepareForEmitter() {
+  lectura = true;
+  root->resetNavegacion();
+  scopeActual = root.get();
+
+}
+
+void GestorTablas::entrarScope() {
+  std::cout << "[110, common.cpp] entrarScope\n";
+  if (!lectura) {
+    auto nuevo_hijo = std::make_unique<Scope>(scopeActual);
+    Scope* ptr_hijo = nuevo_hijo.get();
+    scopeActual->hijos.push_back(std::move(nuevo_hijo));
+    scopeActual = ptr_hijo;
+
+  } else {
+    if (scopeActual->hijo_actual < scopeActual->hijos.size()) {
+      scopeActual = scopeActual->hijos[scopeActual->hijo_actual++].get();
+    }
+  }
+}
+
+void GestorTablas::salirScope() {
+  std::cout << "[125, common.cpp] salirScope\n";
+  if (scopeActual->padre) {
+    scopeActual = scopeActual->padre;
+
+  } else {
+    std::cerr << "Error: Intento de salir de un scope raíz o nulo.\n";
+
+  }
+}
+
+InfoVariable* GestorTablas::buscarVariable(const std::string& name) {
+  Scope* cursor = scopeActual;
+  while (cursor != nullptr) {
+    auto it = cursor->variables.find(name);
+    if (it != cursor->variables.end()) {
+      return &(it->second);
+    }
+    cursor = cursor->padre;
+  }
+  return nullptr;
+
+}
+
+bool GestorTablas::añadirVariable(const std::string& name, InfoVariable info) {
+
+  if (scopeActual->variables.find(name) != scopeActual->variables.end()) {
+    return false;
+
+  }
+
+  scopeActual->variables[name] = std::move(info);
+  return true;
+
+}
+
+bool GestorTablas::añadirFunction(const std::string& name, InfoFuncion info) {
+  if (scopeActual->funciones.count(name)) {
+    return false;
+
+  }
+
+  scopeActual->funciones[name] = std::move(info);
+  return true;
+
+}
+
+InfoFuncion* GestorTablas::buscarFunction(const std::string& name) {
+  Scope* cursor = scopeActual;
+
+  while (cursor != nullptr) {
+    auto it = cursor->funciones.find(name);
+
+    if (it != cursor->funciones.end()) {
+      return &(it->second);
+
+    }
+
+    cursor = cursor->padre;
+  }
+
+  return nullptr;
+}
+
+InfoFuncion* GestorTablas::getCurrentFunction() {
+
+  if (!pilaFuncs.empty()) {
+    return pilaFuncs.back();
+
+  }
+
+  return nullptr;
+
+}
+
+void GestorTablas::pushFunction(InfoFuncion* function) { pilaFuncs.push_back(function);   }
+
+void GestorTablas::popFunction() {
+  if (!pilaFuncs.empty()) { pilaFuncs.pop_back(); }
+
+}
+
 /* --- Colores para la terminal --- */
 
 inline const std::string COLOR_RESET   = "\033[0m"   ;

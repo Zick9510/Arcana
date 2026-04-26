@@ -44,13 +44,13 @@ bool Driver::compile(const CompilerConfig& config) {
 
   // 5. Semántic Analysis (AST Check)
   std::vector<Scope> scopes;
-  GestorTablas tablas(errHandler, scopes);
+  GestorTablas tablas;
 
   Checker checker(tablas, ast, errHandler, factory, contexto_arcanos);
   checker.verificarPrograma();
 
   if (errHandler.notificar()) { //... Hay al menos un error
-    std::cerr << "[44 driver.cpp]: Error\n";
+    std::cerr << "[53 driver.cpp]: Error\n";
     return false;
   }
 

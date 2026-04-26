@@ -4,96 +4,6 @@
 
 #include "Common.hpp"
 
-/* --- Gestor de Tablas (Symbol Table Manager) --- */
-GestorTablas::GestorTablas(ErrorHandler& e, std::vector<Scope> s)
-  : errHandler(e), scopes(s) {}
-
-// --- Bloques ---
-void GestorTablas::entrarScope(Scope scope) {
-  scopes.push_back(scope);
-}
-
-void GestorTablas::salirScope() {
-  if (scopes.size() > 1) {
-    scopes.pop_back();
-  }
-}
-
-// --- Variables ---
-bool GestorTablas::añadirVariable(const std::string& nombre, InfoVariable info, int linea) {
-  // Comprobamos solo en el ámbito actual (redefinición)
-
-  if (scopes.empty()) {
-    scopes.push_back(Scope());
-    scopes.back().variables[nombre] = info;
-    return true;
-
-  }
-
-  if (scopes.back().variables.count(nombre)) {
-    std::vector<std::string> detalle = {nombre};
-    errHandler.reportar(CE::ERR_VARIABLE_REDECLARADA, linea, detalle);
-    return false;
-
-  }
-
-  //... Añadir comprobación de shadiwing en otros scopes
-  scopes.back().variables[nombre] = info;
-
-  return true;
-
-}
-
-InfoVariable* GestorTablas::buscarVariable(const std::string& nombre) {
-  // Buscamos desde el ámbito actual hacia el global
-
-  for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
-    if (it->variables.count(nombre)) {
-      return &it->variables[nombre];
-    }
-  }
-
-  return nullptr; // No encontrada
-
-}
-
-// --- Functions ---
-
-bool GestorTablas::añadirFunction(const std::string& nombre, InfoFuncion info) {
-  if (scopes.back().funciones.count(nombre)) { return false; }
-  scopes.back().funciones[nombre] = info;
-  return true;
-
-}
-
-InfoFuncion* GestorTablas::buscarFuncion(const std::string& nombre) {
-  for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
-    if (it->funciones.count(nombre)) { return &it->funciones[nombre]; }
-
-  }
-
-  return nullptr;
-
-}
-
-InfoFuncion* GestorTablas::getCurrentFunction() {
-
-  if (!pilaFuncs.empty()) {
-    return pilaFuncs.back();
-
-  }
-
-  return nullptr;
-
-}
-
-void GestorTablas::pushFunction(InfoFuncion* function) { pilaFuncs.push_back(function);   }
-
-void GestorTablas::popFunction() {
-  if (!pilaFuncs.empty()) { pilaFuncs.pop_back(); }
-
-}
-
 /* --- Checker --- */
 Checker::Checker(GestorTablas& t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e, TypeFactory& tf, ContextoArcanos& ca)
   : tablas(t), ast(a), errHandler(e), typeFactory(tf), contextoArcanos(ca) {}
@@ -369,11 +279,11 @@ bool Checker::esCasteoValido(const Dt& origen, const Dt& destino) {
 
 void Checker::verificarPrograma() {
 
-  tablas.entrarScope(Scope());
+  //tablas.entrarScope();
 
   for (auto& nodo : ast) {
     nodo->accept(this);
   }
 
-  tablas.salirScope();
+  //tablas.salirScope();
 }

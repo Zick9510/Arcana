@@ -6,6 +6,6 @@ func A() -> int {
 }
 
 func main() -> int {
-  int a = A();
-  return a;
+  int x = A();
+  return x;
 }

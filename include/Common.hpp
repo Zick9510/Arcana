@@ -1157,7 +1157,7 @@ public:
   std::string nombre_func;
   bool es_pure;
   std::vector<std::pair<std::string, InfoVariable>> args_type;
-  std::unique_ptr<Sentencia> cuerpo_func;
+  std::vector<std::unique_ptr<Sentencia>> cuerpo_func;
   Dt ret_type;
 
   std::string firma_mangled;
@@ -1165,7 +1165,7 @@ public:
   SentenciaFuncDecl(std::string n,
                     bool pure,
                     std::vector<std::pair<std::string, InfoVariable>> a,
-                    std::unique_ptr<Sentencia> c,
+                    std::vector<std::unique_ptr<Sentencia>> c,
                     Dt r)
   : nombre_func(n), es_pure(pure), args_type(a), cuerpo_func(std::move(c)), ret_type(r) {}
 
@@ -1173,9 +1173,14 @@ public:
     : nombre_func(otra.nombre_func),
       es_pure(otra.es_pure),
       args_type(otra.args_type),
-      cuerpo_func(otra.cuerpo_func->clonar()),
       ret_type(otra.ret_type),
-      firma_mangled(otra.firma_mangled) {}
+      firma_mangled(otra.firma_mangled) {
+
+    for (const auto& inst: otra.cuerpo_func) {
+      cuerpo_func.push_back(inst->clonar());
+    }
+  
+  }
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
@@ -1193,8 +1198,10 @@ public:
 
     std::cout << sangria << "| ";
 
-    if (cuerpo_func != nullptr) {
-      cuerpo_func->imprimir(nivel + 1);
+    if (!cuerpo_func.empty()) {
+      for (const auto& inst : cuerpo_func) {
+        inst->imprimir(nivel + 1);
+      }
 
     } else {
       std::cout << sangria << "+- [prototype]\n";
@@ -1437,28 +1444,50 @@ struct InfoFuncion {
 struct Scope {
   std::unordered_map<std::string, InfoVariable> variables;
   std::unordered_map<std::string, InfoFuncion > funciones;
-};
 
+  Scope* padre = nullptr;
+  std::vector<std::unique_ptr<Scope>> hijos;
+  size_t hijo_actual = 0;
+
+  explicit Scope(Scope* padrePtr = nullptr) : padre(padrePtr) {}
+
+  Scope(const Scope&)            = delete;
+  Scope& operator=(const Scope&) = delete;
+  Scope(Scope&&)            = default;
+  Scope& operator=(Scope&&) = default;
+
+  void resetNavegacion() {
+    hijo_actual = 0;
+    for (auto& hijo : hijos) { hijo->resetNavegacion(); }
+  }
+
+};
 
 class GestorTablas {
 private:
-  ErrorHandler& errHandler;
-  std::vector<Scope> scopes;
+  //ErrorHandler& errHandler;
+
+  std::unique_ptr<Scope> root;
+  Scope* scopeActual;
+
+  bool lectura = false;
   std::vector<InfoFuncion*> pilaFuncs;
 
 public:
-  GestorTablas(ErrorHandler& err, std::vector<Scope> scopes);
+  GestorTablas();
 
-  void entrarScope(Scope scope = {});
+  void prepareForEmitter();
+
+  void entrarScope();
   void salirScope();
 
   // --- Variables ---
-  bool añadirVariable(const std::string& nombre, InfoVariable info, int linea);
-  InfoVariable* buscarVariable(const std::string& nombre);
+  bool añadirVariable(const std::string& name, InfoVariable info);
+  InfoVariable* buscarVariable(const std::string& name);
 
   // --- Functions ---
-  bool añadirFunction(const std::string& nombre, InfoFuncion info);
-  InfoFuncion* buscarFuncion(const std::string& nombre);
+  bool añadirFunction(const std::string& name, InfoFuncion info);
+  InfoFuncion* buscarFunction(const std::string& name);
   InfoFuncion* getCurrentFunction();
 
   void pushFunction(InfoFuncion* function);
