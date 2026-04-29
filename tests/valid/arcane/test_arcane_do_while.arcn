@@ -18,11 +18,11 @@ arcane DoWhile (do: key, body: code, while: key, as: key, cond: expr) {
   @double_d {
 
     do <=> {
+      body;
+      body;
+      while (cond) {
         body;
-        body;
-        while (cond) {
-          body;
-        }
+      }
     };
 
   }
