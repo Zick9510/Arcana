@@ -11,6 +11,7 @@ private:
   ErrorHandler& errHandler;
   TypeFactory& typeFactory;
   ContextoArcanos& contextoArcanos;
+  std::map<std::string, Sentencia*> bloques_arcano_activos;
 
 public:
   Checker(GestorTablas& t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e, TypeFactory& tf, ContextoArcanos& ca);
@@ -155,15 +156,29 @@ public:
   }
 
   void visitar(ExprVariable* nodo) override { //...
+
+    if (bloques_arcano_activos.count(nodo->nombre)) {
+      auto* bloque = bloques_arcano_activos[nodo->nombre];
+      bloque->accept(this);
+
+      if (auto* s_expr = dynamic_cast<SentenciaExpr*>(bloque)) {
+        nodo->tipo_resuelto = s_expr->expresion->tipo_resuelto;
+      } else {
+        nodo->tipo_resuelto = Dt(typeFactory.getUnknown());
+      }
+      return ;
+    }
+
     InfoVariable* info = tablas.buscarVariable(nodo->nombre);
 
     if (info != nullptr) {
       nodo->tipo_resuelto = info->tipo;
-
-    } else {
-      //... La variable no existe
+      return ;
 
     }
+
+
+    std::cerr << "Error: Variable '" << nodo->nombre << "' no encontrada.\n";
 
   }
 
@@ -427,71 +442,84 @@ public:
 
   }
 
-  //void visitar(SentenciaArcano* nodo) override {
-  //  for (const auto& branch : nodo->def.branches) {
-  //    tablas.entrarScope();
-
-  //    for (const auto& segment : branch.segmentos) {
-
-  //      for (const auto& [name, info] : segment.br_args) {
-  //        tablas.añadirVariable(name, info, 0);
-
-  //      }
-
-  //      if (segment.br_cont != nullptr) {
-  //        segment.br_cont->accept(this);
-
-  //      }
-
-  //    }
-
-  //    tablas.salirScope();
-  //  }
-
-  //}
-
   void visitar(SentenciaArcano* nodo) override {
     ArcaneDef& def = contextoArcanos.buscarDefinicionPorNombre(nodo->def.name);
 
-    for (const auto& branch : nodo->def.branches) {
-      tablas.entrarScope();
-
-      for (const auto& segment : branch.segmentos) {
-        for (const auto& [name, info] : segment.br_args) {
-          tablas.añadirVariable(name, info);
-        }
-
-        if (segment.br_cont != nullptr) {
-          segment.br_cont->accept(this);
-        }
-      }
-
-      tablas.salirScope();
-
-    }
+    //for (const auto& branch : nodo->def.branches) {
+    //  tablas.entrarScope();
+    //  for (const auto& segment : branch.segmentos) {
+    //    for (const auto& [name, info] : segment.br_args) {
+    //      tablas.añadirVariable(name, info);
+    //    }
+    //    if (segment.br_cont != nullptr) {
+    //      segment.br_cont->accept(this);
+    //    }
+    //  }
+    //  tablas.salirScope();
+    //}
 
     def = nodo->def;
+
   }
 
   void visitar(SentenciaLlamadaArcano* nodo) override {
 
-    for (const auto& [name, arg_nodo] : nodo->args) {
-      if (arg_nodo != nullptr) {
-        arg_nodo->accept(this);
+    ArcaneDef& def     = contextoArcanos.buscarDefinicionPorKeyword(nodo->nombre);
+    ArcaneBranch* rama = &def.branches[nodo->indice_rama];
+
+    tablas.entrarScope();
+
+    for (const auto& [nombre_arg, ast_arg] : nodo->args) {
+      ast_arg->accept(this);
+
+      InfoVariable info;
+
+      if (auto* s_expr = dynamic_cast<SentenciaExpr*>(ast_arg.get())) {
+        info.tipo = s_expr->expresion->tipo_resuelto;
+      } else {
+        info.tipo = Dt(typeFactory.getUnknown());
+      }
+
+      tablas.añadirVariable(nombre_arg, info);
+
+    }
+
+    auto backup_bloques = bloques_arcano_activos;
+
+    for (const auto& [nombre_arg, ast_arg] : nodo->expr) {
+      bloques_arcano_activos[nombre_arg] = ast_arg.get();
+    }
+
+    for (const auto& [nombre_arg, ast_arg] : nodo->code) {
+      bloques_arcano_activos[nombre_arg] = ast_arg.get();
+    }
+
+    for (const auto& seg : rama->segmentos) {
+      if (seg.br_cont) {
+        seg.br_cont->accept(this);
       }
     }
 
-    for (const auto& [name, arg_nodo] : nodo->expr) {
-      if (arg_nodo != nullptr) {
-        arg_nodo->accept(this);
-      }
-    }
+    bloques_arcano_activos = backup_bloques;
+    tablas.salirScope();
 
-    for (const auto& [name, arg_nodo] : nodo->code) {
-      if (arg_nodo != nullptr) {
-        arg_nodo->accept(this);
-      }
-    }
+    //for (const auto& [name, arg_nodo] : nodo->args) {
+    //  if (arg_nodo != nullptr) {
+    //    arg_nodo->accept(this);
+    //  }
+    //}
+    //
+    //for (const auto& [name, arg_nodo] : nodo->expr) {
+    //  if (arg_nodo != nullptr) {
+    //    arg_nodo->accept(this);
+    //  }
+    //}
+    //
+    //for (const auto& [name, arg_nodo] : nodo->code) {
+    //  if (arg_nodo != nullptr) {
+    //    arg_nodo->accept(this);
+    //  }
+    //}
 
   }
 

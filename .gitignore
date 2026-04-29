@@ -1,27 +1,32 @@
-# --- Carpetas de Compilación y Sistema ---
+# --- Compilación y Sistema ---
 bin/
 obj/
 .cache/
 .directory
 
+*.o
+*.out
+*.exe
+*.a
+*.so
+
 # --- Archivos de Herramientas y Editores ---
-.vscode
-compile_commands.json
 Session.vim
+compile_commands.json
+
+.vscode/
+.idea/
+__pycache__/
 
 # --- Archivos Temporales ---
 *.ll
 *.s
-
-# --- Archivos Arcana ---
-*.arcn
-!tests/valid/*.arcn
-!tests/invalid/*.arcn
+*.bc
 
 # --- Tests ---
-test/build
+tests/build/
 
-# --- Binarios Comunes (por si acaso) ---
-*.o
-*.out
-*.exe
+# --- Debugging ---
+core
+vgcore.*
+*.log

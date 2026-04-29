@@ -88,6 +88,7 @@ bool Dt::esPrimitivo() const { //...
 }
 
 std::string Dt::tipoString() const {
+  if (valor == nullptr) { return "???"; }
   return (es_const? "const": "") + valor->toString();
 }
 

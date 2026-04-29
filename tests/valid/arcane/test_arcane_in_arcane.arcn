@@ -1,3 +1,5 @@
+// return : 36
+
 arcane TwiceOrThrice (decide: key, expr1: expr, block1: code) {
 
   rules [

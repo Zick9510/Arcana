@@ -1,0 +1,12 @@
+func A(int a) -> void;
+func Aa(int aA) -> unsigned int;
+func B(int b, float b2) -> void;
+func C(int c) -> [void, int]; // Same concept as std::variant
+func D(int d) -> [int, int32, float64, raw32];
+func E(int e) -> [raw];
+func Ee(int eE) -> raw16;
+func Ff(int fF) -> [raw64, int];
+func F(int f) -> [raw64];
+func G(int g) -> [raw32];
+func H(raw32 h) -> [int];
+func I(int i) -> [void, raw32];

@@ -54,6 +54,7 @@ inline int operator-(Pr lhs, int rhs) {
 
 // --- TipoToken ---
 enum class Tt {
+
   // Tipos Inferibles
   VAR,
 
@@ -86,7 +87,7 @@ enum class Tt {
   IF, ELSE,
 
   // Loops
-  DO, WHILE, FOR, FOREACH, LOOP,
+  WHILE, FOR, FOREACH,
 
   BREAK, CONTINUE, PASS,
 
@@ -143,6 +144,26 @@ enum class Tt {
   // Otros
   FIN_ARCHIVO, ERROR
 
+};
+
+inline bool is_keyword(Tt t) {
+  switch (t) {
+    case Tt::IF     :
+    case Tt::ELSE   :
+    case Tt::WHILE  :
+    case Tt::FOR    :
+    case Tt::FOREACH: {
+      return true;
+    }
+
+    default: { return false; }
+  }
+}
+
+// --- ParseMode ---
+enum class Pm {
+  STRICT,
+  RELAXED
 };
 
 /* --- Tipos --- */
@@ -325,9 +346,9 @@ inline std::map<std::string, Tt> keywords = {
   {"arcanito", Tt::ARCANITO},
   {"rules"   , Tt::RULES   },
 
-  {"code", Tt::CODE},
-  {"expr", Tt::EXPR},
   {"key" , Tt::KEY },
+  {"expr", Tt::EXPR},
+  {"code", Tt::CODE},
 
   // If-else
   {"if"  , Tt::IF  },
@@ -335,7 +356,7 @@ inline std::map<std::string, Tt> keywords = {
 
   // While y do-while
   {"while", Tt::WHILE},
-  {"do"   , Tt::DO   },
+  //{"do"   , Tt::DO   },
 
   // For y foreach
   {"for" , Tt::FOR    },
@@ -344,7 +365,7 @@ inline std::map<std::string, Tt> keywords = {
   // Break, continue and pass
   {"break"   , Tt::BREAK   },
   {"continue", Tt::CONTINUE},
-  {"pass"    , Tt::PASS},
+  {"pass"    , Tt::PASS    },
 
   // Functions
   {"func", Tt::FUNC},
@@ -352,25 +373,6 @@ inline std::map<std::string, Tt> keywords = {
   {"math", Tt::MATH},
   {"return", Tt::RETURN},
 
-};
-
-struct DatosPesados;
-
-using ValorVar = std::variant <
-  std::monostate, // Desconocido
-  char,           // bool y char
-  int16_t,        // short
-  int32_t,        // int
-  int64_t,        // long
-  float,          // float
-  double,         // double
-  std::string,    // string
-  std::unique_ptr<DatosPesados>
->;
-
-struct DatosPesados {
-  std::vector<ValorVar> elementos_array;
-  std::vector<uint64_t> valor_pesado;
 };
 
 /* --- Arcanos --- */
@@ -1320,7 +1322,35 @@ public:
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
-    std::cout << sangria << "Llamada a Arcano: " << nombre << "\n";
+    std::cout << sangria << "Llamada a Arcano: " << nombre << ' ' << indice_rama << "\n";
+
+    /*
+
+    if (!args.empty()) {
+      std::cout << sangria << "ARGS:\n";
+      for (const auto& [i, a] : args) {
+        std::cout << sangria << "| " << i << " ->\n";
+        a->imprimir(nivel + 2);
+      }
+    }
+
+    if (!expr.empty()) {
+      std::cout << sangria << "EXPR:\n";
+      for (const auto& [i, a] : expr) {
+        std::cout << sangria << "| " << i << " ->\n";
+        a->imprimir(nivel + 2);
+      }
+    }
+
+    if (!code.empty()) {
+      std::cout << sangria << "CODE:\n";
+      for (const auto& [i, a] : code) {
+        std::cout << sangria << "| " << i << " ->\n";
+        a->imprimir(nivel + 2);
+      }
+    }
+
+    */
   }
 
 };

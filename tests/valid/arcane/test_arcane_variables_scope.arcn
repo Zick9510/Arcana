@@ -1,0 +1,13 @@
+func main() -> int {
+
+  int x = 5;
+
+  if (1) {
+    x = x + 5;
+    // int x = 10;
+    x = x + 15;
+  }
+
+  return x;
+
+}

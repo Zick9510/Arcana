@@ -1,0 +1,43 @@
+arcane DoWhile (do: key, body: code, while: key, as: key, cond: expr) {
+  rules [
+    @standard : do [ body while cond ];
+    @double_d : do [ body as cond];
+
+  ];
+
+  @standard {
+
+    do <=> {
+      body;
+      while (cond) { body; }
+
+    };
+
+  }
+
+  @double_d {
+
+    do <=> {
+        body;
+        body;
+        while (cond) {
+          body;
+        }
+    };
+
+  }
+}
+
+func main() -> int {
+
+  int i = 10;
+
+  do {
+    i = i - 1;
+
+  } while (i);
+
+
+  return i;
+
+}

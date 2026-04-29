@@ -16,7 +16,7 @@ private:
   Token resolverAlias(Token t);
   Token peek(size_t offset = 0);
   Token get();
-  Token check(Tt tipoEsperado);
+  Token check(Tt tipoEsperado, Pm parseMode = Pm::STRICT);
 
   Token coincide(std::initializer_list<Tt> tipos);
 

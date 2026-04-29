@@ -1,3 +1,5 @@
+// return : 51
+
 arcane CustomIf (si: key, siempre: key, expr_if: expr, block_if: code) {
 
   rules [

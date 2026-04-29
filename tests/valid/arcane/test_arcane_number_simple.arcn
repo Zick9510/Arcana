@@ -1,3 +1,5 @@
+// return : 0
+
 arcane CustomNumber (num: key) {
 
   rules [

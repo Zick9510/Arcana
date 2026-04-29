@@ -617,7 +617,8 @@ void Emitter::visitar(SentenciaLlamadaArcano* nodo) { //...
 
   ArcaneBranch* rama_elegida = &def.branches[nodo->indice_rama];
 
-  //llvm_scopes.push_back(std::map<std::string, llvm::AllocaInst*>());
+  tablas.entrarScope();
+
   auto backup_bloques = bloques_arcano_activos;
 
   for (const auto& [nombre_arg, ast_arg] : nodo->args) {
@@ -626,7 +627,16 @@ void Emitter::visitar(SentenciaLlamadaArcano* nodo) { //...
 
     llvm::AllocaInst* alloca = llvm_builder->CreateAlloca(valor_arg->getType(), nullptr, nombre_arg);
     llvm_builder->CreateStore(valor_arg, alloca);
-    //llvm_scopes.back()[nombre_arg] = alloca;
+
+    InfoVariable* info = tablas.buscarVariable(nombre_arg);
+
+    if (info) {
+      info->alloca = alloca;
+
+    } else {
+      std::cerr << "Error: Argumento '" << nombre_arg << "' no encontrado.\n";
+
+    }
 
   }
 
@@ -645,6 +655,6 @@ void Emitter::visitar(SentenciaLlamadaArcano* nodo) { //...
   }
 
   bloques_arcano_activos = backup_bloques;
-  //llvm_scopes.pop_back();
+  tablas.salirScope();
 
 }

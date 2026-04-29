@@ -1,3 +1,5 @@
+// return : 100
+
 arcane CustomLoop (loop: key, block: code) {
 
   rules [
