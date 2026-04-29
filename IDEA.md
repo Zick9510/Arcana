@@ -23,17 +23,16 @@ To improve accessibility and reduce finger travel distance, Arcana explores "Lef
 for common types and control structures that can be typed entirely with the left hand (QWERT / ASDFG / ZXCVB ).
 
 
-
 #### Types
 [vd] -> [void ] (void)
 [wd] -> [int]   (word)
-[fd] -> [float] (float/decimal)
-[bt] -> [bool]  (boolean type)
+[ft] -> [float] (float/decimal)
+[tf] -> [bool]  (true/false)
 
 #### Keywords
 [br]  -> [if]     (branch)
 [re]  -> [else]   (residual)
-[wa]  -> [while]  (while active)
+[as]  -> [while]  (as)
 [fc]  -> [func]   (function)
 [ret] -> [return] (return)
 

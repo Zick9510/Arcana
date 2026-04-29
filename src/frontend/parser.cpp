@@ -1184,19 +1184,7 @@ std::unique_ptr<Expresion> Parser::parsearExpresion(Pr precedenciaMinima) {
       continue;
     }
 
-    // Casting
-    /*
-      (type) C-style
-
-      {type} Static
-
-      [type] Reinterpret
-
-      |type| Bit-Cast
-
-    */
-
-    // C-Style
+    // C-Style casting
     if (op.tipo == Tt::PAREN_L && esTipo(peek().tipo)) {
       izquierda = parsearCasteo();
       continue;
