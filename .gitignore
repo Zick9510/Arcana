@@ -19,6 +19,7 @@ compile_commands.json
 __pycache__/
 
 # --- Archivos Temporales ---
+a
 *.ll
 *.s
 *.bc

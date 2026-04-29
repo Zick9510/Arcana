@@ -958,6 +958,7 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() {
       posibles_reglas.push_back({i, rule});
 
     }
+
   }
 
   if (posibles_reglas.empty()) {
@@ -978,10 +979,14 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() {
   }
 
   auto obtenerTipo = [&](const std::string& lex) -> std::pair<TPA, std::string> {
+
     for (const auto& arg : def.args) {
       if (arg.contenido == lex) { return { arg.tipo_dato, arg.contenido}; }
+
     }
+
     return {TPA::NULO, lex};
+
   };
 
   size_t comp_idx = 0;
@@ -1044,12 +1049,15 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() {
 
     if        (tipo == TPA::CODE) {
       mapa_code[nombre] = parsearBloque();
+
     } else if (tipo == TPA::EXPR) {
       check(Tt::PAREN_L);
       mapa_expr[nombre] = std::make_unique<SentenciaExpr>(parsearExpresion(Pr::MINIMA));
       check(Tt::PAREN_R);
+
     } else if (tipo == TPA::KEY ) {
       get();
+
     }
 
     comp_idx++;
