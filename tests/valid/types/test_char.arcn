@@ -1,0 +1,6 @@
+func main() -> int {
+
+  char a = 'b';
+  return a;
+
+}

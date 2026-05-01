@@ -179,9 +179,60 @@ void Lexer::leerNumero() {
 }
 
 void Lexer::leerStringChar() { //...
-  bool comillas_dobles = (actual() == '"');
-  // Logic to consume until closing quote would go here
 
+  char delimitador = source[cursor - 1];
+  std::string contenido = "";
+  int inicio_linea = linea;
+
+  while (!esFin() && actual() != delimitador) { //... Add multiline string support
+    char c = get();
+
+    if (c == '\\') {
+      if (esFin()) { break; } //... Error: string sin cerrar tras \
+
+      char escape = get();
+      switch (escape) {
+        case '0': { contenido += '\0'; break; }
+        case 'n': { contenido += '\n'; break; }
+        case 't': { contenido += '\t'; break; }
+        case 'r': { contenido += '\r'; break; }
+
+        case '\\': { contenido += '\\'; break; }
+        case '\'': { contenido += '\''; break; }
+        case '\"': { contenido += '\"'; break; }
+
+        //... Add Hex support
+
+        default: {
+          //... Error: Secuencia de escape no conocida
+          break;
+        }
+      }
+    } else {
+      contenido += c;
+    }
+
+    if (c == '\n') {
+      //... Error: Salto de línea inesperado en literal
+    }
+  }
+
+  if (esFin()) {
+    //... Error: No se cerró la string/char
+  } else {
+    get();
+
+  }
+
+  if (delimitador == '\'') {
+    if (contenido.size() > 1) {
+      //... Error: Multibyte char
+    } else {
+      tokens.push_back( {Tt::CHAR, contenido, inicio_linea} );
+    }
+  } else {
+    tokens.push_back( {Tt::STRING, contenido, inicio_linea} );
+  }
 }
 
 void Lexer::captureSymbol() { //...

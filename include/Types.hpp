@@ -16,6 +16,7 @@ enum class TypeKind { //...
   INTEGER,
   FLOAT,
 
+  CHAR,
   STRING,
 
   ARRAY,
@@ -41,7 +42,7 @@ public:
   virtual std::string toString()                          const = 0;
   virtual int getBitSize()                                const = 0;
   virtual bool esIgual(const ArcanaType* otro)            const = 0;
-  virtual bool isSigned()                                 const = 0;
+  virtual bool isSigned()                                 const { return false  ; }
   virtual std::shared_ptr<ArcanaType> getUnderlyingType() const { return nullptr; }
 
 };
@@ -53,7 +54,6 @@ public:
   std::string toString()               const override;
   int getBitSize()                     const override;
   bool esIgual(const ArcanaType* otro) const override;
-  bool isSigned()                      const override;
 
 };
 
@@ -64,7 +64,6 @@ public:
   std::string toString()               const override;
   int getBitSize()                     const override;
   bool esIgual(const ArcanaType* otro) const override;
-  bool isSigned()                      const override;
 
 };
 
@@ -75,7 +74,6 @@ public:
   std::string toString()               const override;
   int getBitSize()                     const override;
   bool esIgual(const ArcanaType* otro) const override;
-  bool isSigned()                      const override;
 
 };
 
@@ -89,7 +87,6 @@ public:
   std::string toString()               const override;
   int getBitSize()                     const override;
   bool esIgual(const ArcanaType* otro) const override;
-  bool isSigned()                      const override;
 
   std::shared_ptr<ArcanaType> getUnderlyingType() const override;
 
@@ -122,6 +119,18 @@ public:
 
 };
 
+class CharType : public ArcanaType {
+public:
+  int bits;
+
+  CharType(int b);
+
+  std::string toString() const override;
+  int getBitSize() const override;
+  bool esIgual(const ArcanaType* otro) const override;
+
+};
+
 class MorphType : public ArcanaType {
 public:
   int selector_bytes; // Bytes to select the one thing we need
@@ -133,7 +142,6 @@ public:
   std::string toString()               const override;
   int getBitSize()                     const override;
   bool esIgual(const ArcanaType* otro) const override;
-  bool isSigned()                      const override;
 
 };
 
@@ -151,7 +159,6 @@ public:
   std::string toString()               const override;
   int getBitSize()                     const override;
   bool esIgual(const ArcanaType* otro) const override;
-  bool isSigned()                      const override;
 
 };
 
@@ -165,9 +172,11 @@ private:
 
   std::map<std::shared_ptr<ArcanaType>, std::shared_ptr<PointerType>> cachePointer;
   std::map<std::tuple<int, bool>      , std::shared_ptr<IntegerType>> cacheInteger;
-  std::map<float                      , std::shared_ptr<FloatType>>   cacheFloat  ;
+  std::map<int                        , std::shared_ptr<FloatType  >> cacheFloat  ;
 
-  std::map<std::string, std::shared_ptr<MorphType>> cacheMorph;
+  std::map<int                        , std::shared_ptr<CharType   >> cacheChar   ;
+
+  std::map<std::string                , std::shared_ptr<MorphType  >> cacheMorph  ;
 
 public:
   std::shared_ptr<UnknownType> getUnknown();
@@ -179,6 +188,8 @@ public:
   std::shared_ptr<BooleanType> getBoolean();
   std::shared_ptr<IntegerType> getInteger(int bits, bool is_unsigned);
   std::shared_ptr<FloatType>   getFloat  (int bits);
+
+  std::shared_ptr<CharType>    getChar   (int bits);
 
   std::shared_ptr<MorphType>   getMorph  (std::vector<std::shared_ptr<ArcanaType>> subtipos);
   std::shared_ptr<ShapeType>   getShape  (std::vector<CampoShape> campos);

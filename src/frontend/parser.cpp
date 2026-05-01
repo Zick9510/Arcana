@@ -164,35 +164,47 @@ InfoVariable Parser::parsearTipo() {
 
     // --- Tipos Primitivos ---
 
-    case Tt::VOID: {
+    case Tt::VOID_TYPE: {
       get();
       tipo_actual = typeFactory.getVoid();
       break;
+
     }
 
-    case Tt::INT: {
+    case Tt::INT_TYPE: {
       get();
       int bits = extraerBits(t_base.lexema, 32);
       tipo_actual = typeFactory.getInteger(bits, es_unsigned);
       break;
+
     }
 
-    case Tt::UINT: {
+    case Tt::UINT_TYPE: {
       get();
       int bits = extraerBits(t_base.lexema, 32);
       tipo_actual = typeFactory.getInteger(bits, true);
       break;
+
     }
 
-    case Tt::FLOAT: {
+    case Tt::FLOAT_TYPE: {
       get();
       int bits = extraerBits(t_base.lexema, 64);
       tipo_actual = typeFactory.getFloat(bits);
       break;
+
+    }
+
+    case Tt::CHAR_TYPE: {
+      get();
+      int bits = extraerBits(t_base.lexema, 8);
+      tipo_actual = typeFactory.getChar(bits);
+      break;
+
     }
 
     default: { //...
-      std::cout << "[185, parser.cpp] Type not implemented: " << peek().lexema << '\n';
+      std::cout << "[195, parser.cpp] Type not implemented: " << peek().lexema << '\n';
       exit(1);
       break;
     }
@@ -440,8 +452,8 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
     case Tt::ASTERISCO  : {op = TipoOperador::PTR_DEREF ; break; }
     case Tt::AMPERSAND  : {op = TipoOperador::PTR_REF   ; break; }
 
-    default: {
-        std::cerr << "Línea " << t.linea << ": No se esperaba el prefijo '" << t.lexema << "'\n";
+    default: { //...
+        std::cerr << "[456, parser.cpp] Error: Línea " << t.linea << ", no se esperaba el prefijo '" << t.lexema << "'\n";
         exit(1);
     }
   }

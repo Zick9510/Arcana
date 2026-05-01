@@ -51,14 +51,14 @@ bool esInfiere(Tt tipo) { //... I think we should not do this
 }
 
 bool esTipoComp(Tt tipo) {
-  return tipo == Tt::VECTOR || tipo == Tt::MAP || tipo == Tt::SET;
+  return tipo == Tt::VECTOR_TYPE || tipo == Tt::MAP_TYPE || tipo == Tt::SET_TYPE;
 }
 
 bool esTipo(Tt tipo) {
-  return tipo == Tt::BYTE   || tipo == Tt::CHAR   || tipo == Tt::SHORT  ||
-         tipo == Tt::INT    || tipo == Tt::UINT   || tipo == Tt::STRING ||
-         tipo == Tt::FLOAT  || tipo == Tt::DOUBLE || tipo == Tt::BOOL   ||
-         tipo == Tt::SLICE  || esTipoComp(tipo);
+  return tipo == Tt::BYTE_TYPE   || tipo == Tt::CHAR_TYPE   || tipo == Tt::SHORT_TYPE  ||
+         tipo == Tt::INT_TYPE    || tipo == Tt::UINT_TYPE   || tipo == Tt::STRING_TYPE ||
+         tipo == Tt::FLOAT_TYPE  || tipo == Tt::DOUBLE_TYPE || tipo == Tt::BOOL_TYPE   ||
+         tipo == Tt::SLICE_TYPE  || esTipoComp(tipo);
 }
 
 bool Dt::operator==(const Dt& otro) const { //... Comparar this.es_const

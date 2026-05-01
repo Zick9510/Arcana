@@ -83,6 +83,7 @@ void Emitter::visitar(ExprNumero* nodo) { //...
     llvm_valor = llvm::ConstantInt::get(llvm_ctx, llvm::APInt(bits, nodo->valor, 10));
 
   }
+
 }
 
 void Emitter::visitar(ExprVariable* nodo) {

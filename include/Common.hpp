@@ -62,16 +62,15 @@ enum class Tt {
   CONST,
 
   // Tipos de datos
-  VOID,
-  BYTE, CHAR, BOOL,
-  SHORT, INT, UINT,
-  FLOAT, DOUBLE,
-  STRING,
-  VECTOR, MAP, SET,
+  VOID_TYPE,
+  BYTE_TYPE, CHAR_TYPE, BOOL_TYPE,
+  SHORT_TYPE, INT_TYPE, UINT_TYPE,
+  FLOAT_TYPE, DOUBLE_TYPE,
+  STRING_TYPE,
 
-  SLICE,
+  SLICE_TYPE,
 
-  UMBRAL,
+  VECTOR_TYPE, MAP_TYPE, SET_TYPE,
 
   ENUM,
 
@@ -81,7 +80,7 @@ enum class Tt {
   UNSIGNED, LONG, VERY_LONG, FULL_LONG, COMPLEJO,
 
   // Variables y Literales
-  IDENTIFICADOR, NUMERO,
+  IDENTIFICADOR, NUMERO, CHAR, STRING,
 
   // If-else
   IF, ELSE,
@@ -306,26 +305,22 @@ inline std::map<std::string, Tt> keywords = {
   {"var", Tt::VAR}, // auto
 
   // Tipos explícitos
-  {"void", Tt::VOID}, // void
-  {"short", Tt::SHORT}, // int16
-  {"int", Tt::INT}, // int32
-  {"raw", Tt::UINT}, // uint32
+  {"void", Tt::VOID_TYPE}, // void
+  {"short", Tt::SHORT_TYPE}, // int16
+  {"int", Tt::INT_TYPE}, // int32
+  {"raw", Tt::UINT_TYPE}, // uint32
 
-  {"float", Tt::FLOAT}, // float32
-  {"double", Tt::DOUBLE}, // float64
+  {"float", Tt::FLOAT_TYPE}, // float32
+  {"double", Tt::DOUBLE_TYPE}, // float64
 
-  {"bool", Tt::BOOL}, // bool
+  {"bool", Tt::BOOL_TYPE}, // bool
 
-  {"char", Tt::CHAR}, // char
-  {"runa", Tt::CHAR}, // char
+  {"char", Tt::CHAR_TYPE}, // char
+  {"runa", Tt::CHAR_TYPE}, // char
 
-  {"pergamino", Tt::STRING},
+  {"string", Tt::STRING_TYPE},
 
-  {"tomo", Tt::VECTOR}, // Array
-  {"pacto", Tt::MAP}, // Map
-  {"acervo", Tt::SET}, // Set
-
-  {"umbral", Tt::UMBRAL},  // Slice
+  {"slice", Tt::SLICE_TYPE},  // Slice
 
   {"enum", Tt::ENUM}, // Enums
   {"shape", Tt::SHAPE}, // Variants
@@ -693,7 +688,7 @@ public:
 // - Nodos -
 
 // Expresiones
-class ExprNumero : public NodoBase<Expresion, ExprNumero> {
+class ExprNumero : public NodoBase<Expresion, ExprNumero> { //... ToDo: Refactor this to ExprLiteral
 public:
   std::string valor;
   std::string sufijo;
