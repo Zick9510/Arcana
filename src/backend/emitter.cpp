@@ -216,21 +216,21 @@ void Emitter::visitar(ExprBinaria* nodo) {
   bool es_float = nodo->tipo_resuelto.valor->kind == TypeKind::FLOAT;
 
   switch (nodo->operador) { //...
-    case TipoOperador::A_SUMA: {
+    case TipoOperador::SUMA: {
       std::cout << "[183, emitter.cpp]\n";
       llvm_valor = es_float ? llvm_builder->CreateFAdd(left, right, "")
                             : llvm_builder->CreateAdd(left, right, "");
       break;
     }
 
-    case TipoOperador::A_RESTA: {
+    case TipoOperador::RESTA: {
       std::cout << "[189, emitter.cpp]\n";
       llvm_valor = es_float ? llvm_builder->CreateFSub(left, right, "")
                             : llvm_builder->CreateSub(left, right, "");
       break;
     }
 
-    case TipoOperador::A_MULT: {
+    case TipoOperador::MULT: {
       std::cout << "[196, emitter.cpp]\n";
       llvm_valor = es_float ? llvm_builder->CreateFMul(left, right, "")
                             : llvm_builder->CreateMul(left, right, "");
@@ -244,7 +244,7 @@ void Emitter::visitar(ExprBinaria* nodo) {
       break;
     }
 
-    case TipoOperador::A_SWAP: {
+    case TipoOperador::SWAP: {
       std::cout << "[211, emitter.cpp]\n";
 
       llvm::Value* ptr_l = nullptr;
@@ -287,6 +287,46 @@ void Emitter::visitar(ExprBinaria* nodo) {
       break;
     }
   }
+
+}
+
+void Emitter::visitar(ExprTernaria* nodo) {
+  nodo->condicion->accept(this);
+  llvm::Value* cond = llvm_valor;
+
+  llvm::Value* cero_cond = llvm::ConstantInt::get(cond->getType(), 0);
+  cond = llvm_builder->CreateICmpNE(cond, cero_cond, "");
+
+  llvm::Function* function = llvm_builder->GetInsertBlock()->getParent();
+
+  llvm::BasicBlock* then_bb  = llvm::BasicBlock::Create(llvm_ctx, "ternary.then", function);
+  llvm::BasicBlock* else_bb  = llvm::BasicBlock::Create(llvm_ctx, "ternary.else");
+  llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(llvm_ctx, "ternary.merge");
+
+  llvm_builder->CreateCondBr(cond, then_bb, else_bb);
+
+  llvm_builder->SetInsertPoint(then_bb);
+  nodo->rama_true->accept(this);
+  llvm::Value* val_true = llvm_valor;
+  then_bb = llvm_builder->GetInsertBlock();
+  llvm_builder->CreateBr(merge_bb);
+
+  function->insert(function->end(), else_bb);
+  llvm_builder->SetInsertPoint(else_bb);
+  nodo->rama_false->accept(this);
+  llvm::Value* val_false = llvm_valor;
+  else_bb = llvm_builder->GetInsertBlock();
+  llvm_builder->CreateBr(merge_bb);
+
+  function->insert(function->end(), merge_bb);
+  llvm_builder->SetInsertPoint(merge_bb);
+
+  llvm::Type* tipo_res = obtenerTipoLLVM(nodo->tipo_resuelto.valor);
+  llvm::PHINode* phi = llvm_builder->CreatePHI(tipo_res, 2, "ternary.res");
+
+  phi->addIncoming(val_true , then_bb);
+  phi->addIncoming(val_false, else_bb);
+  llvm_valor = phi;
 
 }
 

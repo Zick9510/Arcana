@@ -12,6 +12,8 @@ enum class Precedencia : int {
 
   ASIGNACION,   // =
 
+  TERNARIO,     // ? :
+
   LOGICA_O,     // ||
   LOGICA_XOR,   // ^^
   LOGICA_Y,     // &&
@@ -241,14 +243,16 @@ enum class TipoOperador {
   CMP_MENOR_IGUAL,
   CMP_MAYOR_IGUAL,
 
-  A_SUMA,
-  A_RESTA,
-  A_MULT,
-  A_DIV,
-  A_MOD,
-  A_POT,
-  A_RAIZ,
-  A_SWAP,
+  SUMA,
+  RESTA,
+  MULT,
+  DIV,
+  MOD,
+  POT,
+  RAIZ,
+
+  SWAP,
+  TERNARY,
 
   INC_PREF,
   DEC_PREF,
@@ -265,24 +269,27 @@ enum class TipoOperador {
 
 inline std::string operadorString(TipoOperador op) { //... Agregar los demás casos
   switch (op) {
-    case TipoOperador::A_SUMA : { return "+"      ; }
-    case TipoOperador::A_RESTA: { return "-"      ; }
-    case TipoOperador::A_MULT : { return "*"      ; }
-    case TipoOperador::A_DIV  : { return "/"      ; }
-    case TipoOperador::A_POT  : { return "**"     ; }
-    case TipoOperador::A_SWAP : { return "><"     ; }
+    case TipoOperador::SUMA   : { return "+"      ; }
+    case TipoOperador::RESTA  : { return "-"      ; }
+    case TipoOperador::MULT   : { return "*"      ; }
+    case TipoOperador::DIV    : { return "/"      ; }
+    case TipoOperador::POT    : { return "**"     ; }
+
+    case TipoOperador::SWAP   : { return "><"     ; }
+    case TipoOperador::TERNARY: { return "?:"     ; }
+
     default                   : { return "unknown"; }
   }
 }
 
 inline TipoOperador convertirEnTipoOperador(Tt op) { //... Agregar los demás casos
   switch (op) {
-    case Tt::MAS      : { return TipoOperador::A_SUMA     ; }
-    case Tt::MENOS    : { return TipoOperador::A_RESTA    ; }
-    case Tt::ASTERISCO: { return TipoOperador::A_MULT     ; }
-    case Tt::DIV      : { return TipoOperador::A_DIV      ; }
-    case Tt::POTENCIA : { return TipoOperador::A_POT      ; }
-    case Tt::SWAP     : { return TipoOperador::A_SWAP     ; }
+    case Tt::MAS      : { return TipoOperador::SUMA     ; }
+    case Tt::MENOS    : { return TipoOperador::RESTA    ; }
+    case Tt::ASTERISCO: { return TipoOperador::MULT     ; }
+    case Tt::DIV      : { return TipoOperador::DIV      ; }
+    case Tt::POTENCIA : { return TipoOperador::POT      ; }
+    case Tt::SWAP     : { return TipoOperador::SWAP     ; }
 
     case Tt::MENOR    : { return TipoOperador::CMP_MENOR  ; }
 
@@ -412,6 +419,8 @@ class ExprArray;
 
 class ExprUnaria;
 class ExprBinaria;
+class ExprTernaria;
+
 class ExprCasteo;
 
 class ExprRango;
@@ -449,8 +458,10 @@ public:
 
   virtual void visitar(ExprArray* nodo)    = 0;
 
-  virtual void visitar(ExprUnaria* nodo)  = 0;
-  virtual void visitar(ExprBinaria* nodo) = 0;
+  virtual void visitar(ExprUnaria* nodo)   = 0;
+  virtual void visitar(ExprBinaria* nodo)  = 0;
+  virtual void visitar(ExprTernaria* nodo) = 0;
+
   virtual void visitar(ExprCasteo* nodo)  = 0;
 
   virtual void visitar(ExprRango* nodo)  = 0;
@@ -832,6 +843,37 @@ public:
     derecha->imprimir(nivel + 1);
   }
 
+};
+
+class ExprTernaria : public NodoBase<Expresion, ExprTernaria> {
+public:
+  std::unique_ptr<Expresion> condicion ;
+  std::unique_ptr<Expresion> rama_true ;
+  std::unique_ptr<Expresion> rama_false;
+
+  ExprTernaria(std::unique_ptr<Expresion> c, std::unique_ptr<Expresion> t, std::unique_ptr<Expresion> f)
+    : condicion(std::move(c)), rama_true(std::move(t)), rama_false(std::move(f)) {}
+
+  ExprTernaria(const ExprTernaria& otra)
+    : condicion(otra.condicion->clonar()), rama_true(otra.rama_true->clonar()), rama_false(otra.rama_false->clonar()) {
+
+    this->tipo_resuelto = otra.tipo_resuelto;
+    this->linea         = otra.linea;
+
+  }
+
+  void imprimir(int nivel = 0) const override {
+    std::string sangria = "";
+    for (int i = 0; i < nivel; ++i) { sangria += "| "; }
+    std::cout << sangria << "+- Op Ternario [" << tipo_resuelto.tipoString() << "]\n";
+    std::cout << sangria << "| Condición:\n";
+    condicion->imprimir(nivel + 1);
+    std::cout << sangria << "| Rama true:\n";
+    rama_true->imprimir(nivel + 1);
+    std::cout << sangria << "| Rama false:\n";
+    rama_false->imprimir(nivel + 1);
+
+  }
 };
 
 class ExprCasteo : public NodoBase<Expresion, ExprCasteo> {

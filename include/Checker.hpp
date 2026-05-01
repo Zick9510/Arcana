@@ -28,6 +28,7 @@ public:
   std::shared_ptr<ArcanaType> verificarPotencia(const Dt& izq, const Dt& der);
 
   std::shared_ptr<ArcanaType> verificarSwap    (const Dt& izq, const Dt& der);
+  std::shared_ptr<ArcanaType> verificarTernary (const Dt& izq, const Dt& der);
 
   std::shared_ptr<ArcanaType> verificarCmpMenor(const Dt& izq, const Dt& der);
 
@@ -153,6 +154,23 @@ public:
     if (nodo->tipo_resuelto.valor->kind != TypeKind::DESCONOCIDO) {
       nodo->izquierda = forzarTipo(std::move(nodo->izquierda), nodo->tipo_resuelto);
       nodo->derecha   = forzarTipo(std::move(nodo->derecha)  , nodo->tipo_resuelto);
+    }
+
+  }
+
+  void visitar(ExprTernaria* nodo) override {
+    nodo->condicion ->accept(this);
+    nodo->rama_true ->accept(this);
+    nodo->rama_false->accept(this);
+
+    Dt tipo_izq = nodo->rama_true ->tipo_resuelto;
+    Dt tipo_der = nodo->rama_false->tipo_resuelto;
+
+    nodo->tipo_resuelto = verificarOperandos(tipo_izq, tipo_der, TipoOperador::TERNARY);
+
+    if (nodo->tipo_resuelto.valor->kind != TypeKind::DESCONOCIDO) {
+      nodo->rama_true  = forzarTipo(std::move(nodo->rama_true) , nodo->tipo_resuelto);
+      nodo->rama_false = forzarTipo(std::move(nodo->rama_false), nodo->tipo_resuelto);
     }
 
   }

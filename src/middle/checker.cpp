@@ -42,11 +42,11 @@ std::unique_ptr<Expresion> Checker::forzarTipo(std::unique_ptr<Expresion> hijo, 
 std::shared_ptr<ArcanaType> Checker::verificarSuma(const Dt& izq, const Dt& der) {
 
   if (izq.esPrimitivo() && der.esPrimitivo()) {
-    TypeKind pIzq = izq.valor->kind;
-    TypeKind pDer = der.valor->kind;
+    TypeKind p_izq = izq.valor->kind;
+    TypeKind p_der = der.valor->kind;
 
     // Regla 1: Suma de números
-    if (esNum(pIzq) && esNum(pDer)) {
+    if (esNum(p_izq) && esNum(p_der)) {
       return promoverTipos(izq.valor, der.valor);
     }
 
@@ -65,11 +65,11 @@ std::shared_ptr<ArcanaType> Checker::verificarSuma(const Dt& izq, const Dt& der)
 
 std::shared_ptr<ArcanaType> Checker::verificarResta(const Dt& izq, const Dt& der) {
   if (izq.esPrimitivo() && der.esPrimitivo()) {
-    TypeKind pIzq = izq.valor->kind;
-    TypeKind pDer = der.valor->kind;
+    TypeKind p_izq = izq.valor->kind;
+    TypeKind p_der = der.valor->kind;
 
     // Regla 1: Resta de números
-    if (esNum(pIzq) && esNum(pDer)) {
+    if (esNum(p_izq) && esNum(p_der)) {
       return promoverTipos(izq.valor, der.valor);
     }
 
@@ -83,11 +83,11 @@ std::shared_ptr<ArcanaType> Checker::verificarResta(const Dt& izq, const Dt& der
 std::shared_ptr<ArcanaType> Checker::verificarMult(const Dt& izq, const Dt& der) {
 
   if (izq.esPrimitivo() && der.esPrimitivo()) {
-    TypeKind pIzq = izq.valor->kind;
-    TypeKind pDer = der.valor->kind;
+    TypeKind p_izq = izq.valor->kind;
+    TypeKind p_der = der.valor->kind;
 
     // Regla 1: Multiplicación de números
-    if (esNum(pIzq) && esNum(pDer)) {
+    if (esNum(p_izq) && esNum(p_der)) {
       return promoverTipos(izq.valor, der.valor);
     }
 
@@ -105,11 +105,11 @@ std::shared_ptr<ArcanaType> Checker::verificarMult(const Dt& izq, const Dt& der)
 std::shared_ptr<ArcanaType> Checker::verificarDiv(const Dt& izq, const Dt& der) {
 
   if (izq.esPrimitivo() && der.esPrimitivo()) {
-    TypeKind pIzq = izq.valor->kind;
-    TypeKind pDer = der.valor->kind;
+    TypeKind p_izq = izq.valor->kind;
+    TypeKind p_der = der.valor->kind;
 
     // Regla 1: División de números
-    if (esNum(pIzq) && esNum(pDer)) { //... Ajustar esto para que retorne como mínimo, float64
+    if (esNum(p_izq) && esNum(p_der)) { //... Ajustar esto para que retorne como mínimo, float64
       return promoverTipos(izq.valor, der.valor);
     }
 
@@ -124,28 +124,28 @@ std::shared_ptr<ArcanaType> Checker::verificarPotencia(const Dt& izq, const Dt& 
 
   if (izq.esPrimitivo() && der.esPrimitivo()) {
     std::cout << "[217 checker.cpp]\n";
-    TypeKind pIzq = izq.valor->kind;
-    TypeKind pDer = der.valor->kind;
+    TypeKind p_izq = izq.valor->kind;
+    TypeKind p_der = der.valor->kind;
     std::cout << "[220 checker.cpp]\n";
 
     // Regla 1: Potenciación de números
-    if (esNum(pIzq) && esNum(pDer)) { //... Ojo con (-x) ** ( 1 / (2n) )
+    if (esNum(p_izq) && esNum(p_der)) { //... Ojo con (-x) ** ( 1 / (2n) )
 
       // Obtenemos el tipo más preciso de los dos
       std::shared_ptr<ArcanaType> promovido = promoverTipos(izq.valor, der.valor);
       std::cout << "[227 checker.cpp]\n";
-      TypeKind pProm = promovido->kind;
+      TypeKind p_prom = promovido->kind;
       std::cout << "[229 checker.cpp]\n";
 
-      if (esFloat(pProm)) {
+      if (esFloat(p_prom)) {
         // Si es flotante, el piso es double
-        if (obtenerRangoNum(pProm) < obtenerRangoNum(TypeKind::FLOAT)) {
+        if (obtenerRangoNum(p_prom) < obtenerRangoNum(TypeKind::FLOAT)) {
           return typeFactory.getFloat(64);
         }
 
       } else {
         // Si es entero, el piso es long
-        if (obtenerRangoNum(pProm) < obtenerRangoNum(TypeKind::INTEGER)) {
+        if (obtenerRangoNum(p_prom) < obtenerRangoNum(TypeKind::INTEGER)) {
           return typeFactory.getInteger(64, false);
 
         }
@@ -167,14 +167,23 @@ std::shared_ptr<ArcanaType> Checker::verificarPotencia(const Dt& izq, const Dt& 
 std::shared_ptr<ArcanaType> Checker::verificarSwap(const Dt& izq, const Dt& der) {
 
   if (izq.esPrimitivo() && der.esPrimitivo()) {
-    if (izq == der) {
-      return der.valor;
 
+    TypeKind p_izq = izq.valor->kind;
+    TypeKind p_der = der.valor->kind;
+
+    // Regla 1: Suma de números
+    if (esNum(p_izq) && esNum(p_der)) {
+      return promoverTipos(izq.valor, der.valor);
     }
+
   }
 
   return nullptr;
 
+}
+
+std::shared_ptr<ArcanaType> Checker::verificarTernary(const Dt& izq, const Dt& der) {
+  return verificarSwap(izq, der);
 }
 
 std::shared_ptr<ArcanaType> Checker::verificarCmpMenor(const Dt& izq, const Dt& der) {
@@ -219,37 +228,45 @@ Dt Checker::verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador 
 
     // Aritméticos
 
-    case TipoOperador::A_SUMA: {
+    case TipoOperador::SUMA: {
       return verificarSuma(izq, der);
     }
 
-    case TipoOperador::A_RESTA: {
+    case TipoOperador::RESTA: {
       return verificarResta(izq, der);
     }
 
-    case TipoOperador::A_MULT: {
+    case TipoOperador::MULT: {
       return verificarMult(izq, der);
     }
 
-    case TipoOperador::A_DIV: {
+    case TipoOperador::DIV: {
       return verificarDiv(izq, der);
     }
 
-    case TipoOperador::A_POT: {
+    case TipoOperador::POT: {
       return verificarPotencia(izq, der);
     }
 
-    case TipoOperador::A_SWAP: {
-      return verificarSwap(izq, der);
-    }
     // Comparadores
 
     case TipoOperador::CMP_MENOR: {
       return verificarCmpMenor(izq, der);
     }
 
+    // Extra
+
+    case TipoOperador::SWAP: {
+      return verificarSwap(izq, der);
+    }
+
+    case TipoOperador::TERNARY: {
+      return verificarTernary(izq, der);
+    }
+
+
     default: {
-      std::cout << "[326 checker.cpp] Operador desconocido: " << operadorString(op) << '\n';
+      std::cout << "[264 checker.cpp] Operador desconocido: " << operadorString(op) << '\n';
       //... Retornar algo
     }
   }
