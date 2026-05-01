@@ -45,87 +45,99 @@ public:
 
   // --- AST Visitor ---
 
-  void visitar(ExprNumero* nodo) override { //... Hacer más robusto
-    Dt tipo;
-    tipo.valor = typeFactory.getUnknown();
+  template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+  template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+  void visitar(ExprLiteral* nodo) override { //...
 
-    bool tiene_punto = nodo->valor.contains('.');
-    bool scientific  = nodo->valor.contains('e');
+    std::visit(overloaded {
+      [&](NumberData& d) {
+        bool tiene_punto = (d.valor.find('.') != std::string::npos);
+        bool scientific  = (d.valor.find('e') != std::string::npos);
 
-    char suf = ' ';
-    int suf_num   ;
+        char suf = ' ';
+        int bits = -1 ;
 
-    if (!nodo->sufijo.empty()) { // [f/u/i][num]
-      suf     = nodo->sufijo[0];
-    }
-
-    if (nodo->sufijo.size() > 1) {
-      suf_num = std::stoi(nodo->sufijo.substr(1));
-
-    } else if (scientific) {
-      suf_num = 64;
-
-    } else {
-      suf_num = -1; // Flag para "Elegir automáticamente"
-
-    }
-
-    if (!isPowerOf2(suf_num) || suf_num < 8 && suf_num != -1) {
-      //... Error, el sufijo tiene que tener una potencia de 2 mayor o igual a 8
-    }
-
-    switch (suf) {
-      case 'i':
-      case 'u': {
-        if (suf_num == -1) {
-          suf_num = 32;
+        if (!d.sufijo.empty()) {
+          suf = d.sufijo[0];
+          if (d.sufijo.size() > 1) {
+            bits = std::stoi(d.sufijo.substr(1)); // Should check if suffix has letters in positions 1..n
+          }
         }
 
-        tipo.valor = typeFactory.getInteger(suf_num, (suf == 'u'));
-        break;
-      }
-
-      case 'f': {
-        if (suf_num == -1) {
-          suf_num = 64;
+        if (bits != -1) {
+          if (bits < 8 || !isPowerOf2(bits)) {
+            //... Error: Sufijo inválido
+          }
         }
 
-        tipo.valor = typeFactory.getFloat(suf_num);
-        break;
+        std::shared_ptr<ArcanaType> res;
 
-      }
+        switch (suf) {
+          case 'u':
+          case 'i': {
+            if (tiene_punto) {
+              //... Error: Un literal entero can't have a decimal point
+            }
+            res = typeFactory.getInteger(bits == -1 ? 32 : bits, (suf == 'u'));
+            break;
+          }
 
-      case ' ': { // No tenía sufijo
-        break;
-      }
+          case 'f': {
+            res = typeFactory.getFloat(bits == -1 ? 64 : bits);
+            break;
+          }
 
-    }
+          default: { //... Añadir comprobación de overflow
+            if (tiene_punto || scientific) {
+              res = typeFactory.getFloat(64);
 
-    if (tiene_punto) {
-      if (suf != 'f' && suf != ' ') {
-        //... Error, tiene punto y el sufijo no es float
-      }
-    }
+            } else {
+              res = typeFactory.getInteger(32, false);
 
-    //std::cout << "[106, Checker.hpp]\n";
+            }
+            break;
+          }
+        }
 
-    if (tipo.valor != typeFactory.getUnknown()) {
-      nodo->tipo_resuelto = tipo;
-      return ;
-    }
+        nodo->tipo_resuelto = Dt(res);
+      },
 
-    //std::cout << "[113, Checker.hpp]\n";
+      [&](CharData& d) {
+        char suf = ' ';
+        int bits = -1;
 
-    //... Añadir comprobaciones de tamaño
-    if (tiene_punto || scientific) {
-      tipo.valor = typeFactory.getFloat(64);
+        if (!d.sufijo.empty()) {
+          suf = d.sufijo[0];
+          if (d.sufijo.size() > 1) {
+            bits = std::stoi(d.sufijo.substr(1)); // Should check if suffix has letters in positions 1..n
+          }
+        }
 
-    } else {
-      tipo.valor = typeFactory.getInteger(32, false);
+        if (bits != -1) {
+          if (bits < 8 || !isPowerOf2(bits)) {
+            //... Error: Sufijo inválido
+          }
+        }
 
-    }
+        std::shared_ptr<ArcanaType> res;
 
-    nodo->tipo_resuelto = tipo;
+        switch (suf) {
+          case 'c': {
+            res = typeFactory.getChar(bits == -1 ? 8 : bits);
+            break;
+          }
+          default: {
+            res = typeFactory.getChar(8);
+            break;
+          }
+        }
+
+        nodo->tipo_resuelto = Dt(res);
+
+      },
+
+      [&](StringData& d) {}
+    }, nodo->datos);
 
   }
 
@@ -446,19 +458,6 @@ public:
   void visitar(SentenciaArcano* nodo) override {
     ArcaneDef& def = contextoArcanos.buscarDefinicionPorNombre(nodo->def.name);
 
-    //for (const auto& branch : nodo->def.branches) {
-    //  tablas.entrarScope();
-    //  for (const auto& segment : branch.segmentos) {
-    //    for (const auto& [name, info] : segment.br_args) {
-    //      tablas.añadirVariable(name, info);
-    //    }
-    //    if (segment.br_cont != nullptr) {
-    //      segment.br_cont->accept(this);
-    //    }
-    //  }
-    //  tablas.salirScope();
-    //}
-
     def = nodo->def;
 
   }
@@ -503,24 +502,6 @@ public:
 
     bloques_arcano_activos = backup_bloques;
     tablas.salirScope();
-
-    //for (const auto& [name, arg_nodo] : nodo->args) {
-    //  if (arg_nodo != nullptr) {
-    //    arg_nodo->accept(this);
-    //  }
-    //}
-    //
-    //for (const auto& [name, arg_nodo] : nodo->expr) {
-    //  if (arg_nodo != nullptr) {
-    //    arg_nodo->accept(this);
-    //  }
-    //}
-    //
-    //for (const auto& [name, arg_nodo] : nodo->code) {
-    //  if (arg_nodo != nullptr) {
-    //    arg_nodo->accept(this);
-    //  }
-    //}
 
   }
 

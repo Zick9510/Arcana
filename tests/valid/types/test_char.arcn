@@ -1,6 +1,7 @@
 func main() -> int {
 
-  char a = 'b';
+  char a = 'A';
+
   return a;
 
 }

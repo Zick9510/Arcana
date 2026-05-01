@@ -282,6 +282,10 @@ bool Checker::esCasteoValido(const Dt& origen, const Dt& destino) {
       return true;
     }
 
+    if (pO == TypeKind::CHAR && esNum(pD)) {
+      return true;
+    }
+
     //... Char -> int
  
   }

@@ -306,16 +306,18 @@ inline std::map<std::string, Tt> keywords = {
 
   // Tipos explícitos
   {"void", Tt::VOID_TYPE}, // void
-  {"short", Tt::SHORT_TYPE}, // int16
-  {"int", Tt::INT_TYPE}, // int32
-  {"raw", Tt::UINT_TYPE}, // uint32
 
-  {"float", Tt::FLOAT_TYPE}, // float32
+  {"short", Tt::SHORT_TYPE}, // int16
+  {"int"  , Tt::INT_TYPE  }, // int32
+  {"uint" , Tt::UINT_TYPE }, // uint32
+  {"raw"  , Tt::UINT_TYPE }, // uint32
+
+  {"float" , Tt::FLOAT_TYPE }, // float32
   {"double", Tt::DOUBLE_TYPE}, // float64
 
   {"bool", Tt::BOOL_TYPE}, // bool
 
-  {"char", Tt::CHAR_TYPE}, // char
+  {"char" , Tt::CHAR_TYPE}, // char
   {"runa", Tt::CHAR_TYPE}, // char
 
   {"string", Tt::STRING_TYPE},
@@ -403,7 +405,7 @@ bool esTipo(Tt);
 
 
 // Declaraciones previas
-class ExprNumero;
+class ExprLiteral;
 class ExprVariable;
 class ExprArray;
 
@@ -441,8 +443,9 @@ public:
   virtual ~ASTVisitor() = default;
 
   // Expresiones
-  virtual void visitar(ExprNumero* nodo)   = 0;
+  virtual void visitar(ExprLiteral * nodo) = 0;
   virtual void visitar(ExprVariable* nodo) = 0;
+
   virtual void visitar(ExprArray* nodo)    = 0;
 
   virtual void visitar(ExprUnaria* nodo)  = 0;
@@ -688,18 +691,34 @@ public:
 // - Nodos -
 
 // Expresiones
-class ExprNumero : public NodoBase<Expresion, ExprNumero> { //... ToDo: Refactor this to ExprLiteral
-public:
-  std::string valor;
-  std::string sufijo;
 
-  ExprNumero(std::string val, std::string suf)
-    : valor(val), sufijo(suf) {}
+struct NumberData {
+  std::string valor ;
+  std::string sufijo;
+};
+
+struct CharData {
+  std::string letra ;
+  std::string sufijo;
+};
+
+struct StringData {
+  std::string contenido;
+};
+
+using LiteralData = std::variant<NumberData, CharData, StringData>;
+
+class ExprLiteral : public NodoBase<Expresion, ExprLiteral> {
+public:
+  LiteralData datos;
+
+  ExprLiteral(LiteralData d)
+    : datos(std::move(d)) {}
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
-    std::cout << sangria << "+- " << valor << sufijo << " [" << tipo_resuelto.tipoString() << "]\n";
+    std::cout << sangria << "+- [" << tipo_resuelto.tipoString() << "]\n";
   }
 
 };

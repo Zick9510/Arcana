@@ -75,6 +75,7 @@ bool Dt::esPrimitivo() const { //...
     case TypeKind::VOID   :
     case TypeKind::BOOLEAN:
     case TypeKind::INTEGER:
+    case TypeKind::CHAR   :
     case TypeKind::FLOAT  :
     case TypeKind::ARRAY  : {
       return true;

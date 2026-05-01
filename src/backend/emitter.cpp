@@ -26,16 +26,18 @@ llvm::Type* Emitter::obtenerTipoLLVM(std::shared_ptr<ArcanaType> tipo) {
       return llvm::Type::getInt1Ty(llvm_ctx);
     }
 
+    case TypeKind::CHAR   :
     case TypeKind::INTEGER: {
       return llvm::Type::getIntNTy(llvm_ctx, tipo->getBitSize());
     }
 
     case TypeKind::FLOAT: {
       switch(tipo->getBitSize()) {
-        case 16 : { return llvm::Type::getHalfTy  (llvm_ctx); }
-        case 32 : { return llvm::Type::getFloatTy (llvm_ctx); }
-        case 64 : { return llvm::Type::getDoubleTy(llvm_ctx); }
-        case 128: { return llvm::Type::getFP128Ty (llvm_ctx); }
+        case 16 : { return llvm::Type::getHalfTy    (llvm_ctx); }
+        case 32 : { return llvm::Type::getFloatTy   (llvm_ctx); }
+        case 64 : { return llvm::Type::getDoubleTy  (llvm_ctx); }
+        case 80 : { return llvm::Type::getX86_FP80Ty(llvm_ctx); }
+        case 128: { return llvm::Type::getFP128Ty   (llvm_ctx); }
         default : { return nullptr; }
       }
     }
@@ -72,16 +74,50 @@ void Emitter::generarArchivoIR(const std::filesystem::path& nombreArchivo) {
 //... Everything after this line has to be triple checked.
 
 // --- Expresiones --- //
-void Emitter::visitar(ExprNumero* nodo) { //...
-  //std::cout << "[69, emitter.cpp] ExprNumero\n";
+void Emitter::visitar(ExprLiteral* nodo) { //...
+  auto tipo = nodo->tipo_resuelto.valor;
+  int bits = tipo->getBitSize();
 
-  if (nodo->tipo_resuelto.valor->kind == TypeKind::FLOAT) {
-    llvm_valor = llvm::ConstantFP::get(llvm_ctx, llvm::APFloat(std::stod(nodo->valor)));
+  switch (tipo->kind) {
+    case TypeKind::INTEGER: {
+      auto& data = std::get<NumberData>(nodo->datos);
+      llvm_valor = llvm::ConstantInt::get(llvm_ctx, llvm::APInt(bits, data.valor, 10));
+      break;
+    }
 
-  } else {
-    int bits = nodo->tipo_resuelto.valor->getBitSize();
-    llvm_valor = llvm::ConstantInt::get(llvm_ctx, llvm::APInt(bits, nodo->valor, 10));
+    case TypeKind::FLOAT: {
+      auto& data = std::get<NumberData>(nodo->datos);
+      const llvm::fltSemantics* sem;
 
+      if      (bits == 16 ) { sem = &llvm::APFloat::IEEEhalf         (); }
+      else if (bits == 32 ) { sem = &llvm::APFloat::IEEEsingle       (); }
+      else if (bits == 64 ) { sem = &llvm::APFloat::IEEEdouble       (); }
+      else if (bits == 80 ) { sem = &llvm::APFloat::x87DoubleExtended(); } //... Should be
+      else if (bits == 128) { sem = &llvm::APFloat::IEEEquad         (); } // else if (bits == llvm::APFloat::semanticsSizeInBits(llvm::APFloat::IEEEquad()))
+      else                  { sem = &llvm::APFloat::IEEEdouble       (); }
+
+      llvm_valor = llvm::ConstantFP::get(llvm_ctx, llvm::APFloat(*sem, data.valor));
+      break;
+    }
+
+    case TypeKind::CHAR: {
+      auto& data = std::get<CharData>(nodo->datos);
+
+      llvm::APInt valor_char(bits, 0, false);
+
+      for (char c : data.letra) {
+        valor_char <<= 8;
+        llvm::APInt byte_actual(bits, static_cast<unsigned char>(c), false);
+        valor_char |= byte_actual;
+      }
+
+      llvm_valor = llvm::ConstantInt::get(llvm_ctx, valor_char);
+      break;
+    }
+
+    default: {
+      break;
+    }
   }
 
 }
@@ -265,6 +301,7 @@ void Emitter::visitar(ExprCasteo* nodo) {
   if (t_destino->kind == TypeKind::BOOLEAN) {
     switch (t_origen->kind) {
 
+      case TypeKind::CHAR   :
       case TypeKind::INTEGER: {
         llvm_valor = llvm_builder->CreateICmpNE(
           val,

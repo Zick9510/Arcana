@@ -27,7 +27,7 @@ public:
   void generarArchivoIR(const std::filesystem::path& nombreArchivo);
   llvm::Type* obtenerTipoLLVM(std::shared_ptr<ArcanaType> tipo);
 
-  void visitar(ExprNumero  * nodo) override;
+  void visitar(ExprLiteral  * nodo) override;
   void visitar(ExprVariable* nodo) override;
   void visitar(ExprArray   * nodo) override;
 
