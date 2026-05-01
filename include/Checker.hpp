@@ -150,6 +150,11 @@ public:
 
     nodo->tipo_resuelto = verificarOperandos(tipo_izq, tipo_der, nodo->operador);
 
+    if (nodo->tipo_resuelto.valor->kind != TypeKind::DESCONOCIDO) {
+      nodo->izquierda = forzarTipo(std::move(nodo->izquierda), nodo->tipo_resuelto);
+      nodo->derecha   = forzarTipo(std::move(nodo->derecha)  , nodo->tipo_resuelto);
+    }
+
   }
 
   void visitar(ExprCasteo* nodo) override {
@@ -318,7 +323,14 @@ public:
   }
 
   void visitar(SentenciaAsignarVar* nodo) override {
-    if (nodo->valor_inicial) { nodo->valor_inicial->accept(this); }
+    if (nodo->valor_inicial) {
+      nodo->valor_inicial->accept(this);
+
+      Dt tipo_destino = nodo->tipo_explicito.tipo;
+
+      nodo->valor_inicial = forzarTipo(std::move(nodo->valor_inicial), tipo_destino);
+
+    }
 
     InfoVariable* info = tablas.buscarVariable(nodo->nombre);
     if (info == nullptr) { // Si la variable no existe, creamos una

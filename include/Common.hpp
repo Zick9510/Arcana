@@ -170,8 +170,9 @@ enum class Pm {
 inline int obtenerRangoNum(TypeKind t) { //... Distinguir entre tamaño de bits
   switch (t) {
     case TypeKind::BOOLEAN: { return 1; }
-    case TypeKind::INTEGER: { return 2; }
-    case TypeKind::FLOAT  : { return 3; }
+    case TypeKind::CHAR   : { return 2; }
+    case TypeKind::INTEGER: { return 3; }
+    case TypeKind::FLOAT  : { return 4; }
     default               : { return 0; }
   }
 }

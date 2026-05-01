@@ -186,7 +186,6 @@ std::shared_ptr<ArcanaType> Checker::verificarCmpMenor(const Dt& izq, const Dt& 
     // Regla 1: Comparación de números
     if (esNum(pIzq) && esNum(pDer)) {
       return typeFactory.getBoolean();
-      return promoverTipos(izq.valor, der.valor); //...
 
     }
 
