@@ -1,0 +1,10 @@
+func main() -> int {
+
+  float a = 2.5;
+  float b = 7.5;
+
+  a >< b;
+
+  return a;
+
+}

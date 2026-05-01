@@ -47,22 +47,32 @@ arcane Twice_TwiceIf (twice: key, twice_if: key, expr1: expr, block1: code) {
   rules [
     @simple: twice    [       block1 ];
     @eval  : twice_if [ expr1 block1 ];
+
   ];
 
   @simple {
+
     twice <=> {
+
       block1;
       block1;
+
     };
+
   }
 
   @eval {
+
     twice_if <=> {
+
       if (expr1) {
         block1;
         block1;
+
       }
+
     };
+
   }
 
 }
@@ -95,6 +105,7 @@ arcane CustomLoop (loop: key, block: code) {
 
   rules [
     @simple: loop [ block ];
+
   ];
 
   @simple {
@@ -104,6 +115,7 @@ arcane CustomLoop (loop: key, block: code) {
       while (a) {
         block;
         a = a - 1;
+
       }
 
     };
