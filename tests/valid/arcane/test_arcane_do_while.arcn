@@ -1,7 +1,7 @@
 arcane DoWhile (do: key, body: code, while: key, as: key, cond: expr) {
   rules [
     @standard : do [ body while cond ];
-    @double_d : do [ body as cond];
+    @double_d : do [ body as    cond ];
 
   ];
 
