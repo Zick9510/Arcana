@@ -25,6 +25,8 @@ bool Driver::compile(const CompilerConfig& config) {
   ErrorHandler errHandler(errores);
 
   // 3. Lexical Analysis (Code -> Tokens)
+  std::cout << "--- LEXER ---\n";
+
   Lexer lexer(*source);
   std::vector<Token> tokens = lexer.tokenize();
 
@@ -37,12 +39,16 @@ bool Driver::compile(const CompilerConfig& config) {
   }
 
   // 4. Syntactic Analysis (Tokens -> AST)
+  std::cout << "--- PARSER ---\n";
+
   TypeFactory factory;
   ContextoArcanos contexto_arcanos;
   Parser parser(tokens, contexto_arcanos, factory);
   std::vector<std::unique_ptr<Sentencia>> ast = std::move(parser.parsearPrograma());
 
   // 5. Semantic Analysis (AST Check)
+  std::cout << "--- CHECKER ---\n";
+
   std::vector<Scope> scopes;
   GestorTablas tablas;
 
@@ -55,6 +61,8 @@ bool Driver::compile(const CompilerConfig& config) {
   }
 
   // 6. Code Generation (AST Check -> Source)
+  std::cout << "--- EMITTER ---\n";
+
   Emitter emitter(contexto_arcanos, tablas);
   for (auto& nodo : ast) {
     nodo->accept(&emitter);

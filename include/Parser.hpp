@@ -20,6 +20,8 @@ private:
 
   Token coincide(std::initializer_list<Tt> tipos);
 
+  bool sync(Tt target);
+
 public:
   Parser(std::vector<Token> t, ContextoArcanos& ca, TypeFactory& tf);
 

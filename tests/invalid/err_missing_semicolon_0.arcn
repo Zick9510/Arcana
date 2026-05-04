@@ -1,1 +1,5 @@
-123
+func main() -> int {
+
+  return 123
+
+}

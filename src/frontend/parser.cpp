@@ -46,6 +46,16 @@ Token Parser::coincide(std::initializer_list<Tt> tipos) {
 
 }
 
+bool Parser::sync(Tt target) {
+  while (!is_safe(peek().tipo) && peek().tipo != target) {
+    get();
+
+  }
+
+  return (peek().tipo == target);
+
+}
+
 // We expect the next token to be exactly this one, if its not, then error
 Token Parser::check(Tt tipoEsperado, Pm parseMode) {
 
@@ -67,7 +77,18 @@ Token Parser::check(Tt tipoEsperado, Pm parseMode) {
   std::cout << "Backtrace:\n";
   std::cout << std::stacktrace::current() << '\n';
 
-  exit(1);
+  bool flag = sync(tipoEsperado);
+
+  if (flag) {
+    return get();
+
+  } else {
+    Token ghost  = peek()      ;
+    ghost.tipo   = tipoEsperado;
+    ghost.lexema = "<recovery>";
+    return ghost;
+
+  }
 
 }
 
@@ -102,7 +123,7 @@ InfoVariable Parser::parsearTipo() {
       }
     } else {
       if (es_unsigned) {
-        // Error, dos veces unsigned
+        //... Error, dos veces unsigned
       } else {
         es_unsigned = true;
       }
@@ -645,6 +666,7 @@ std::unique_ptr<Sentencia> Parser::parsearBreak() {
   int linea = peek().linea;
   check(Tt::BREAK);
   check(Tt::PUNTO_COMA);
+
   return std::make_unique<SentenciaBreak>(linea);
 }
 
@@ -653,14 +675,18 @@ std::unique_ptr<Sentencia> Parser::parsearContinue() {
   check(Tt::CONTINUE);
   check(Tt::PUNTO_COMA);
   return std::make_unique<SentenciaContinue>(linea);
+
 }
 
 std::unique_ptr<Sentencia> Parser::parsearReturn() {
   check(Tt::RETURN);
   std::unique_ptr<Expresion> ret_value = parsearExpresion(Pr::MINIMA);
+  std::cout << "[682, parser.cpp]\n";
   check(Tt::PUNTO_COMA);
+  std::cout << "[684, parser.cpp]\n";
 
   return std::make_unique<SentenciaReturn>(ret_value->tipo_resuelto, std::move(ret_value));
+
 }
 
 std::vector<std::pair<std::string, InfoVariable>> Parser::parsearFuncArgs(Tt tEnd) {
@@ -1292,6 +1318,7 @@ std::unique_ptr<Expresion> Parser::parsearExpresion(Pr precedenciaMinima) {
   }
 
   return izquierda;
+
 }
 
 std::vector<std::unique_ptr<Sentencia>> Parser::parsearPrograma() {
@@ -1300,5 +1327,6 @@ std::vector<std::unique_ptr<Sentencia>> Parser::parsearPrograma() {
     programa.push_back(parsearSentencia());
   }
   return programa;
+
 }
 

@@ -147,6 +147,24 @@ enum class Tt {
 
 };
 
+inline bool is_safe(Tt t) {
+  switch (t) {
+    case Tt::FIN_ARCHIVO:
+
+    case Tt::PAREN_R:
+    case Tt::CORCH_R:
+    case Tt::LLAVE_R:
+
+    case Tt::PUNTO_COMA: {
+      return true;
+    }
+
+    default: { return false; }
+
+  }
+
+}
+
 inline bool is_keyword(Tt t) {
   switch (t) {
     case Tt::IF     :
@@ -1509,6 +1527,7 @@ public:
 
     return hayError;
   }
+
 };
 
 
