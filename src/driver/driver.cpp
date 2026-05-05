@@ -21,8 +21,7 @@ bool Driver::compile(const CompilerConfig& config) {
   }
 
   // 2. Set up the error handler
-  std::vector<Error> errores;
-  ErrorHandler errHandler(errores);
+  ErrorHandler err_handler;
 
   // 3. Lexical Analysis (Code -> Tokens)
   std::cout << "--- LEXER ---\n";
@@ -31,10 +30,10 @@ bool Driver::compile(const CompilerConfig& config) {
   std::vector<Token> tokens = lexer.tokenize();
 
   //... Debug
-  std::cout << "\n --- TOKENS --- \n\n";
+  std::cout << "\n--- TOKENS --- \n\n";
   for (const auto& t : tokens) {
     std::cout << "< Token: '" << t.lexema << "' | "
-              << "L: " << t.linea
+              << "L: " << t.pos.line
               << " >\n";
   }
 
@@ -43,7 +42,7 @@ bool Driver::compile(const CompilerConfig& config) {
 
   TypeFactory factory;
   ContextoArcanos contexto_arcanos;
-  Parser parser(tokens, contexto_arcanos, factory);
+  Parser parser(tokens, err_handler, contexto_arcanos, factory);
   std::vector<std::unique_ptr<Sentencia>> ast = std::move(parser.parsearPrograma());
 
   // 5. Semantic Analysis (AST Check)
@@ -52,11 +51,12 @@ bool Driver::compile(const CompilerConfig& config) {
   std::vector<Scope> scopes;
   GestorTablas tablas;
 
-  Checker checker(tablas, ast, errHandler, factory, contexto_arcanos);
+  Checker checker(tablas, ast, err_handler, factory, contexto_arcanos);
   checker.verificarPrograma();
 
-  if (errHandler.notificar()) { //... Hay al menos un error
+  if (err_handler.checkErrors()) { //... Hay al menos un error
     std::cerr << "[53 driver.cpp]: Error\n";
+    err_handler.show();
     return false;
   }
 

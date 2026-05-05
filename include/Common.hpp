@@ -5,6 +5,7 @@
 #include "Includes.hpp"
 
 #include "Types.hpp"
+#include "Error.hpp"
 
 // --- Precedencia --- 
 enum class Precedencia : int {
@@ -317,10 +318,16 @@ inline TipoOperador convertirEnTipoOperador(Tt op) { //... Agregar los demás ca
 }
 
 /* --- Lexer --- */
+//struct Range {
+//  Pos    start;
+//  Pos    end;
+//  size_t file_id; //...
+//};
+
 struct Token {
   Tt tipo;
   std::string lexema;
-  int linea;
+  Pos pos;
 };
 
 
@@ -431,6 +438,8 @@ bool esTipo(Tt);
 
 
 // Declaraciones previas
+class ErrorNode;
+
 class ExprLiteral;
 class ExprVariable;
 class ExprArray;
@@ -465,10 +474,11 @@ class SentenciaEscritura;
 class SentenciaArcano;
 class SentenciaLlamadaArcano;
 
-
 class ASTVisitor {
 public:
   virtual ~ASTVisitor() = default;
+
+  virtual void visitar(ErrorNode* nodo) = 0;
 
   // Expresiones
   virtual void visitar(ExprLiteral * nodo) = 0;
@@ -517,7 +527,7 @@ public:
 class NodoAST {
 public:
 
-  int linea = 0;
+  Pos pos;
 
   virtual ~NodoAST() = default;
   virtual void imprimir(int nivel = 0) const = 0;
@@ -553,6 +563,18 @@ public:
 class Sentencia : public NodoAST {
 public:
   virtual std::unique_ptr<Sentencia> clonar() const = 0;
+
+};
+
+class ErrorNode : public NodoBase<Expresion, ErrorNode> {
+public:
+
+  void imprimir(int nivel = 0) const override {
+    std::string sangria = "";
+    for (int i = 0; i < nivel; ++i) { sangria += "| "; }
+    std::cout << sangria << "+- ErrorNode\n";
+
+  }
 
 };
 
@@ -793,7 +815,7 @@ public:
     }
 
     this->tipo_resuelto = otra.tipo_resuelto;
-    this->linea         = otra.linea        ;
+    this->pos           = otra.pos          ;
 
   }
 
@@ -821,7 +843,7 @@ public:
     : operador(otra.operador), operando(otra.operando->clonar()), es_prefijo(otra.es_prefijo) {
 
     this->tipo_resuelto = otra.tipo_resuelto;
-    this->linea         = otra.linea        ;
+    this->pos           = otra.pos          ;
 
   }
 
@@ -849,7 +871,7 @@ public:
       derecha  (otra.derecha  ->clonar()) {
 
     this->tipo_resuelto = otra.tipo_resuelto;
-    this->linea         = otra.linea        ;
+    this->pos           = otra.pos          ;
 
   }
 
@@ -876,7 +898,7 @@ public:
     : condicion(otra.condicion->clonar()), rama_true(otra.rama_true->clonar()), rama_false(otra.rama_false->clonar()) {
 
     this->tipo_resuelto = otra.tipo_resuelto;
-    this->linea         = otra.linea;
+    this->pos           = otra.pos  ;
 
   }
 
@@ -907,7 +929,7 @@ public:
     : expresion(otra.expresion->clonar()), tipo_casteo(otra.tipo_casteo) {
 
     this->tipo_resuelto = otra.tipo_resuelto;
-    this->linea         = otra.linea        ;
+    this->pos           = otra.pos          ;
 
   }
 
@@ -938,7 +960,7 @@ class ExprRango : public NodoBase<Expresion, ExprRango> {
         paso  (otra.paso   ? otra.paso  ->clonar() : nullptr) {
 
       this->tipo_resuelto = otra.tipo_resuelto;
-      this->linea         = otra.linea        ;
+      this->pos           = otra.pos          ;
 
     }
 
@@ -972,7 +994,7 @@ public:
     : contenedor(otra.contenedor->clonar()), rango(otra.rango->clonar()) {
 
       this->tipo_resuelto = otra.tipo_resuelto;
-      this->linea         = otra.linea        ;
+      this->pos           = otra.pos          ;
 
   }
 
@@ -1003,7 +1025,7 @@ public:
     }
 
     this->tipo_resuelto = otra.tipo_resuelto;
-    this->linea         = otra.linea        ;
+    this->pos           = otra.pos          ;
 
   }
 
@@ -1182,10 +1204,6 @@ public:
 
 class SentenciaBreak : public NodoBase<Sentencia, SentenciaBreak> {
 public:
-  int linea;
-
-  SentenciaBreak(int l)
-    : linea(l) {}
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
@@ -1197,10 +1215,6 @@ public:
 
 class SentenciaContinue : public NodoBase<Sentencia, SentenciaContinue> {
 public:
-  int linea;
-
-  SentenciaContinue(int l)
-    : linea(l) {}
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
@@ -1443,94 +1457,6 @@ struct CompilerConfig {
 
 };
 
-
-/* --- Errores y Warnings --- */
-enum class CodigoError { // Codigo Error
-
-  // --- Errores Léxicos (1000) ---
-  ERR_CARACTER_ILEGAL = 1000,
-  ERR_NUMERO_MAL_FORMADO = 1001,
-
-  ERR_NO_CERRADO_CADENA = 1100,
-  ERR_NO_CERRADO_COMENTARIO = 1101,
-
-  // --- Errores Sintácticos (2000) ---
-  ERR_ESPERABA = 2000, // Se esperaba un token que no está
-  ERR_NO_ESPERABA = 2001, // No se esperaba un token que sí está
-
-  ERR_DESBALANCE_PARENTESIS = 2100,
-  ERR_DESBALANCE_LLAVES = 2101,
-  ERR_DESBALANCE_CORCHETES = 2102,
-
-  ERR_EXPRESION_INVALIDA = 2200, // Ej: 2 +-+ 3. 3**
-
-
-  // --- Erores Semánticos (3000) ---
-
-  // Tipos (3000)
-  ERR_TIPO_ESPERADO = 3000, // Se entrega un tipo T1 cuando se esperaba un tipo T2
-  ERR_CASTEO_INVALIDO = 3001, // Se intenta hacer un casteo incompatible (ej: (int)string)
-
-  // Variables (3100)
-  ERR_VARIABLE_USO_SIN_DECLARAR = 3100, // Cuando se manipula una variable sin declarar
-  ERR_VARIABLE_USO_SIN_DEFINIR = 3101, // Se usa una variable sin valor
-  ERR_VARIABLE_REDECLARADA = 3102,
-  ERR_CONSTANTE_MUTADA = 3103,
-
-  // Funciones (3200)
-  ERR_USO_SIN_DEFINIR_F = 3200, // Cuando se llama a una función cuyo nombre y firma no coincide
-  ERR_CANTIDAD_ARGUMENTOS_INCORRECTA = 3201,
-  ERR_RETORNO_INVALIDO = 3202,
-  ERR_FALTA_RETORNO = 3203,
-
-  // Extra (3900)
-  ERR_NOMBRE_INVALIDO = 3900,
-
-  // --- Warnings (>= 4000) ---
-  W_VARIABLE_SIN_USAR = 4000,
-  W_FUNCION_SIN_USAR = 4001,
-  W_CODIGO_INACCESIBLE = 4002,
-  W_CONVERSION_PELIGROSA = 4003, // Pérdida de precisión
-
-};
-
-using CE = CodigoError;
-
-struct Error {
-  std::vector<std::string> detalle;
-  CE codigoError;
-  int linea;
-};
-
-class ErrorHandler {
-private:
-  std::vector<Error> errores;
-
-public:
-  ErrorHandler(std::vector<Error> e)
-    : errores(e) {}
-
-  void reportar(CE codigoError, int linea, std::vector<std::string> detalle) {
-    Error err;
-    err.codigoError = codigoError;
-    err.linea = linea;
-    err.detalle = std::move(detalle);
-    errores.push_back(err);
-  }
-
-  bool notificar() {
-    bool hayError = !errores.empty();
-    for (const auto& e : errores) {
-      std::cout << "Error línea " << e.linea << '\n';
-      //... Mostrar errores por pantalla
-    }
-
-    return hayError;
-  }
-
-};
-
-
 /* --- Symbol Table Manager --- */
 
 struct FirmaMetodo {
@@ -1548,7 +1474,6 @@ struct InfoFuncion {
   std::string nombre;
   Dt tipo_retorno;
   std::vector<std::pair<std::string, InfoVariable>> tipos_parametros;
-  int linea;
 };
 
 struct Scope {

@@ -9,7 +9,7 @@ private:
   std::string_view source;
   std::vector<Token> tokens;
   size_t cursor = 0;
-  int linea = 1;
+  size_t linea  = 1;
 
   char actual() const;
   char peek() const;

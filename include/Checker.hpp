@@ -46,6 +46,8 @@ public:
 
   // --- AST Visitor ---
 
+  void visitar(ErrorNode* nodo) override {}
+
   template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
   template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
   void visitar(ExprLiteral* nodo) override { //...
@@ -185,7 +187,7 @@ public:
       nodo->tipo_resuelto = tipo_destino;
 
     } else {
-      errHandler.reportar(CE::ERR_CASTEO_INVALIDO, nodo->linea, {});
+      errHandler.report(CE::E_CASTEO_INVALIDO, nodo->pos);
       nodo->tipo_resuelto = Dt(typeFactory.getUnknown());
 
     }
@@ -454,7 +456,6 @@ public:
     info_func.nombre = nodo->nombre_func;
     info_func.tipo_retorno = nodo->ret_type;
     info_func.tipos_parametros = nodo->args_type;
-    info_func.linea = nodo->linea;
 
     if (!tablas.añadirFunction(firma, info_func)) {
       std::cout << "[338, Checker.hpp] Error: Función redefinida\n";

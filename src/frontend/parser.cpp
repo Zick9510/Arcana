@@ -39,7 +39,7 @@ Token Parser::coincide(std::initializer_list<Tt> tipos) {
   }
 
   std::cerr << "pero se encontró "   << nombreTipo(peek().tipo)  << " ('"
-            << peek().lexema         << "') en linea "                 << peek().linea << '\n';
+            << peek().lexema         << "') en linea "                 << peek().pos.line << '\n';
 
   std::cerr << '\n';
   exit(1);
@@ -72,10 +72,12 @@ Token Parser::check(Tt tipoEsperado, Pm parseMode) {
   //... We have to report this error and call the not implemented yet error recovery function
   std::cerr << "Error: Se esperaba "  << nombreTipo(tipoEsperado)
             << " pero se encontró "   << nombreTipo(peek().tipo)  << " ('"
-            << peek().lexema          << "') en linea "                 << peek().linea << '\n';
+            << peek().lexema          << "') en linea "                 << peek().pos.line << '\n';
 
   std::cout << "Backtrace:\n";
   std::cout << std::stacktrace::current() << '\n';
+
+  errHandler.report(CE::E_EXPECTED_TOKEN, peek().pos, nombreTipo(tipoEsperado), nombreTipo(peek().tipo));
 
   bool flag = sync(tipoEsperado);
 
@@ -92,8 +94,8 @@ Token Parser::check(Tt tipoEsperado, Pm parseMode) {
 
 }
 
-Parser::Parser(std::vector<Token> t, ContextoArcanos& ca, TypeFactory& tf)
-  : tokens(std::move(t)), pos(0), contextoArcanos(ca), typeFactory(tf) {}
+Parser::Parser(std::vector<Token> t, ErrorHandler& e, ContextoArcanos& ca, TypeFactory& tf)
+  : tokens(std::move(t)), pos(0), errHandler(e), contextoArcanos(ca), typeFactory(tf) {}
 
 int extraerBits(std::string lexema, int defaultBits) {
   if (lexema == "int" || lexema == "raw" || lexema == "float") { return defaultBits; }
@@ -268,7 +270,6 @@ std::unique_ptr<Expresion> Parser::parsearCasteo() {
 std::unique_ptr<Expresion> Parser::parsearRangoOArray() {
 
   if (peek().tipo == Tt::CORCH_R) { // "[]" An empty array
-
     get();
     std::vector<std::unique_ptr<Expresion>> elementos;
     return std::make_unique<ExprArray>(std::move(elementos));
@@ -425,10 +426,26 @@ std::pair<std::string, std::string> Parser::partirLexemaNum(std::string lexema) 
 }
 
 std::unique_ptr<Expresion> Parser::parsearPrefijo() {
-  Token t = get();
+  Token t = peek();
 
   std::cout << "[409, parser.cpp] t.lexema: " << t.lexema << '\n';
 
+  // Error cases
+  switch (t.tipo) { //...
+    case Tt::PAREN_R:
+    case Tt::LLAVE_R:
+    case Tt::PUNTO_COMA: {
+      errHandler.report(CE::E_EXPECTED_EXPRESSION, peek().pos);
+      return std::make_unique<ErrorNode>();
+    }
+
+    default: { break; }
+
+  }
+
+  get();
+
+  // Atom cases
   switch (t.tipo) { //...
     case Tt::NUMERO: {
       auto [num, suf] = partirLexemaNum(t.lexema);
@@ -436,9 +453,7 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
     }
 
     case Tt::CHAR: {
-
       return std::make_unique<ExprLiteral>(CharData{&t.lexema[0]});
-
     }
 
     case Tt::IDENTIFICADOR: {
@@ -458,6 +473,7 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
     default: {
       break; // No es un átomo
     }
+
   }
 
   if (t.tipo == Tt::POTENCIA) { // **
@@ -488,7 +504,7 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
 
     default: {
         std::cerr << "[469, parser.cpp]\n";
-        std::cerr << "Línea " << t.linea << ": No se esperaba el prefijo '" << t.lexema << "'\n";
+        std::cerr << "Línea " << t.pos.line << ": No se esperaba el prefijo '" << t.lexema << "'\n";
         exit(1);
     }
   }
@@ -663,18 +679,16 @@ std::unique_ptr<Sentencia> Parser::parsearMientras() {
 }
 
 std::unique_ptr<Sentencia> Parser::parsearBreak() {
-  int linea = peek().linea;
   check(Tt::BREAK);
   check(Tt::PUNTO_COMA);
 
-  return std::make_unique<SentenciaBreak>(linea);
+  return std::make_unique<SentenciaBreak>();
 }
 
 std::unique_ptr<Sentencia> Parser::parsearContinue() {
-  int linea = peek().linea;
   check(Tt::CONTINUE);
   check(Tt::PUNTO_COMA);
-  return std::make_unique<SentenciaContinue>(linea);
+  return std::make_unique<SentenciaContinue>();
 
 }
 

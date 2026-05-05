@@ -71,9 +71,10 @@ void Emitter::generarArchivoIR(const std::filesystem::path& nombreArchivo) {
 
 }
 
-//... Everything after this line has to be triple checked.
-
 // --- Expresiones --- //
+
+void Emitter::visitar(ErrorNode* nodo) {}
+
 void Emitter::visitar(ExprLiteral* nodo) { //...
   auto tipo = nodo->tipo_resuelto.valor;
   int bits = tipo->getBitSize();

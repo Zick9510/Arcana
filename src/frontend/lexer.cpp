@@ -174,7 +174,7 @@ void Lexer::leerNumero() {
     //... Ya cant end a number with a "_"
   }
 
-  tokens.push_back( {Tt::NUMERO, std::string(valor), linea} );
+  tokens.push_back( {Tt::NUMERO, std::string(valor), {linea, cursor} } );
 
 }
 
@@ -182,7 +182,7 @@ void Lexer::leerStringChar() { //...
 
   char delimitador = source[cursor - 1];
   std::string contenido = "";
-  int inicio_linea = linea;
+  size_t inicio_linea = linea;
 
   while (!esFin() && actual() != delimitador) { //... Add multiline string support
     char c = get();
@@ -228,10 +228,10 @@ void Lexer::leerStringChar() { //...
     if (contenido.size() > 1) {
       //... Error: Multibyte char
     } else {
-      tokens.push_back( {Tt::CHAR, contenido, inicio_linea} );
+      tokens.push_back( {Tt::CHAR, contenido, {inicio_linea, cursor} } );
     }
   } else {
-    tokens.push_back( {Tt::STRING, contenido, inicio_linea} );
+    tokens.push_back( {Tt::STRING, contenido, {inicio_linea, cursor} } );
   }
 }
 
@@ -294,7 +294,7 @@ std::vector<Token> Lexer::tokenize() {
         }
       }
 
-      tokens.push_back( {tipo_final, std::string(texto), linea} );
+      tokens.push_back( {tipo_final, std::string(texto), {linea, cursor} } );
       continue;
     }
 
@@ -313,48 +313,48 @@ std::vector<Token> Lexer::tokenize() {
 
     // --- Symbols ---
     switch (c) { // Greedy matching
-      case '(': { tokens.push_back( {Tt::PAREN_L, "(", linea} ); break; }
-      case ')': { tokens.push_back( {Tt::PAREN_R, ")", linea} ); break; }
-      case '{': { tokens.push_back( {Tt::LLAVE_L, "{", linea} ); break; }
-      case '}': { tokens.push_back( {Tt::LLAVE_R, "}", linea} ); break; }
-      case '[': { tokens.push_back( {Tt::CORCH_L, "[", linea} ); break; }
-      case ']': { tokens.push_back( {Tt::CORCH_R, "]", linea} ); break; }
+      case '(': { tokens.push_back( {Tt::PAREN_L, "(", {linea, cursor} } ); break; }
+      case ')': { tokens.push_back( {Tt::PAREN_R, ")", {linea, cursor} } ); break; }
+      case '{': { tokens.push_back( {Tt::LLAVE_L, "{", {linea, cursor} } ); break; }
+      case '}': { tokens.push_back( {Tt::LLAVE_R, "}", {linea, cursor} } ); break; }
+      case '[': { tokens.push_back( {Tt::CORCH_L, "[", {linea, cursor} } ); break; }
+      case ']': { tokens.push_back( {Tt::CORCH_R, "]", {linea, cursor} } ); break; }
 
-      case '.': { tokens.push_back( {Tt::PUNTO, ".", linea} ); break; }
-      case ',': { tokens.push_back( {Tt::COMA , ",", linea} ); break; }
+      case '.': { tokens.push_back( {Tt::PUNTO, ".", {linea, cursor} } ); break; }
+      case ',': { tokens.push_back( {Tt::COMA , ",", {linea, cursor} } ); break; }
 
-      case ';': { tokens.push_back( {Tt::PUNTO_COMA, ";", linea} ); break; }
-      case ':': { tokens.push_back( {Tt::DOS_PUNTOS, ":", linea} ); break; }
+      case ';': { tokens.push_back( {Tt::PUNTO_COMA, ";", {linea, cursor} } ); break; }
+      case ':': { tokens.push_back( {Tt::DOS_PUNTOS, ":", {linea, cursor} } ); break; }
 
       case '+': {
-        if      (match('+')) { tokens.push_back( {Tt::INCREMENTAR, "++", linea} ); }
-        else if (match('=')) { tokens.push_back( {Tt::MAS_IGUAL  , "+=", linea} ); }
-        else                      { tokens.push_back( {Tt::MAS        , "+" , linea} ); }
+        if      (match('+')) { tokens.push_back( {Tt::INCREMENTAR, "++", {linea, cursor} } ); }
+        else if (match('=')) { tokens.push_back( {Tt::MAS_IGUAL  , "+=", {linea, cursor} } ); }
+        else                      { tokens.push_back( {Tt::MAS        , "+" , {linea, cursor} } ); }
         break;
       }
 
       case '-': {
-        if      (match('>')) { tokens.push_back( {Tt::FLECHA     , "->", linea} ); }
-        else if (match('-')) { tokens.push_back( {Tt::DECREMENTAR, "--", linea} ); }
-        else if (match('=')) { tokens.push_back( {Tt::MENOS_IGUAL, "-=", linea} ); }
-        else                      { tokens.push_back( {Tt::MENOS      , "-" , linea} ); }
+        if      (match('>')) { tokens.push_back( {Tt::FLECHA     , "->", {linea, cursor} } ); }
+        else if (match('-')) { tokens.push_back( {Tt::DECREMENTAR, "--", {linea, cursor} } ); }
+        else if (match('=')) { tokens.push_back( {Tt::MENOS_IGUAL, "-=", {linea, cursor} } ); }
+        else                      { tokens.push_back( {Tt::MENOS      , "-" , {linea, cursor} } ); }
         break;
       }
 
       case '*': {
         if        (match('*')) {
-          if   (match('=')) { tokens.push_back( {Tt::POTENCIA_IGUAL, "**=", linea} ); }
-          else                   { tokens.push_back( {Tt::POTENCIA      , "**" , linea} ); }
+          if   (match('=')) { tokens.push_back( {Tt::POTENCIA_IGUAL, "**=", {linea, cursor} } ); }
+          else                   { tokens.push_back( {Tt::POTENCIA      , "**" , {linea, cursor} } ); }
 
         } else if (match('/')) {
-          if   (match('=')) { tokens.push_back( {Tt::RAIZ_IGUAL    , "*/=", linea} ); }
-          else                   { tokens.push_back( {Tt::RAIZ          , "*/" , linea} ); }
+          if   (match('=')) { tokens.push_back( {Tt::RAIZ_IGUAL    , "*/=", {linea, cursor} } ); }
+          else                   { tokens.push_back( {Tt::RAIZ          , "*/" , {linea, cursor} } ); }
 
         } else if (match('=')) {
-          tokens.push_back( {Tt::POR_IGUAL, "*=", linea} );
+          tokens.push_back( {Tt::POR_IGUAL, "*=", {linea, cursor} } );
 
         } else {
-          tokens.push_back( {Tt::ASTERISCO, "*" , linea} );
+          tokens.push_back( {Tt::ASTERISCO, "*" , {linea, cursor} } );
 
         }
 
@@ -388,10 +388,10 @@ std::vector<Token> Lexer::tokenize() {
           }
 
         } else if (match('=')) {
-          tokens.push_back( {Tt::DIV_IGUAL, "/=", linea} );
+          tokens.push_back( {Tt::DIV_IGUAL, "/=", {linea, cursor} } );
 
         } else {
-          tokens.push_back( {Tt::DIV      , "/" , linea} );
+          tokens.push_back( {Tt::DIV      , "/" , {linea, cursor} } );
 
         }
 
@@ -399,21 +399,21 @@ std::vector<Token> Lexer::tokenize() {
       }
 
       case '%': {
-        if   (match('=')) { tokens.push_back( {Tt::MOD_IGUAL, "%=", linea} ); }
-        else                   { tokens.push_back( {Tt::MODULO   , "%" , linea} ); }
+        if   (match('=')) { tokens.push_back( {Tt::MOD_IGUAL, "%=", {linea, cursor} } ); }
+        else                   { tokens.push_back( {Tt::MODULO   , "%" , {linea, cursor} } ); }
         break;
       }
 
       case '&': {
         if        (match('&')) {
-          if   (match('=')) { tokens.push_back( {Tt::Y_LOG_IGUAL, "&&=", linea} ); }
-          else                   { tokens.push_back( {Tt::Y_LOGICO   , "&&" , linea} ); }
+          if   (match('=')) { tokens.push_back( {Tt::Y_LOG_IGUAL, "&&=", {linea, cursor} } ); }
+          else                   { tokens.push_back( {Tt::Y_LOGICO   , "&&" , {linea, cursor} } ); }
 
         } else if (match('=')) {
-          tokens.push_back( {Tt::Y_BIT_IGUAL, "&=", linea} );
+          tokens.push_back( {Tt::Y_BIT_IGUAL, "&=", {linea, cursor} } );
 
         } else                      {
-          tokens.push_back( {Tt::AMPERSAND  , "&" , linea} );
+          tokens.push_back( {Tt::AMPERSAND  , "&" , {linea, cursor} } );
 
         }
 
@@ -422,14 +422,14 @@ std::vector<Token> Lexer::tokenize() {
 
       case '|': {
         if        (match('|')) {
-          if   (match('=')) { tokens.push_back( {Tt::O_LOG_IGUAL, "||=", linea} ); }
-          else                   { tokens.push_back( {Tt::O_LOGICO   , "||" , linea} ); }
+          if   (match('=')) { tokens.push_back( {Tt::O_LOG_IGUAL, "||=", {linea, cursor} } ); }
+          else                   { tokens.push_back( {Tt::O_LOGICO   , "||" , {linea, cursor} } ); }
 
         } else if (match('=')) {
-          tokens.push_back( {Tt::O_BIT_IGUAL, "|=", linea} );
+          tokens.push_back( {Tt::O_BIT_IGUAL, "|=", {linea, cursor} } );
 
         } else                      {
-          tokens.push_back( {Tt::O_BITWISE, "|", linea} );
+          tokens.push_back( {Tt::O_BITWISE, "|", {linea, cursor} } );
 
         }
 
@@ -438,47 +438,47 @@ std::vector<Token> Lexer::tokenize() {
 
       case '^': {
         if        (match('^')) {
-          if   (match('=')) { tokens.push_back( {Tt::XO_LOG_IGUAL, "^^=", linea} ); }
-          else                   { tokens.push_back( {Tt::XO_LOGICO   , "^^" , linea} ); }
+          if   (match('=')) { tokens.push_back( {Tt::XO_LOG_IGUAL, "^^=", {linea, cursor} } ); }
+          else                   { tokens.push_back( {Tt::XO_LOGICO   , "^^" , {linea, cursor} } ); }
 
         } else if (match('=')) {
-          tokens.push_back( {Tt::XO_BIT_IGUAL, "^=", linea} );
+          tokens.push_back( {Tt::XO_BIT_IGUAL, "^=", {linea, cursor} } );
 
         } else                      {
-          tokens.push_back( {Tt::XO_BITWISE, "^", linea} );
+          tokens.push_back( {Tt::XO_BITWISE, "^", {linea, cursor} } );
 
         }
 
         break;
       }
 
-      case '~': { //... x ~= y has no sense. We could use the "~=" symbol for float comparations
-        if   (match('=')) { tokens.push_back( {Tt::FLOAT_EQUAL, "~=", linea} ); }
-        else                   { tokens.push_back( {Tt::NO_BITWISE , "~" , linea} ); }
+      case '~': {
+        if   (match('=')) { tokens.push_back( {Tt::FLOAT_EQUAL, "~=", {linea, cursor} } ); }
+        else                   { tokens.push_back( {Tt::NO_BITWISE , "~" , {linea, cursor} } ); }
 
         break;
       }
 
       case '!': {
-        if   (match('=')) { tokens.push_back( {Tt::DISTINTO , "!=", linea} ); }
-        else                   { tokens.push_back( {Tt::NO_LOGICO, "!" , linea} ); }
+        if   (match('=')) { tokens.push_back( {Tt::DISTINTO , "!=", {linea, cursor} } ); }
+        else                   { tokens.push_back( {Tt::NO_LOGICO, "!" , {linea, cursor} } ); }
         break;
       }
 
       case '<': {
         if        (match('<')) {
-          if   (match('=')) { tokens.push_back( {Tt::BITWISE_L_IGUAL, "<<=", linea} ); }
-          else                   { tokens.push_back( {Tt::BITWISE_L      , "<<" , linea} ); }
+          if   (match('=')) { tokens.push_back( {Tt::BITWISE_L_IGUAL, "<<=", {linea, cursor} } ); }
+          else                   { tokens.push_back( {Tt::BITWISE_L      , "<<" , {linea, cursor} } ); }
 
         } else if (match('=')) {
-          if   (match('>')) { tokens.push_back( {Tt::ASIG_BLOQUE, "<=>", linea} ); }
-          else                   { tokens.push_back( {Tt::MENOR_IGUAL, "<=" , linea} ); }
+          if   (match('>')) { tokens.push_back( {Tt::ASIG_BLOQUE, "<=>", {linea, cursor} } ); }
+          else                   { tokens.push_back( {Tt::MENOR_IGUAL, "<=" , {linea, cursor} } ); }
 
         } else if (match('>')) {
-          tokens.push_back( {Tt::DISTINTO, "<>", linea} );
+          tokens.push_back( {Tt::DISTINTO, "<>", {linea, cursor} } );
 
         } else {
-          tokens.push_back( {Tt::MENOR, "<", linea});
+          tokens.push_back( {Tt::MENOR, "<", {linea, cursor} });
 
         }
 
@@ -487,17 +487,17 @@ std::vector<Token> Lexer::tokenize() {
 
       case '>': {
         if        (match('>')) {
-          if   (match('=')) { tokens.push_back( {Tt::BITWISE_R_IGUAL, ">>=", linea} ); }
-          else                   { tokens.push_back( {Tt::BITWISE_R      , ">>" , linea} ); }
+          if   (match('=')) { tokens.push_back( {Tt::BITWISE_R_IGUAL, ">>=", {linea, cursor} } ); }
+          else                   { tokens.push_back( {Tt::BITWISE_R      , ">>" , {linea, cursor} } ); }
 
         } else if (match('<')) {
-          tokens.push_back( {Tt::SWAP       , "><", linea} );
+          tokens.push_back( {Tt::SWAP       , "><", {linea, cursor} } );
 
         } else if (match('=')) {
-          tokens.push_back( {Tt::MAYOR_IGUAL, ">=", linea} );
+          tokens.push_back( {Tt::MAYOR_IGUAL, ">=", {linea, cursor} } );
 
         } else                      {
-          tokens.push_back( {Tt::MAYOR      , ">" , linea} );
+          tokens.push_back( {Tt::MAYOR      , ">" , {linea, cursor} } );
 
         }
 
@@ -505,26 +505,26 @@ std::vector<Token> Lexer::tokenize() {
       }
 
       case '=': {
-        if   (match('=')) { tokens.push_back( {Tt::IGUAL_CMP , "==", linea} ); }
-        else                   { tokens.push_back( {Tt::IGUAL_ASIG, "=" , linea} ); }
+        if   (match('=')) { tokens.push_back( {Tt::IGUAL_CMP , "==", {linea, cursor} } ); }
+        else                   { tokens.push_back( {Tt::IGUAL_ASIG, "=" , {linea, cursor} } ); }
         break;
       }
 
       case '?': {
-        if   (match('?')) { tokens.push_back( {Tt::DOS_PREGUNTAS, "??", linea} ); }
-        else                   { tokens.push_back( {Tt::PREGUNTA     , "?" , linea} ); }
+        if   (match('?')) { tokens.push_back( {Tt::DOS_PREGUNTAS, "??", {linea, cursor} } ); }
+        else                   { tokens.push_back( {Tt::PREGUNTA     , "?" , {linea, cursor} } ); }
         break;
       }
 
       case '@': {
-        tokens.push_back( {Tt::ARROBA, "@", linea} );
+        tokens.push_back( {Tt::ARROBA, "@", {linea, cursor} } );
         break;
       }
     }
   }
 
   // EOF Token at the end
-  tokens.push_back( {Tt::FIN_ARCHIVO, "", linea} );
+  tokens.push_back( {Tt::FIN_ARCHIVO, "", {linea, cursor} } );
  
   return tokens;
 

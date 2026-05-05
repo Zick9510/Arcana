@@ -10,6 +10,7 @@ private:
   unsigned long long pos;
   std::unordered_map<std::string, Tt> aliasLexicos;
 
+  ErrorHandler&    errHandler;
   ContextoArcanos& contextoArcanos;
   TypeFactory&     typeFactory;
 
@@ -23,7 +24,7 @@ private:
   bool sync(Tt target);
 
 public:
-  Parser(std::vector<Token> t, ContextoArcanos& ca, TypeFactory& tf);
+  Parser(std::vector<Token> t, ErrorHandler& e, ContextoArcanos& ca, TypeFactory& tf);
 
   InfoVariable parsearTipo();
 
