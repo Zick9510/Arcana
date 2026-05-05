@@ -11,8 +11,8 @@ class Color:
     BOLD   = '\033[1m'
     END    = '\033[0m'
 
-COMPILER_PATH: str = "./bin/arcana"
-VALID_TESTS_DIR: str = "tests/valid/"
+COMPILER_PATH   : str = "./bin/arcana"
+VALID_TESTS_DIR : str = "tests/valid/"
 OUTPUT_TESTS_DIR: str = "tests/build/"
 
 failed_tests: list = []

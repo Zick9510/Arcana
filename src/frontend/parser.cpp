@@ -435,7 +435,7 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
     case Tt::PAREN_R:
     case Tt::LLAVE_R:
     case Tt::PUNTO_COMA: {
-      errHandler.report(CE::E_EXPECTED_EXPRESSION, peek().pos);
+      errHandler.report(CE::E_EXPECTED_EXPRESSION, peek().pos, nombreTipo(t.tipo));
       return std::make_unique<ErrorNode>();
     }
 

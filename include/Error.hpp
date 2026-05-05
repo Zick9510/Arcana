@@ -102,6 +102,7 @@ public:
 
     } else {
       err.msg = std::string(templ);
+
     }
 
     err.kind = (static_cast<int>(ce) >= 4000) ? EK::WARNING : EK::ERROR;
@@ -112,6 +113,9 @@ public:
     errores.push_back(err);
 
   }
+
+
+  void printSourceLine(Pos pos);
 
   void show();
 
