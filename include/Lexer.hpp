@@ -6,7 +6,7 @@
 
 class Lexer {
 private:
-  std::string_view source;
+  std::shared_ptr<SourceBuffer> buffer;
   std::vector<Token> tokens;
   size_t cursor = 0;
   size_t linea  = 1;
@@ -19,8 +19,8 @@ private:
   bool esFin() const;
 
 public:
-  Lexer(std::string_view src)
-    : source(src) {}
+  Lexer(std::shared_ptr<SourceBuffer> b)
+    : buffer(b) {}
 
   bool validarBase();
   bool validarCaracterBase(char caracter, char base);

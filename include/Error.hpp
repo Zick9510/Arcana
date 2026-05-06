@@ -4,6 +4,8 @@
 
 #include "Includes.hpp"
 
+struct SourceBuffer;
+
 struct Pos {
   size_t line;
   size_t col;
@@ -80,13 +82,14 @@ struct Error {
 
 class ErrorHandler {
 private:
+  std::shared_ptr<SourceBuffer> buffer;
   std::vector<Error> errores;
 
   size_t errorCount   = 0;
   size_t warningCount = 0;
 
 public:
-  ErrorHandler();
+  ErrorHandler(std::shared_ptr<SourceBuffer> b);
 
   std::string_view getTemplate(CE ce);
 
@@ -113,9 +116,6 @@ public:
     errores.push_back(err);
 
   }
-
-
-  void printSourceLine(Pos pos);
 
   void show();
 

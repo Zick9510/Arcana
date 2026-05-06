@@ -20,13 +20,14 @@ bool Driver::compile(const CompilerConfig& config) {
     return false;
   }
 
-  // 2. Set up the error handler
-  ErrorHandler err_handler;
+  // 2. Set up basic components
+  auto buffer = std::make_shared<SourceBuffer>(std::move(*source));
+  ErrorHandler err_handler(buffer);
 
   // 3. Lexical Analysis (Code -> Tokens)
   std::cout << "--- LEXER ---\n";
 
-  Lexer lexer(*source);
+  Lexer lexer(buffer);
   std::vector<Token> tokens = lexer.tokenize();
 
   //... Debug

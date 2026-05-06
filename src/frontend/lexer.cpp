@@ -8,36 +8,39 @@
 
 // Checks if we have reached the end of the source string
 bool Lexer::esFin() const {
-  return cursor >= source.size();
+  return cursor >= buffer->content.size();
 
 }
 
 // Returns the character at the current position without advancing
 char Lexer::actual() const {
-  return esFin() ? '\0' : source[cursor];
+  return esFin() ? '\0' : buffer->content[cursor];
 
 }
 
 // Returns the next character (lookahead) without advancing the cursor
 char Lexer::peek() const {
-  if (cursor + 1 >= source.size()) { return '\0'; }
-  return source[cursor + 1];
+  if (cursor + 1 >= buffer->content.size()) { return '\0'; }
+  return buffer->content[cursor + 1];
 
 }
 
 // Consumes and returns the current character, advancing the cursor
 // Also increments the line counter if a newline is found
 char Lexer::get() {
-  char c = source[cursor++];
-  if (c == '\n') { linea++; }
+  char c = buffer->content[cursor++];
+  if (c == '\n') {
+    linea++;
+    buffer->setOffset(cursor);
+  }
   return c;
 
 }
 
 // "Conditional consume": If the current char matches 'esp', advance and return true
 bool Lexer::match(char esp) { // Expected
-  if (esFin() || source[cursor] != esp) { return false; }
-  cursor++;
+  if (esFin() || buffer->content[cursor] != esp) { return false; }
+  get();
   return true;
 
 }
@@ -98,8 +101,9 @@ void Lexer::leerNumero() {
   bool tiene_punto = false;
   bool scientific_notation = false;
 
+
   // Handle non-decimal bases: 0b..., 0o..., 0x...
-  if (source[inicio] == '0' && validarBase()) {
+  if (buffer->content[inicio] == '0' && validarBase()) {
     char base = get(); // Consume the 'b', 'o', or 'x'
 
     while (validarCaracterBase(actual(), base)) {
@@ -168,7 +172,7 @@ void Lexer::leerNumero() {
 
   }
  
-  std::string valor(source.substr(inicio, cursor - inicio));
+  std::string_view valor(buffer->content.data() + inicio, cursor - inicio);
 
   if (valor.back() == '_') {
     //... Ya cant end a number with a "_"
@@ -180,7 +184,7 @@ void Lexer::leerNumero() {
 
 void Lexer::leerStringChar() { //...
 
-  char delimitador = source[cursor - 1];
+  char delimitador = buffer->content[cursor - 1];
   std::string contenido = "";
   size_t inicio_linea = linea;
 
@@ -258,7 +262,7 @@ std::vector<Token> Lexer::tokenize() {
 
       // Consumir el identificador completo
       while (std::isalnum(actual()) || actual() == '_') { get(); }
-      std::string_view texto = source.substr(inicio, cursor - inicio);
+      std::string_view texto(buffer->content.data() + inicio, cursor - inicio);
 
       // Encontrar dónde empiezan los números (si existen)
       auto it_digito = std::find_if(texto.begin(), texto.end(), ::isdigit);

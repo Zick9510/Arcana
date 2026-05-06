@@ -2,10 +2,11 @@
 
 #include "Error.hpp"
 
-#include "Common.hpp"
 #include "Includes.hpp"
+#include "Common.hpp"
 
-ErrorHandler::ErrorHandler() {}
+ErrorHandler::ErrorHandler(std::shared_ptr<SourceBuffer> b)
+  : buffer(b) {}
 
 std::string_view ErrorHandler::getTemplate(CE ce) {
   switch (ce) {
@@ -14,10 +15,6 @@ std::string_view ErrorHandler::getTemplate(CE ce) {
 
     default: { return "unkown error"; }
   }
-
-}
-
-void ErrorHandler::printSourceLine(Pos pos) {
 
 }
 
@@ -33,8 +30,7 @@ void ErrorHandler::show() {
     std::cout << COLOR_RESET << " ";
 
     std::cout << e.msg << '\n';
-
-    printSourceLine(e.pos);
+    std::cout << e.pos.line << " | " << buffer->getLine(e.pos.line) << '\n';
 
   }
 

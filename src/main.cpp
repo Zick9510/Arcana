@@ -108,7 +108,7 @@ int main(int argc, const char *argv[]) { //... I am still translating the code t
   auto fin = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double, std::milli> tiempo = fin - inicio;
 
-  std::cout << "Time: " << tiempo.count() << " ms.\n";
+  std::cout << '\n' << "Time: " << tiempo.count() << " ms.\n";
 
   if (resultado) {
     return 0;

@@ -1457,6 +1457,34 @@ struct CompilerConfig {
 
 };
 
+struct SourceBuffer {
+  std::string content;
+  std::vector<size_t> line_offsets;
+
+  SourceBuffer(std::string&& source) : content(std::move(source)) {
+    line_offsets.reserve(128);
+    line_offsets.push_back(0);
+  }
+
+  void setOffset(size_t offset) {
+    line_offsets.push_back(offset);
+  }
+
+  std::string_view getLine(size_t offset) const {
+    if (offset == 0 || offset > line_offsets.size()) { return ""; }
+
+    size_t start = line_offsets[offset - 1];
+    size_t end   = (offset < line_offsets.size())
+                 ? line_offsets[offset] - 1
+                 : content.size();
+
+    if (end > start && content[end - 1] == '\r') { end--; }
+
+    return std::string_view(content.data() + start, end - start);
+  }
+
+};
+
 /* --- Symbol Table Manager --- */
 
 struct FirmaMetodo {
