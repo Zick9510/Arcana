@@ -9,10 +9,10 @@ ErrorHandler::ErrorHandler() {}
 
 std::string_view ErrorHandler::getTemplate(CE ce) {
   switch (ce) {
-    case CE::E_EXPECTED_TOKEN: { return "Se esperaba '{}' pero se encontró '{}'"; }
-    case CE::E_EXPECTED_EXPRESSION: { return "Se esperaba una expresión antes de '{}'"; }
+    case CE::E_EXPECTED_TOKEN: { return "expected '{}' but '{}' token was found"; }
+    case CE::E_EXPECTED_EXPRESSION: { return "expected expression but '{}' token was found"; }
 
-    default: { return "Error desconocido"; }
+    default: { return "unkown error"; }
   }
 
 }
@@ -24,10 +24,10 @@ void ErrorHandler::printSourceLine(Pos pos) {
 void ErrorHandler::show() {
   for (const auto& e : errores) {
     switch (e.kind) {
-      case EK::ERROR  : { std::cout << COLOR_RED    << "[Error]"  ; break; }
-      case EK::WARNING: { std::cout << COLOR_YELLOW << "[Warning]"; break; }
-      case EK::INFO   : { std::cout << COLOR_BLUE   << "[Info]"   ; break; }
-      defualt: { break; }
+      case EK::ERROR  : { std::cout << COLOR_RED    << "[error]"  ; break; }
+      case EK::WARNING: { std::cout << COLOR_YELLOW << "[warning]"; break; }
+      case EK::INFO   : { std::cout << COLOR_BLUE   << "[info]"   ; break; }
+      default: { break; }
     }
 
     std::cout << COLOR_RESET << " ";
