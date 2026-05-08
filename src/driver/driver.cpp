@@ -33,9 +33,7 @@ bool Driver::compile(const CompilerConfig& config) {
   //... Debug
   std::cout << "\n--- TOKENS --- \n\n";
   for (const auto& t : tokens) {
-    std::cout << "< Token: '" << t.lexema << "' | "
-              << "L: " << t.pos.line
-              << " >\n";
+    std::cout << "< Token: '" << t.lexema << "' >\n";
   }
 
   // 4. Syntactic Analysis (Tokens -> AST)

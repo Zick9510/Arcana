@@ -1457,6 +1457,14 @@ struct CompilerConfig {
 
 };
 
+
+/* --- Buffer --- */
+
+struct ResolvedPos {
+  size_t line;
+  size_t col ;
+};
+
 struct SourceBuffer {
   std::string content;
   std::vector<size_t> line_offsets;
@@ -1470,12 +1478,22 @@ struct SourceBuffer {
     line_offsets.push_back(offset);
   }
 
-  std::string_view getLine(size_t offset) const {
-    if (offset == 0 || offset > line_offsets.size()) { return ""; }
+  ResolvedPos resolvePos(size_t cursor) const {
+    auto it = std::upper_bound(line_offsets.begin(), line_offsets.end(), cursor);
 
-    size_t start = line_offsets[offset - 1];
-    size_t end   = (offset < line_offsets.size())
-                 ? line_offsets[offset] - 1
+    size_t line_idx = std::distance(line_offsets.begin(), it) - 1;
+    size_t line_num = line_idx + 1;
+    size_t col_num  = cursor - line_offsets[line_idx] + 1;
+
+    return { line_num, col_num };
+  }
+
+  std::string_view getLine(size_t lineNum) const {
+    if (lineNum == 0 || lineNum > line_offsets.size()) { return ""; }
+
+    size_t start = line_offsets[lineNum - 1];
+    size_t end   = (lineNum < line_offsets.size())
+                 ? line_offsets[lineNum] - 1
                  : content.size();
 
     if (end > start && content[end - 1] == '\r') { end--; }
@@ -1561,7 +1579,7 @@ public:
 
 /* --- Extra --- */
 // A power of 2 is just 10..00
-// A (power of 2) - 1 i just 01..11
+// A (power of 2) - 1 is just 01..11
 // This & that == 0
 inline bool isPowerOf2(int num) { return (num > 0) && ((num & (num - 1)) == 0); }
 

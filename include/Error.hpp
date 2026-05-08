@@ -7,8 +7,7 @@
 struct SourceBuffer;
 
 struct Pos {
-  size_t line;
-  size_t col;
+  size_t cur;
   size_t len;
 };
 

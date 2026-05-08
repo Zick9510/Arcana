@@ -1,7 +1,7 @@
 func main() -> int {
 
   if () {
-    return 0;
+    return 0
   }
 
   return 1;

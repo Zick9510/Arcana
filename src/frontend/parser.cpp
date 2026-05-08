@@ -38,10 +38,7 @@ Token Parser::coincide(std::initializer_list<Tt> tipos) {
     std::cerr << nombreTipo(tipo) << ' ';
   }
 
-  std::cerr << "pero se encontró "   << nombreTipo(peek().tipo)  << " ('"
-            << peek().lexema         << "') en linea "                 << peek().pos.line << '\n';
-
-  std::cerr << '\n';
+  std::cerr << "pero se encontró "   << nombreTipo(peek().tipo)  << " (" << peek().lexema << ")\n";
   exit(1);
 
 }
@@ -72,7 +69,7 @@ Token Parser::check(Tt tipoEsperado, Pm parseMode) {
   //... We have to report this error and call the not implemented yet error recovery function
   std::cerr << "Error: Se esperaba "  << nombreTipo(tipoEsperado)
             << " pero se encontró "   << nombreTipo(peek().tipo)  << " ('"
-            << peek().lexema          << "') en linea "                 << peek().pos.line << '\n';
+            << peek().lexema          << "')\n";
 
   std::cout << "Backtrace:\n";
   std::cout << std::stacktrace::current() << '\n';
@@ -504,7 +501,7 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
 
     default: {
         std::cerr << "[469, parser.cpp]\n";
-        std::cerr << "Línea " << t.pos.line << ": No se esperaba el prefijo '" << t.lexema << "'\n";
+        std::cerr << "No se esperaba el prefijo '" << t.lexema << "'\n";
         exit(1);
     }
   }
