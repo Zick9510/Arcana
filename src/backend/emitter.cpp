@@ -3,8 +3,65 @@
 #include "Common.hpp"
 #include "Emitter.hpp"
 
+
+/* --- Trait Emitter Handler --- */
+TraitEmitter::TraitEmitter(Emitter& e)
+  : emitter(e) {}
+
+void TraitEmitter::despacharTrait(Bloque* nodo, size_t idx) {
+  if (idx >= nodo->traits.size()) {
+
+    for (const auto& inst : nodo->instrucciones) {
+      inst->accept(&emitter);
+    }
+
+    return ;
+
+  }
+
+  auto trait = nodo->traits[idx];
+
+  switch (trait) {
+    case BT::LOOP: {
+      handleLoop(nodo, idx);
+      break;
+    }
+    default: {
+      despacharTrait(nodo, idx + 1);
+      break;
+    }
+  }
+}
+
+void TraitEmitter::handleLoop(Bloque* nodo, size_t idx) {
+  llvm::Function* func = emitter.llvm_builder->GetInsertBlock()->getParent();
+
+  llvm::BasicBlock* redo_bb = llvm::BasicBlock::Create(emitter.llvm_ctx, "trait.loop.redo", func);
+  llvm::BasicBlock* end_bb  = llvm::BasicBlock::Create(emitter.llvm_ctx, "trait.loop.end");
+
+  emitter.llvm_builder->CreateBr(redo_bb);
+  emitter.llvm_builder->SetInsertPoint(redo_bb);
+
+  emitter.pila_breaks.push_back(end_bb );
+  emitter.pila_redos .push_back(redo_bb);
+
+  despacharTrait(nodo, idx + 1);
+
+  if (!emitter.llvm_builder->GetInsertBlock()->getTerminator()) {
+    emitter.llvm_builder->CreateBr(redo_bb);
+  }
+
+  emitter.pila_redos .pop_back();
+  emitter.pila_breaks.pop_back();
+
+  func->insert(func->end(), end_bb);
+  emitter.llvm_builder->SetInsertPoint(end_bb);
+
+}
+
+/* --- Emitter --- */
 Emitter::Emitter(ContextoArcanos& ca, GestorTablas& t)
-  : contextoArcanos(ca), tablas(t) {
+  : contextoArcanos(ca), tablas(t), traits(*this) {
   llvm_modulo  = std::make_unique<llvm::Module>("ArcanaModulo", llvm_ctx);
   llvm_builder = std::make_unique<llvm::IRBuilder<>>(llvm_ctx);
 
@@ -421,10 +478,7 @@ void Emitter::visitar(Bloque* nodo) {
 
   tablas.entrarScope();
 
-  for (const auto& i : nodo->instrucciones) {
-    i->accept(this);
-
-  }
+  traits.despacharTrait(nodo, 0);
 
   tablas.salirScope();
 
@@ -663,6 +717,7 @@ void Emitter::visitar(SentenciaFuncDecl* nodo) {
 
   if (!nodo->cuerpo_func.empty()) {
     for (const auto& inst : nodo->cuerpo_func) {
+      if (llvm_builder->GetInsertBlock()->getTerminator()) { break; }
       inst->accept(this);
     }
   }

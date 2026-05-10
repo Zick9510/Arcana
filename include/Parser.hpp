@@ -40,8 +40,11 @@ public:
   std::unique_ptr<Sentencia> parsearEscritura();
   std::unique_ptr<Sentencia> parsearDeclaracionVar();
   std::unique_ptr<Sentencia> parsearSentenciaExpresion();
+
   std::unique_ptr<Sentencia> parsearBloqSent();
+  std::vector<BT>            parsearTraits();
   std::unique_ptr<Sentencia> parsearBloque();
+
   std::unique_ptr<Sentencia> parsearSentencia();
   std::unique_ptr<Sentencia> parsearSi();
   std::unique_ptr<Sentencia> parsearSino();

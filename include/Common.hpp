@@ -98,7 +98,7 @@ enum class Tt {
 
   INCREMENTAR, DECREMENTAR,
 
-  ASTERISCO, AMPERSAND, ARROBA,
+  ASTERISCO, AMPERSAND,
 
   // Punteros y Direcciones
   PUNTERO, DIRECCION, SWAP,
@@ -129,7 +129,9 @@ enum class Tt {
   ASIG_BLOQUE,
 
   // Símbolos comunes
-  PUNTO, COMA, PUNTO_COMA, DOS_PUNTOS, PREGUNTA, DOS_PREGUNTAS,
+  PUNTO, COMA, PUNTO_COMA, DOS_PUNTOS,
+  PREGUNTA, DOS_PREGUNTAS,
+  ARROBA, TATETI,
 
   // Delimitadores
   LLAVE_L, LLAVE_R,
@@ -316,6 +318,36 @@ inline TipoOperador convertirEnTipoOperador(Tt op) { //... Agregar los demás ca
 
   }
 }
+
+// --- Traits --- //
+enum class BlockTrait {
+  LOOP,
+  UNKNOWN
+};
+
+using BT = BlockTrait;
+
+static const std::unordered_map<std::string_view, BT> string_traits = {
+  {"loop", BT::LOOP},
+};
+
+inline BT stringToTrait(std::string_view name) {
+  auto it = string_traits.find(name);
+  if (it != string_traits.end()) {
+    return it->second;
+  }
+
+  return BT::UNKNOWN;
+
+}
+
+inline std::string_view traitToString(BT trait) {
+  switch (trait) {
+    case BT::LOOP: { return "loop"   ; }
+    default:       { return "unknown"; }
+  }
+}
+
 
 /* --- Lexer --- */
 //struct Range {
@@ -715,6 +747,7 @@ public:
 class Bloque : public NodoBase<Sentencia, Bloque> {
 public:
   std::vector<std::unique_ptr<Sentencia>> instrucciones;
+  std::vector<BT> traits;
 
   Bloque() = default;
 
@@ -731,11 +764,22 @@ public:
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
-    std::cout << sangria << "{ (Bloque)\n";
+    std::cout << sangria << "Bloque\n";
+
+    if (!traits.empty()) {
+      std::cout << sangria << "| +- Traits:\n";
+
+      for (auto t : traits) {
+        std::cout << sangria << "| | +- " << traitToString(t) << '\n';
+      }
+    }
+
+    std::cout << sangria << "| +- Instructions:\n";
+    std::cout << sangria << "| | {\n";
     for (const auto& sent : instrucciones) {
       sent->imprimir(nivel + 1);
     }
-    std::cout << "| " << sangria << "}\n";
+    std::cout << sangria << "| | }\n";
   }
 
 };

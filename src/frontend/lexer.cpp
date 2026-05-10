@@ -529,6 +529,12 @@ std::vector<Token> Lexer::tokenize() {
         tokens.push_back( {Tt::ARROBA, "@", {cursor, 1} } );
         break;
       }
+
+      case '#': {
+        tokens.push_back( {Tt::TATETI, "#", {cursor, 1} } );
+        break;
+      }
+
     }
   }
 

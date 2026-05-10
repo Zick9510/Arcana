@@ -4,6 +4,21 @@
 
 #include "Common.hpp"
 
+class Emitter;
+
+class TraitEmitter {
+private:
+  Emitter& emitter;
+
+public:
+  TraitEmitter(Emitter& e);
+
+  void despacharTrait(Bloque* nodo, size_t idx);
+
+  void handleLoop(Bloque* nodo, size_t idx);
+
+};
+
 class Emitter : public ASTVisitor {
 private:
   llvm::LLVMContext                                      llvm_ctx            ;
@@ -14,9 +29,12 @@ private:
 
   std::vector<llvm::BasicBlock*> pila_breaks   ;
   std::vector<llvm::BasicBlock*> pila_continues;
+  std::vector<llvm::BasicBlock*> pila_redos    ;
 
   ContextoArcanos& contextoArcanos;
   GestorTablas&    tablas         ;
+  TraitEmitter     traits         ;
+  friend class TraitEmitter;
 
   std::map<std::string, Sentencia*> bloques_arcano_activos;
 

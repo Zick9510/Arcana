@@ -4,6 +4,17 @@
 
 #include "Common.hpp"
 
+class Checker;
+
+class TraitChecker {
+private:
+  Checker& checker;
+
+public:
+  TraitChecker(Checker& c);
+
+};
+
 class Checker : public ASTVisitor {
 private:
   GestorTablas& tablas;
@@ -12,6 +23,8 @@ private:
   TypeFactory& typeFactory;
   ContextoArcanos& contextoArcanos;
   std::map<std::string, Sentencia*> bloques_arcano_activos;
+
+  TraitChecker traits;
 
 public:
   Checker(GestorTablas& t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e, TypeFactory& tf, ContextoArcanos& ca);

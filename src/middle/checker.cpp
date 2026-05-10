@@ -4,9 +4,13 @@
 
 #include "Common.hpp"
 
+/* --- Trait Checker Handler --- */
+TraitChecker::TraitChecker(Checker& c)
+  : checker(c) {}
+
 /* --- Checker --- */
 Checker::Checker(GestorTablas& t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e, TypeFactory& tf, ContextoArcanos& ca)
-  : tablas(t), ast(a), errHandler(e), typeFactory(tf), contextoArcanos(ca) {}
+  : tablas(t), ast(a), errHandler(e), typeFactory(tf), contextoArcanos(ca), traits(*this) {}
 
 
 // --- Casteos --- //
@@ -38,7 +42,7 @@ std::unique_ptr<Expresion> Checker::forzarTipo(std::unique_ptr<Expresion> hijo, 
 
 }
 
-// --- Verificar Expresiones ---
+// --- Verificar Expresiones --- //
 std::shared_ptr<ArcanaType> Checker::verificarSuma(const Dt& izq, const Dt& der) {
 
   if (izq.esPrimitivo() && der.esPrimitivo()) {

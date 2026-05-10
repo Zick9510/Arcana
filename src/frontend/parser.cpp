@@ -425,7 +425,9 @@ std::pair<std::string, std::string> Parser::partirLexemaNum(std::string lexema) 
 std::unique_ptr<Expresion> Parser::parsearPrefijo() {
   Token t = peek();
 
-  std::cout << "[409, parser.cpp] t.lexema: " << t.lexema << '\n';
+  std::cout << "[428, parser.cpp]\n";
+  std::cout << t.lexema << '\n';
+  std::cout << nombreTipo(t.tipo) << '\n';
 
   // Error cases
   switch (t.tipo) { //...
@@ -500,7 +502,7 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
     case Tt::AMPERSAND  : {op = TipoOperador::PTR_REF   ; break; }
 
     default: {
-        std::cerr << "[469, parser.cpp]\n";
+        std::cerr << "[503, parser.cpp]\n";
         std::cerr << "No se esperaba el prefijo '" << t.lexema << "'\n";
         exit(1);
     }
@@ -571,7 +573,23 @@ std::unique_ptr<Sentencia> Parser::parsearBloqSent() {
 
 }
 
+std::vector<BT> Parser::parsearTraits() {
+  std::vector<BT> traits;
+
+  while (peek().tipo == Tt::TATETI) {
+    get();
+    traits.push_back(stringToTrait(get().lexema));
+
+  }
+
+  return traits;
+
+}
+
 std::unique_ptr<Sentencia> Parser::parsearBloque() {
+
+  std::vector<BT> traits = parsearTraits();
+
   check(Tt::LLAVE_L);
 
   auto bloque = std::make_unique<Bloque>();
@@ -580,6 +598,8 @@ std::unique_ptr<Sentencia> Parser::parsearBloque() {
     bloque->agregarSentencia(parsearSentencia());
 
   }
+
+  bloque->traits = traits;
 
   check(Tt::LLAVE_R);
   return bloque;
@@ -595,6 +615,7 @@ std::unique_ptr<Sentencia> Parser::parsearSentencia() {
   if (actual == Tt::BREAK    ) { return parsearBreak()    ; }
   if (actual == Tt::CONTINUE ) { return parsearContinue() ; }
   if (actual == Tt::LLAVE_L  ) { return parsearBloque()   ; }
+  if (actual == Tt::TATETI   ) { return parsearBloque()   ; }
   if (actual == Tt::FUNC     ) { return parsearFuncDecl() ; }
   if (actual == Tt::PURE     ) { return parsearFuncDecl() ; }
   if (actual == Tt::RETURN   ) { return parsearReturn()   ; }
@@ -692,9 +713,9 @@ std::unique_ptr<Sentencia> Parser::parsearContinue() {
 std::unique_ptr<Sentencia> Parser::parsearReturn() {
   check(Tt::RETURN);
   std::unique_ptr<Expresion> ret_value = parsearExpresion(Pr::MINIMA);
-  std::cout << "[682, parser.cpp]\n";
+  std::cout << "[695, parser.cpp]\n";
   check(Tt::PUNTO_COMA);
-  std::cout << "[684, parser.cpp]\n";
+  std::cout << "[697, parser.cpp]\n";
 
   return std::make_unique<SentenciaReturn>(ret_value->tipo_resuelto, std::move(ret_value));
 
