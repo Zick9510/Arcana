@@ -10,7 +10,7 @@ In Arcana, syntax is not a law-it is a malleable tool.
 
 ---
 
-## Project Status: Early Alpha (Experimental) [v0.0.3]
+## Project Status: Early Alpha (Experimental) [v0.0.4]
 
 Arcana is currently in a heavy development phase. It is a proof-of-concept for language-oriented programming and is **not suitable for production use yet**.
 
@@ -20,6 +20,7 @@ Arcana is currently in a heavy development phase. It is a proof-of-concept for l
 Most languages force you to wait for a committee to add a new feature. Arcana gives you the **Arcane** system:
 a way to expand the compiler's Abstract Syntax Tree (AST) directly from your source code.
 
+Arcana inverts this relationship. Through the **Arcane** and **Trait** systems, the language becomes a...
 
 ### Side-Effect Clarity
 Strict visual separation between logic and data:
@@ -31,74 +32,13 @@ Strict visual separation between logic and data:
 
 ---
 
-### The Arcane System
+### The Arcane System:
 
 The heart of Arcana is the ability to define your own language constructs.
 
+#### Example: Custom Loop
 
-#### Example 1: Custom Keyword
-
-Create a ```twice``` keyword that executes a block twice and an evaluated ```twice_if``` that checks a condition first.
-
-
-```arcn
-arcane Twice_TwiceIf (twice: key, twice_if: key, expr1: expr, block1: code) {
-
-  rules [
-    @simple: twice    [       block1 ];
-    @eval  : twice_if [ expr1 block1 ];
-
-  ];
-
-  @simple {
-
-    twice <=> {
-
-      block1;
-      block1;
-
-    };
-
-  }
-
-  @eval {
-
-    twice_if <=> {
-
-      if (expr1) {
-        block1;
-        block1;
-
-      }
-
-    };
-
-  }
-
-}
-
-func main() -> int {
-
-  int x = 1;
-  int y = 2;
- 
-  twice {
-    x = x + 3;
-  }
- 
-  twice_if (1) {
-    y = y + 3;
-  }
- 
-  return x + y;
-
-}
-```
-
-#### Example 2: Custom Loop
-
-You aren't restricted to ```while``` or ```for```. You can define iteration logic that fits your specific data structures.
-
+Define a loop that executes a block a specific number of times without the boilerplate of a traditional ```for``` loop.
 
 ```arcn
 arcane CustomLoop (loop: key, block: code) {
@@ -133,6 +73,53 @@ func main() -> int {
   }
 
   return x;
+
+}
+```
+
+### The Trait System
+
+Traits represent the behavioral properties of a code block. You can define how a block executes and interacts with the machine's state. While Traits are
+essential for defining new constructs within the Arcane system, they are universal primitives that can be applied to **any** block of code to enforce specific
+behaviors.
+
+#### Example: Do While
+
+The following example demonstrates how a post-condition behavior (a ```do-while``` pattern) is implemented by assigning the ```#loop``` trait to the code
+block.
+
+```arcn
+arcane DoWhile (do: key, body: code, while: key, cond: expr) {
+  rules [
+    @standard  : do [ body while cond ];
+
+  ];
+
+  @standard {
+
+    do <=> #loop {
+      body;
+
+      if (!cond) { break; }
+    };
+
+  }
+
+}
+
+func main() -> int {
+
+  int i = 4;
+  int j = 1;
+
+  do {
+    i = i - 1;
+    j = j * 2;
+
+  } while (i);
+
+
+  return j;
 
 }
 ```

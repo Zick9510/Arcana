@@ -755,6 +755,7 @@ public:
     for (const auto& inst : otra.instrucciones) {
       instrucciones.push_back(inst->clonar());
     }
+    traits = otra.traits;
   }
 
   void agregarSentencia(std::unique_ptr<Sentencia> sent) {
@@ -777,7 +778,7 @@ public:
     std::cout << sangria << "| +- Instructions:\n";
     std::cout << sangria << "| | {\n";
     for (const auto& sent : instrucciones) {
-      sent->imprimir(nivel + 1);
+      sent->imprimir(nivel + 2);
     }
     std::cout << sangria << "| | }\n";
   }

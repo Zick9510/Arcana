@@ -1,43 +1,33 @@
-arcane DoWhile (do: key, body: code, while: key, as: key, cond: expr) {
+arcane DoWhile (do: key, body: code, while: key, cond: expr) {
   rules [
     @standard  : do [ body while cond ];
-    @double_do : do [ body as    cond ];
 
   ];
 
   @standard {
 
-    do <=> {
+    do <=> #loop {
       body;
-      while (cond) { body; }
 
+      if (!cond) { break; }
     };
 
   }
 
-  @double_do {
-
-    do <=> {
-      body;
-      body;
-      while (cond) {
-        body;
-      }
-    };
-
-  }
 }
 
 func main() -> int {
 
-  int i = 10;
+  int i = 4;
+  int j = 1;
 
   do {
     i = i - 1;
+    j = j * 2;
 
   } while (i);
 
 
-  return i;
+  return j;
 
 }
