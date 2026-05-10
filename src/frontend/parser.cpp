@@ -43,13 +43,30 @@ Token Parser::coincide(std::initializer_list<Tt> tipos) {
 
 }
 
+bool Parser::isStatement(Token t) {
+  if (is_keyword(t.tipo)) { return true; }
+  if (t.tipo == Tt::IDENTIFICADOR &&
+      contextoArcanos.esKeywordArcano(t.lexema)) {
+    return true;
+  }
+  return false;
+
+}
+
 bool Parser::sync(Tt target) {
-  while (!is_safe(peek().tipo) && peek().tipo != target) {
+
+  while (peek().tipo != Tt::FIN_ARCHIVO) {
+    Token t = peek();
+
+    if (t.tipo == target)         { return true ; }
+    if (isStructural(t.tipo) ||
+        isStatement (t        ) ) { return false; }
+
     get();
 
   }
 
-  return (peek().tipo == target);
+  return false;
 
 }
 
@@ -73,6 +90,9 @@ Token Parser::check(Tt tipoEsperado, Pm parseMode) {
 
   std::cout << "Backtrace:\n";
   std::cout << std::stacktrace::current() << '\n';
+
+  std::cout << "[94, parser.cpp]\n";
+  std::cout << peek().lexema << ' ' << peek().pos.cur << ", " << peek().pos.len << '\n';
 
   errHandler.report(CE::E_EXPECTED_TOKEN, peek().pos, nombreTipo(tipoEsperado), nombreTipo(peek().tipo));
 

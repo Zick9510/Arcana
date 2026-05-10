@@ -26,6 +26,8 @@ private:
 public:
   Parser(std::vector<Token> t, ErrorHandler& e, ContextoArcanos& ca, TypeFactory& tf);
 
+  bool isStatement(Token t);
+
   InfoVariable parsearTipo();
 
   std::unique_ptr<Expresion> parsearRangoOArray();

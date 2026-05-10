@@ -50,7 +50,7 @@ void ErrorHandler::show() {
     std::string padding(line_num.length(), ' ');
 
     std::cout << COLOR_MAGENTA << line_num << " | " << COLOR_RESET << source_line << '\n';
-    std::cout << padding << "  " << COLOR_RESET;
+    std::cout << padding << "   " << COLOR_RESET;
 
     for (size_t i = 0; i < res.col - 1 && i < source_line.length(); ++i) {
       if   (source_line[i] == '\t') { std::cout << '\t'; }
@@ -58,11 +58,12 @@ void ErrorHandler::show() {
 
     }
 
+    std::cout << color;
     if (e.pos.len > 1) {
-      for (size_t i = 0; i < e.pos.len;   i++) { std::cout << "~"; }
+      for (size_t i = 0; i < e.pos.len - 1;   i++) { std::cout << "~"; }
     }
 
-    std::cout << COLOR_RED << "^" << COLOR_RESET << '\n';
+    std::cout << "^" << COLOR_RESET << '\n';
 
   }
 

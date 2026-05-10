@@ -150,7 +150,7 @@ enum class Tt {
 
 };
 
-inline bool is_safe(Tt t) {
+inline bool isStructural(Tt t) {
   switch (t) {
     case Tt::FIN_ARCHIVO:
 
