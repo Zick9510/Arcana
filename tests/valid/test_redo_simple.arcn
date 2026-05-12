@@ -1,0 +1,21 @@
+func main() -> int {
+
+  int a = 3;
+  int b = 1;
+
+  #loop {
+
+    if (a) {
+      a = a - 1;
+      redo;
+    }
+
+    b = b * 2;
+
+    break;
+
+  }
+
+  return b;
+
+}

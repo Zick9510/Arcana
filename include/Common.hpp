@@ -91,7 +91,7 @@ enum class Tt {
   // Loops
   WHILE, FOR, FOREACH,
 
-  BREAK, CONTINUE, PASS,
+  BREAK, CONTINUE, REDO, PASS,
 
   // Operadores
   MAS, MENOS, DIV, POTENCIA, RAIZ, MODULO, // La multiplicación es ASTERISCO
@@ -428,6 +428,7 @@ inline std::map<std::string, Tt> keywords = {
   {"break"   , Tt::BREAK   },
   {"continue", Tt::CONTINUE},
   {"pass"    , Tt::PASS    },
+  {"redo"    , Tt::REDO    },
 
   // Functions
   {"func", Tt::FUNC},
@@ -498,6 +499,7 @@ class SentenciaMientras;
 
 class SentenciaBreak;
 class SentenciaContinue;
+class SentenciaRedo;
 
 class SentenciaReturn;
 class SentenciaFuncDecl;
@@ -544,6 +546,7 @@ public:
 
   virtual void visitar(SentenciaBreak   * nodo) = 0;
   virtual void visitar(SentenciaContinue* nodo) = 0;
+  virtual void visitar(SentenciaRedo    * nodo) = 0;
 
   virtual void visitar(SentenciaReturn  * nodo) = 0;
   virtual void visitar(SentenciaFuncDecl* nodo) = 0;
@@ -1269,9 +1272,20 @@ public:
 
 };
 
+class SentenciaRedo : public NodoBase<Sentencia, SentenciaRedo> {
+public:
+
+  void imprimir(int nivel = 0) const override {
+    std::string sangria = "";
+    for (int i = 0; i < nivel; ++i) { sangria += "| "; }
+    std::cout << sangria << "Redo\n";
+  }
+
+};
+
 class SentenciaReturn : public NodoBase<Sentencia, SentenciaReturn> {
 public:
-  Dt ret_type;
+  Dt ret_type; //... This is redundent
   std::unique_ptr<Expresion> ret_value;
 
   SentenciaReturn(Dt r, std::unique_ptr<Expresion> v)

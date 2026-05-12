@@ -437,6 +437,10 @@ public:
 
   }
 
+  void visitar(SentenciaRedo* nodo) override { //...
+
+  }
+
   void visitar(SentenciaReturn* nodo) override { //...
     if (!nodo->ret_value) { return; }
 

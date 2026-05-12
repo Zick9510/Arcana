@@ -643,7 +643,7 @@ void Emitter::visitar(SentenciaMientras* nodo) {
 }
 
 void Emitter::visitar(SentenciaBreak* nodo) {
-  if (pila_breaks.empty()) { //...
+  if (pila_breaks.empty()) { //... This should not be here
     std::cerr << "Error: 'break' fuera de un bucle.\n";
     return ;
   }
@@ -661,6 +661,17 @@ void Emitter::visitar(SentenciaContinue* nodo) {
 
   llvm::BasicBlock* bloque_condicion = pila_continues.back();
   llvm_builder->CreateBr(bloque_condicion);
+
+}
+
+void Emitter::visitar(SentenciaRedo* nodo) {
+  if (pila_redos.empty()) { //...
+    std::cerr << "Error: 'redo' fuera de un bucle.\n";
+    return ;
+  }
+
+  llvm::BasicBlock* bloque_salida = pila_redos.back();
+  llvm_builder->CreateBr(bloque_salida);
 
 }
 

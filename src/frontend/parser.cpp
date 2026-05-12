@@ -445,7 +445,7 @@ std::pair<std::string, std::string> Parser::partirLexemaNum(std::string lexema) 
 std::unique_ptr<Expresion> Parser::parsearPrefijo() {
   Token t = peek();
 
-  std::cout << "[428, parser.cpp]\n";
+  std::cout << "[448, parser.cpp]\n";
   std::cout << t.lexema << '\n';
   std::cout << nombreTipo(t.tipo) << '\n';
 
@@ -556,7 +556,9 @@ std::unique_ptr<Sentencia> Parser::parsearDeclaracionVar() {
 }
 
 std::unique_ptr<Sentencia> Parser::parsearSentenciaExpresion() {
+  std::cout << "[559, parser.cpp]\n";
   std::unique_ptr<Expresion> izquierda = parsearExpresion(Pr::MINIMA);
+  std::cout << "[561, parser.cpp]\n";
 
   if (peek().tipo == Tt::IGUAL_ASIG) { // ... = ...;
     get();
@@ -634,6 +636,7 @@ std::unique_ptr<Sentencia> Parser::parsearSentencia() {
   if (actual == Tt::WHILE    ) { return parsearMientras() ; }
   if (actual == Tt::BREAK    ) { return parsearBreak()    ; }
   if (actual == Tt::CONTINUE ) { return parsearContinue() ; }
+  if (actual == Tt::REDO     ) { return parsearRedo()     ; }
   if (actual == Tt::LLAVE_L  ) { return parsearBloque()   ; }
   if (actual == Tt::TATETI   ) { return parsearBloque()   ; }
   if (actual == Tt::FUNC     ) { return parsearFuncDecl() ; }
@@ -730,12 +733,17 @@ std::unique_ptr<Sentencia> Parser::parsearContinue() {
 
 }
 
+std::unique_ptr<Sentencia> Parser::parsearRedo() {
+  check(Tt::REDO);
+  check(Tt::PUNTO_COMA);
+  return std::make_unique<SentenciaRedo>();
+
+}
+
 std::unique_ptr<Sentencia> Parser::parsearReturn() {
   check(Tt::RETURN);
   std::unique_ptr<Expresion> ret_value = parsearExpresion(Pr::MINIMA);
-  std::cout << "[695, parser.cpp]\n";
   check(Tt::PUNTO_COMA);
-  std::cout << "[697, parser.cpp]\n";
 
   return std::make_unique<SentenciaReturn>(ret_value->tipo_resuelto, std::move(ret_value));
 

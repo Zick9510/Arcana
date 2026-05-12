@@ -53,6 +53,7 @@ public:
   std::unique_ptr<Sentencia> parsearMientras();
   std::unique_ptr<Sentencia> parsearBreak();
   std::unique_ptr<Sentencia> parsearContinue();
+  std::unique_ptr<Sentencia> parsearRedo();
 
   std::unique_ptr<Sentencia> parsearReturn();
   std::vector<std::pair<std::string, InfoVariable>> parsearFuncArgs(Tt end = Tt::PAREN_R);
