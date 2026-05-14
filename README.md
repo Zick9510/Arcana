@@ -32,7 +32,7 @@ Strict visual separation between logic and data:
 
 ---
 
-### The Arcane System:
+### The Arcane System
 
 The heart of Arcana is the ability to define your own language constructs.
 

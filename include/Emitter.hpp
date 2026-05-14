@@ -42,8 +42,10 @@ public:
 
   Emitter(ContextoArcanos& ca, GestorTablas& t);
 
+  llvm::Type*              obtenerTipoLLVM    (std::shared_ptr<ArcanaType> tipo);
+  llvm::CmpInst::Predicate obtenerPredicadoCmp(TipoOperador op, bool esFloat, bool esSigned);
+
   void generarArchivoIR(const std::filesystem::path& nombreArchivo);
-  llvm::Type* obtenerTipoLLVM(std::shared_ptr<ArcanaType> tipo);
 
   void visitar(ErrorNode* nodo) override;
 

@@ -85,6 +85,8 @@ enum class Tt {
   // Variables y Literales
   IDENTIFICADOR, NUMERO, CHAR, STRING,
 
+  TRUE, FALSE,
+
   // If-else
   IF, ELSE,
 
@@ -259,10 +261,11 @@ enum class TipoOperador {
 
   CMP_IGUAL,
   CMP_DISTINTO,
-  CMP_MENOR,
+
   CMP_MAYOR,
-  CMP_MENOR_IGUAL,
   CMP_MAYOR_IGUAL,
+  CMP_MENOR_IGUAL,
+  CMP_MENOR,
 
   SUMA,
   RESTA,
@@ -305,14 +308,20 @@ inline std::string operadorString(TipoOperador op) { //... Agregar los demás ca
 
 inline TipoOperador convertirEnTipoOperador(Tt op) { //... Agregar los demás casos
   switch (op) {
-    case Tt::MAS      : { return TipoOperador::SUMA     ; }
-    case Tt::MENOS    : { return TipoOperador::RESTA    ; }
-    case Tt::ASTERISCO: { return TipoOperador::MULT     ; }
-    case Tt::DIV      : { return TipoOperador::DIV      ; }
-    case Tt::POTENCIA : { return TipoOperador::POT      ; }
-    case Tt::SWAP     : { return TipoOperador::SWAP     ; }
+    case Tt::MAS      : { return TipoOperador::SUMA ; }
+    case Tt::MENOS    : { return TipoOperador::RESTA; }
+    case Tt::ASTERISCO: { return TipoOperador::MULT ; }
+    case Tt::DIV      : { return TipoOperador::DIV  ; }
+    case Tt::POTENCIA : { return TipoOperador::POT  ; }
+    case Tt::SWAP     : { return TipoOperador::SWAP ; }
 
-    case Tt::MENOR    : { return TipoOperador::CMP_MENOR  ; }
+    case Tt::IGUAL_CMP: { return TipoOperador::CMP_IGUAL   ; }
+    case Tt::DISTINTO : { return TipoOperador::CMP_DISTINTO; }
+
+    case Tt::MAYOR      : { return TipoOperador::CMP_MAYOR      ; }
+    case Tt::MAYOR_IGUAL: { return TipoOperador::CMP_MAYOR_IGUAL; }
+    case Tt::MENOR_IGUAL: { return TipoOperador::CMP_MENOR_IGUAL; }
+    case Tt::MENOR      : { return TipoOperador::CMP_MENOR      ; }
 
     default           : { return TipoOperador::DESCONOCIDO; }
 
@@ -401,6 +410,10 @@ inline std::map<std::string, Tt> keywords = {
   {"magna", Tt::VERY_LONG},
   {"ilustre", Tt::FULL_LONG},
   {"quid", Tt::COMPLEJO},
+
+  // Booleans
+  {"true" , Tt::TRUE},
+  {"false", Tt::FALSE},
 
   // --- Estructuras ---
   // Arcanos
@@ -796,6 +809,10 @@ struct NumberData {
   std::string sufijo;
 };
 
+struct BooleanData {
+  std::string valor ;
+};
+
 struct CharData {
   std::string letra ;
   std::string sufijo;
@@ -805,7 +822,7 @@ struct StringData {
   std::string contenido;
 };
 
-using LiteralData = std::variant<NumberData, CharData, StringData>;
+using LiteralData = std::variant<NumberData, BooleanData, CharData, StringData>;
 
 class ExprLiteral : public NodoBase<Expresion, ExprLiteral> {
 public:

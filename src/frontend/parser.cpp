@@ -249,6 +249,12 @@ InfoVariable Parser::parsearTipo() {
       break;
     }
 
+    case Tt::BOOL_TYPE: {
+      get();
+      tipo_actual = typeFactory.getBoolean();
+      break;
+    }
+
     default: { //...
       std::cout << "[185, parser.cpp] Type not implemented: " << peek().lexema << '\n';
       exit(1);
@@ -475,6 +481,11 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
       return std::make_unique<ExprLiteral>(CharData{&t.lexema[0]});
     }
 
+    case Tt::TRUE :
+    case Tt::FALSE: {
+      return std::make_unique<ExprLiteral>(BooleanData{t.lexema});
+    }
+
     case Tt::IDENTIFICADOR: {
       return std::make_unique<ExprVariable>(t.lexema);
     }
@@ -522,7 +533,7 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
     case Tt::AMPERSAND  : {op = TipoOperador::PTR_REF   ; break; }
 
     default: {
-        std::cerr << "[503, parser.cpp]\n";
+        std::cerr << "[536, parser.cpp]\n";
         std::cerr << "No se esperaba el prefijo '" << t.lexema << "'\n";
         exit(1);
     }
@@ -556,9 +567,9 @@ std::unique_ptr<Sentencia> Parser::parsearDeclaracionVar() {
 }
 
 std::unique_ptr<Sentencia> Parser::parsearSentenciaExpresion() {
-  std::cout << "[559, parser.cpp]\n";
+  std::cout << "[570, parser.cpp]\n";
   std::unique_ptr<Expresion> izquierda = parsearExpresion(Pr::MINIMA);
-  std::cout << "[561, parser.cpp]\n";
+  std::cout << "[572, parser.cpp]\n";
 
   if (peek().tipo == Tt::IGUAL_ASIG) { // ... = ...;
     get();
@@ -890,7 +901,7 @@ std::pair<std::string, ReglaArcano> Parser::parsearReglaArcano() { //...
 }
 
 std::vector<std::pair<std::string, ReglaArcano>> Parser::parsearReglasArcano() {
-  check(Tt::RULES);  // rules
+  check(Tt::RULES);   // rules
   check(Tt::CORCH_L); // [
 
   std::vector<std::pair<std::string, ReglaArcano>> rules;

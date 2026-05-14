@@ -256,9 +256,6 @@ std::vector<Token> Lexer::tokenize() {
 
     // Ignore whitespace
     if (std::isspace(c)) {
-      //if (c == '\n') {
-      //  buffer->setOffset(cursor);
-      //}
       continue;
     }
 

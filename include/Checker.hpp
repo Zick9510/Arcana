@@ -43,7 +43,8 @@ public:
   std::shared_ptr<ArcanaType> verificarSwap    (const Dt& izq, const Dt& der);
   std::shared_ptr<ArcanaType> verificarTernary (const Dt& izq, const Dt& der);
 
-  std::shared_ptr<ArcanaType> verificarCmpMenor(const Dt& izq, const Dt& der);
+  std::shared_ptr<ArcanaType> verificarCmpRelacional(const Dt& izq, const Dt& der);
+  std::shared_ptr<ArcanaType> verificarCmpIgualdad  (const Dt& izq, const Dt& der);
 
   // --- Utilidad ---
   bool esCasteoValido(const Dt& tipo_original, const Dt& tipo_destino);
@@ -118,6 +119,10 @@ public:
         nodo->tipo_resuelto = Dt(res);
       },
 
+      [&](BooleanData& d) {
+        nodo->tipo_resuelto = Dt(typeFactory.getBoolean());
+      },
+
       [&](CharData& d) {
         char suf = ' ';
         int bits = -1;
@@ -164,11 +169,13 @@ public:
     Dt tipo_izq = nodo->izquierda->tipo_resuelto;
     Dt tipo_der = nodo->derecha  ->tipo_resuelto;
 
+    std::shared_ptr<ArcanaType> tipo_c = promoverTipos(tipo_izq.valor, tipo_der.valor);
+
     nodo->tipo_resuelto = verificarOperandos(tipo_izq, tipo_der, nodo->operador);
 
     if (nodo->tipo_resuelto.valor->kind != TypeKind::DESCONOCIDO) {
-      nodo->izquierda = forzarTipo(std::move(nodo->izquierda), nodo->tipo_resuelto);
-      nodo->derecha   = forzarTipo(std::move(nodo->derecha)  , nodo->tipo_resuelto);
+      nodo->izquierda = forzarTipo(std::move(nodo->izquierda), Dt(tipo_c));
+      nodo->derecha   = forzarTipo(std::move(nodo->derecha)  , Dt(tipo_c));
     }
 
   }

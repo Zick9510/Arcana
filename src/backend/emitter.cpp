@@ -110,6 +110,49 @@ llvm::Type* Emitter::obtenerTipoLLVM(std::shared_ptr<ArcanaType> tipo) {
   }
 }
 
+llvm::CmpInst::Predicate Emitter::obtenerPredicadoCmp(TipoOperador op, bool esFloat, bool esSigned) {
+
+  if (esFloat) {
+    switch (op) {
+
+      case TipoOperador::CMP_IGUAL      : { return llvm::FCmpInst::FCMP_OEQ          ; }
+      case TipoOperador::CMP_DISTINTO   : { return llvm::FCmpInst::FCMP_ONE          ; }
+      case TipoOperador::CMP_MAYOR      : { return llvm::ICmpInst::FCMP_OGT          ; }
+      case TipoOperador::CMP_MAYOR_IGUAL: { return llvm::ICmpInst::FCMP_OGE          ; }
+      case TipoOperador::CMP_MENOR_IGUAL: { return llvm::ICmpInst::FCMP_OLE          ; }
+      case TipoOperador::CMP_MENOR      : { return llvm::ICmpInst::FCMP_OLT          ; }
+      default                           : { return llvm::ICmpInst::BAD_FCMP_PREDICATE; }
+
+    }
+
+  }
+
+  switch (op) {
+    case TipoOperador::CMP_IGUAL   : { return llvm::ICmpInst::ICMP_EQ; }
+    case TipoOperador::CMP_DISTINTO: { return llvm::ICmpInst::ICMP_NE; }
+
+    case TipoOperador::CMP_MAYOR: {
+      return esSigned ? llvm::ICmpInst::ICMP_SGT : llvm::ICmpInst::ICMP_UGT;
+    }
+
+    case TipoOperador::CMP_MAYOR_IGUAL: {
+      return esSigned ? llvm::ICmpInst::ICMP_SGE : llvm::ICmpInst::ICMP_UGE;
+    }
+
+    case TipoOperador::CMP_MENOR_IGUAL: {
+      return esSigned ? llvm::ICmpInst::ICMP_SLE : llvm::ICmpInst::ICMP_ULE;
+    }
+
+    case TipoOperador::CMP_MENOR: {
+      return esSigned ? llvm::ICmpInst::ICMP_SLT : llvm::ICmpInst::ICMP_ULT;
+    }
+
+    default: { return llvm::ICmpInst::BAD_ICMP_PREDICATE; }
+
+  }
+
+}
+
 void Emitter::generarArchivoIR(const std::filesystem::path& nombreArchivo) {
   std::error_code ec;
 
@@ -155,6 +198,12 @@ void Emitter::visitar(ExprLiteral* nodo) { //...
       else                  { sem = &llvm::APFloat::IEEEdouble       (); }
 
       llvm_valor = llvm::ConstantFP::get(llvm_ctx, llvm::APFloat(*sem, data.valor));
+      break;
+    }
+
+    case TypeKind::BOOLEAN: {
+      auto& data = std::get<BooleanData>(nodo->datos);
+      llvm_valor = data.valor == "true" ? llvm::ConstantInt::getTrue(llvm_ctx) : llvm::ConstantInt::getFalse(llvm_ctx);
       break;
     }
 
@@ -295,10 +344,15 @@ void Emitter::visitar(ExprBinaria* nodo) {
       break;
     }
 
-    case TipoOperador::CMP_MENOR: { //... Add signed / unsigned cmp support
+    case TipoOperador::CMP_MAYOR:
+    case TipoOperador::CMP_MAYOR_IGUAL:
+    case TipoOperador::CMP_IGUAL:
+    case TipoOperador::CMP_DISTINTO:
+    case TipoOperador::CMP_MENOR_IGUAL:
+    case TipoOperador::CMP_MENOR: {
       std::cout << "[203, emitter.cpp]\n";
-      llvm_valor = es_float ? llvm_builder->CreateFCmpULT(left, right, "")
-                            : llvm_builder->CreateICmpULT(left, right, "");
+      llvm::CmpInst::Predicate pred = obtenerPredicadoCmp(nodo->operador, es_float, nodo->derecha->tipo_resuelto.valor->isSigned());
+      llvm_valor = llvm_builder->CreateCmp(pred, left, right);
       break;
     }
 

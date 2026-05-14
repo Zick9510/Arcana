@@ -167,7 +167,7 @@ public:
 class TypeFactory { //...
 private:
   std::shared_ptr<UnknownType> cacheUnknown;
-  std::shared_ptr<VoidType>    cacheVoid;
+  std::shared_ptr<VoidType   > cacheVoid;
   std::shared_ptr<BooleanType> cacheBoolean;
 
   std::map<std::shared_ptr<ArcanaType>, std::shared_ptr<PointerType>> cachePointer;
@@ -180,18 +180,17 @@ private:
 
 public:
   std::shared_ptr<UnknownType> getUnknown();
-
-  std::shared_ptr<VoidType>    getVoid   ();
+  std::shared_ptr<VoidType   > getVoid   ();
 
   std::shared_ptr<PointerType> getPointer(std::shared_ptr<ArcanaType> base);
 
   std::shared_ptr<BooleanType> getBoolean();
   std::shared_ptr<IntegerType> getInteger(int bits, bool is_unsigned);
-  std::shared_ptr<FloatType>   getFloat  (int bits);
+  std::shared_ptr<FloatType  > getFloat  (int bits);
 
-  std::shared_ptr<CharType>    getChar   (int bits);
+  std::shared_ptr<CharType   > getChar   (int bits);
 
-  std::shared_ptr<MorphType>   getMorph  (std::vector<std::shared_ptr<ArcanaType>> subtipos);
-  std::shared_ptr<ShapeType>   getShape  (std::vector<CampoShape> campos);
+  std::shared_ptr<MorphType  > getMorph  (std::vector<std::shared_ptr<ArcanaType>> subtipos);
+  std::shared_ptr<ShapeType  > getShape  (std::vector<CampoShape> campos);
 
 };

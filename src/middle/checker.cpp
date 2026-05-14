@@ -190,16 +190,50 @@ std::shared_ptr<ArcanaType> Checker::verificarTernary(const Dt& izq, const Dt& d
   return verificarSwap(izq, der);
 }
 
-std::shared_ptr<ArcanaType> Checker::verificarCmpMenor(const Dt& izq, const Dt& der) {
+std::shared_ptr<ArcanaType> Checker::verificarCmpIgualdad(const Dt& izq, const Dt& der) {
 
   if (izq.esPrimitivo() && der.esPrimitivo()) {
     TypeKind pIzq = izq.valor->kind;
     TypeKind pDer = der.valor->kind;
 
-    // Regla 1: Comparación de números
+    // Regla 1: Números
     if (esNum(pIzq) && esNum(pDer)) {
       return typeFactory.getBoolean();
 
+    }
+
+    // Regla 2: Punteros
+    if (pIzq == TypeKind::POINTER && pDer == TypeKind::POINTER) {
+      return typeFactory.getBoolean();
+    }
+
+    // Regla 3: Booleanos
+    if (pIzq == TypeKind::BOOLEAN && pDer == TypeKind::BOOLEAN) {
+      return typeFactory.getBoolean();
+    }
+
+  }
+
+  //... Reportar al errHandler
+  return nullptr;
+
+}
+
+std::shared_ptr<ArcanaType> Checker::verificarCmpRelacional(const Dt& izq, const Dt& der) {
+
+  if (izq.esPrimitivo() && der.esPrimitivo()) {
+    TypeKind pIzq = izq.valor->kind;
+    TypeKind pDer = der.valor->kind;
+
+    // Regla 1: Números
+    if (esNum(pIzq) && esNum(pDer)) {
+      return typeFactory.getBoolean();
+
+    }
+
+    // Regla 2: Punteros
+    if (pIzq == TypeKind::POINTER && pDer == TypeKind::POINTER) {
+      return typeFactory.getBoolean();
     }
 
   }
@@ -254,8 +288,16 @@ Dt Checker::verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador 
 
     // Comparadores
 
-    case TipoOperador::CMP_MENOR: {
-      return verificarCmpMenor(izq, der);
+    case TipoOperador::CMP_IGUAL   :
+    case TipoOperador::CMP_DISTINTO: {
+      return verificarCmpIgualdad(izq, der);
+    }
+
+    case TipoOperador::CMP_MAYOR      :
+    case TipoOperador::CMP_MAYOR_IGUAL:
+    case TipoOperador::CMP_MENOR_IGUAL:
+    case TipoOperador::CMP_MENOR      : {
+      return verificarCmpRelacional(izq, der);
     }
 
     // Extra
@@ -319,11 +361,8 @@ bool Checker::esCasteoValido(const Dt& origen, const Dt& destino) {
 
 void Checker::verificarPrograma() {
 
-  //tablas.entrarScope();
-
   for (auto& nodo : ast) {
     nodo->accept(this);
   }
 
-  //tablas.salirScope();
 }
