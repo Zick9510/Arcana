@@ -59,13 +59,15 @@ public:
   std::vector<std::pair<std::string, InfoVariable>> parsearFuncArgs(Tt end = Tt::PAREN_R);
   std::unique_ptr<Sentencia> parsearFuncDecl();
 
-  std::pair<std::string, ReglaArcano> parsearReglaArcano();
-  std::vector<std::pair<std::string, ReglaArcano>> parsearReglasArcano();
+  std::pair         <std::string,              ReglaArcano > parsearReglaArcano();
+  std::vector       <std::pair  < std::string, ReglaArcano>> parsearReglasArcano();
+  std::unordered_map<std::string, std::vector<EnlaceCadena>> parsearCadenasArcano(const std::vector<std::pair<std::string, ReglaArcano>>& reglasDeclaradas);
   std::vector<ArcaneBranch> parsearCuerpoArcano(
-    const std::vector<std::pair<std::string, ReglaArcano>>& reglas_declaradas
+    const std::vector<std::pair<std::string, ReglaArcano>>& reglasDeclaradas
   );
   std::unique_ptr<Sentencia> parsearArcano();
-  std::unique_ptr<Sentencia> parsearLlamadaArcano();
+  std::unique_ptr<Sentencia> parsearLlamadaArcano(bool checkSc = true);
+  std::unique_ptr<Sentencia> parsearMetaDirectiva();
 
   Pr obtenerPrecedencia(Tt tipo);
 

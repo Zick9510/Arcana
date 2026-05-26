@@ -21,22 +21,22 @@ public:
 
 class Emitter : public ASTVisitor {
 private:
-  llvm::LLVMContext                                      llvm_ctx            ;
-  std ::unique_ptr<llvm::Module>                         llvm_modulo         ;
-  std ::unique_ptr<llvm::IRBuilder<>>                    llvm_builder        ;
-  llvm::Value*                                           llvm_valor = nullptr;
-  //std ::vector<std::map<std::string, llvm::AllocaInst*>> llvm_scopes         ;
+  llvm::LLVMContext                                      llvmCtx            ;
+  std ::unique_ptr<llvm::Module>                         llvmModulo         ;
+  std ::unique_ptr<llvm::IRBuilder<>>                    llvmBuilder        ;
+  llvm::Value*                                           llvmValor = nullptr;
 
-  std::vector<llvm::BasicBlock*> pila_breaks   ;
-  std::vector<llvm::BasicBlock*> pila_continues;
-  std::vector<llvm::BasicBlock*> pila_redos    ;
+  std::vector<llvm::BasicBlock*> pilaBreaks   ;
+  std::vector<llvm::BasicBlock*> pilaContinues;
+  std::vector<llvm::BasicBlock*> pilaRedos    ;
 
   ContextoArcanos& contextoArcanos;
   GestorTablas&    tablas         ;
   TraitEmitter     traits         ;
   friend class TraitEmitter;
 
-  std::map<std::string, Sentencia*> bloques_arcano_activos;
+  std::map<std::string,    Sentencia*> bloquesArcanoActivos;
+  std::vector<SentenciaLlamadaArcano*> stackArcanos        ;
 
 public:
 
@@ -87,6 +87,7 @@ public:
  
   void visitar(SentenciaArcano       * nodo) override;
   void visitar(SentenciaLlamadaArcano* nodo) override;
+  void visitar(SentenciaMetaDirective* nodo) override;
 
 };
 

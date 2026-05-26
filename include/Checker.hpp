@@ -22,7 +22,9 @@ private:
   ErrorHandler& errHandler;
   TypeFactory& typeFactory;
   ContextoArcanos& contextoArcanos;
-  std::map<std::string, Sentencia*> bloques_arcano_activos;
+
+  std::map<std::string, Sentencia*> bloquesArcanoActivos;
+  std::vector<SentenciaLlamadaArcano*> pilaLlamadasArcano;
 
   TraitChecker traits;
 
@@ -157,7 +159,8 @@ public:
 
       },
 
-      [&](StringData& d) {}
+      [&](StringData& d) {},
+      [&](RuleData& d) {}
     }, nodo->datos);
 
   }
@@ -213,32 +216,71 @@ public:
     }
   }
 
-  void visitar(ExprVariable* nodo) override { //...
+  //void visitar(ExprVariable* nodo) override { //...
+  //  if (bloquesArcanoActivos.count(nodo->nombre)) {
+  //    auto* bloque_fuente = bloquesArcanoActivos[nodo->nombre];
+  //    auto bloque_conado = bloque_fuente->clonar();
+  //  }
+  //  //if (bloquesArcanoActivos.count(nodo->nombre)) {
+  //  //  auto* bloque = bloquesArcanoActivos[nodo->nombre];
+  //  //  bloque->accept(this);
+  //  //  if (auto* s_expr = dynamic_cast<SentenciaExpr*>(bloque)) {
+  //  //    nodo->tipo_resuelto = s_expr->expresion->tipo_resuelto;
+  //  //  } else {
+  //  //    nodo->tipo_resuelto = Dt(typeFactory.getUnknown());
+  //  //  }
+  //  //  return ;
+  //  //}
+  //  InfoVariable* info = tablas.buscarVariable(nodo->nombre);
+  //  if (info != nullptr) {
+  //    nodo->tipo_resuelto = info->tipo;
+  //    return ;
+  //  }
+  //  std::cerr << "Error: Variable '" << nodo->nombre << "' no encontrada.\n";
+  //}
 
-    if (bloques_arcano_activos.count(nodo->nombre)) {
-      auto* bloque = bloques_arcano_activos[nodo->nombre];
-      bloque->accept(this);
+  void visitar(ExprVariable* nodo) override {
+    std::cout << "[Checker.hpp 243] ExprVariable\n";
 
-      if (auto* s_expr = dynamic_cast<SentenciaExpr*>(bloque)) {
+    if (bloquesArcanoActivos.empty()) {
+      std::cout << "[Checker.hpp 246] bloquesArcanoActivos vacío\n";
+
+    } else {
+      std::cout << "[Checker.hpp 249] bloquesArcanoActivos:\n";
+      for (const auto& [key, val] : bloquesArcanoActivos) {
+        std::cout << "[Checker.hpp 251] key: '" << key << "'\n";
+
+      }
+      std::cout << '\n';
+
+    }
+
+    if (bloquesArcanoActivos.count(nodo->nombre)) {
+      auto* bloque_fuente = bloquesArcanoActivos[nodo->nombre];
+      bloque_fuente->accept(this);
+
+      if (auto* s_expr = dynamic_cast<SentenciaExpr*>(bloque_fuente)) {
         nodo->tipo_resuelto = s_expr->expresion->tipo_resuelto;
+
       } else {
         nodo->tipo_resuelto = Dt(typeFactory.getUnknown());
+
       }
+
       return ;
+
     }
 
     InfoVariable* info = tablas.buscarVariable(nodo->nombre);
-
     if (info != nullptr) {
       nodo->tipo_resuelto = info->tipo;
       return ;
-
     }
-
 
     std::cerr << "Error: Variable '" << nodo->nombre << "' no encontrada.\n";
 
   }
+
 
   void visitar(ExprArray* nodo) override {
     for (const auto& elemento : nodo->elementos) {
@@ -354,8 +396,9 @@ public:
 
     tablas.entrarScope();
 
-    for (const auto& i : nodo->instrucciones) {
-      i->accept(this);
+    for (auto& inst : nodo->instrucciones) {
+      inst->accept(this);
+
     }
 
     tablas.salirScope();
@@ -496,9 +539,11 @@ public:
     }
 
     if (!nodo->cuerpo_func.empty()) {
-      for (const auto& inst : nodo->cuerpo_func) {
+
+      for (auto& inst : nodo->cuerpo_func) {
         inst->accept(this);
       }
+
     }
 
     tablas.salirScope();
@@ -518,6 +563,8 @@ public:
   }
 
   void visitar(SentenciaLlamadaArcano* nodo) override {
+
+    pilaLlamadasArcano.push_back(nodo);
 
     ArcaneDef& def     = contextoArcanos.buscarDefinicionPorKeyword(nodo->nombre);
     ArcaneBranch* rama = &def.branches[nodo->indice_rama];
@@ -539,14 +586,14 @@ public:
 
     }
 
-    auto backup_bloques = bloques_arcano_activos;
+    auto backup_bloques = bloquesArcanoActivos;
 
     for (const auto& [nombre_arg, ast_arg] : nodo->expr) {
-      bloques_arcano_activos[nombre_arg] = ast_arg.get();
+      bloquesArcanoActivos[nombre_arg] = ast_arg.get();
     }
 
     for (const auto& [nombre_arg, ast_arg] : nodo->code) {
-      bloques_arcano_activos[nombre_arg] = ast_arg.get();
+      bloquesArcanoActivos[nombre_arg] = ast_arg.get();
     }
 
     for (const auto& seg : rama->segmentos) {
@@ -555,8 +602,133 @@ public:
       }
     }
 
-    bloques_arcano_activos = backup_bloques;
+    //for (const auto& c : nodo->chains) {
+    //  c->accept(this);
+    //}
+
+    auto bloque_expandido = std::make_unique<Bloque>();
+    for (const auto& seg : rama->segmentos) {
+      if (seg.br_cont) {
+        bloque_expandido->instrucciones.push_back(seg.br_cont->clonar());
+      }
+    }
+
+    bloque_expandido->accept(this);
+
+    bloquesArcanoActivos = backup_bloques;
     tablas.salirScope();
+
+    pilaLlamadasArcano.pop_back();
+
+  }
+
+  //void visitar(SentenciaMetaDirective* nodo) override { //...
+  //  switch (nodo->id) {
+  //    case MetaID::CHAIN: {
+  //      if (nodo->args.size() != 1) {
+  //        throw std::runtime_error("Error: ?chain espera exactamente 1 argumento.");
+  //      }
+  //      auto* arg_literal = dynamic_cast<ExprLiteral*>(nodo->args[0].get());
+  //      if (!arg_literal || !std::holds_alternative<RuleData>(arg_literal->datos)) {
+  //        throw std::runtime_error("Error: El argumento de ?chain deber ser una regla.");
+  //      }
+  //      if (!flagMetaDirectivas) {
+  //        if (nodo->body) { nodo->body->accept(this); }
+  //        return ;
+  //      }
+  //      std::string target_rule = std::get<RuleData>(arg_literal->datos).rule;
+  //      if (pilaLlamadasArcano.empty()) {
+  //        throw std::runtime_error("Error: ?chain solo puede usarse dentro del cuerpo de un arcano.");
+  //      }
+  //      SentenciaLlamadaArcano* llamada_actual = pilaLlamadasArcano.back();
+  //      SentenciaLlamadaArcano* nodo_cadena    = nullptr;
+  //      for (const auto& cadena : llamada_actual->chains) {
+  //        std::cout << "[596 Checker.hpp] " << cadena->rule_tag << ' ' << target_rule << '\n';
+  //        if (cadena->rule_tag == target_rule) {
+  //          nodo_cadena = cadena.get();
+  //          break;
+  //        }
+  //      }
+  //      if (nodo_cadena) {
+  //        pilaLlamadasArcano.push_back(nodo_cadena);
+  //        auto backup_bloques = bloquesArcanoActivos;
+  //        for (const auto& [nombre_arg, ast_arg] : nodo_cadena->expr) {
+  //          bloquesArcanoActivos[nombre_arg] = ast_arg.get();
+  //        }
+  //        for (const auto& [nombre_arg, ast_arg] : nodo_cadena->code) {
+  //          bloquesArcanoActivos[nombre_arg] = ast_arg.get();
+  //        }
+  //        if (currentPtr && nodo->body) {
+  //          std::cout << "[651 Checker.hpp]\n";
+  //          auto clon = nodo->body->clonar();
+  //          *currentPtr = std::move(clon);
+  //          (*currentPtr)->accept(this);
+  //        }
+  //        bloquesArcanoActivos = backup_bloques;
+  //        pilaLlamadasArcano.pop_back();
+  //      } else if (currentPtr) {
+  //        *currentPtr = std::make_unique<Bloque>();
+  //      }
+  //      break;
+  //    }
+  //    default: { break; }
+  //  }
+  //}
+
+  void visitar(SentenciaMetaDirective* nodo) override {
+
+    switch (nodo->id) {
+      case MetaID::CHAIN: {
+        if (nodo->args.size() != 1) {
+          throw std::runtime_error("Error: ?chain esperaba 1 argumento");
+        }
+
+        if (pilaLlamadasArcano.empty()) {
+          throw std::runtime_error("Error: ?chain solo puede usarse dentro del cuerpo de un arcano.");
+        }
+
+        auto* arg_literal = dynamic_cast<ExprLiteral*>(nodo->args[0].get());
+        if (!arg_literal || !std::holds_alternative<RuleData>(arg_literal->datos)) {
+          throw std::runtime_error("Error: El argumento de ?chain debe ser una regla");
+        }
+
+        std::string target_rule = std::get<RuleData>(arg_literal->datos).rule;
+
+        SentenciaLlamadaArcano* llamada_actual = pilaLlamadasArcano.back();
+        SentenciaLlamadaArcano* nodo_cadena    = nullptr;
+
+        for (const auto& cadena : llamada_actual->chains) {
+          if (cadena->rule_tag == target_rule) {
+            nodo_cadena = cadena.get();
+            break;
+          }
+        }
+
+        if (nodo->body && nodo_cadena) {
+          pilaLlamadasArcano.push_back(nodo_cadena);
+          auto backup_bloques = bloquesArcanoActivos;
+
+          for (const auto& [nombre_arg, ast_arg] : nodo_cadena->expr) {
+            bloquesArcanoActivos[nombre_arg] = ast_arg.get();
+          }
+
+          for (const auto& [nombre_arg, ast_arg] : nodo_cadena->code) {
+            bloquesArcanoActivos[nombre_arg] = ast_arg.get();
+          }
+
+          nodo->body->accept(this);
+          bloquesArcanoActivos = backup_bloques;
+          pilaLlamadasArcano.pop_back();
+
+        } else if (nodo->body) {
+          nodo->body->accept(this);
+
+        }
+
+
+      }
+      default: { break; }
+    }
 
   }
 

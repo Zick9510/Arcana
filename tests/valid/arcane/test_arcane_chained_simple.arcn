@@ -1,0 +1,82 @@
+arcane LoopElse (loop: key, block_loop: code, else: key, block_else: code) {
+
+  rules [
+    @simple: loop [ block_loop ];
+    @else_r: else [ block_else ];
+
+  ];
+
+  chains [
+    @simple -> @else_r? ;
+
+  ];
+
+  @simple {
+
+    loop [int a] <=> {
+
+      bool finished = false;
+
+      while (a) {
+        block_loop;
+        a = a - 1;
+        if (a == 0) { finished = true; }
+      }
+
+      ?chain(@else_r) { // If @else_r chained
+        if (finished) { block_else; } // Add this
+      }
+
+    };
+
+  }
+
+  @else_r {
+
+    else <=> {
+      //block_else;
+
+    };
+
+  }
+
+}
+
+func main() -> int {
+
+  int i = 1;
+
+  loop [4] {
+    i = i * 2;
+
+  } else {
+    i = i - 8;
+
+  }
+
+  // i = 8
+  //return i;
+
+  loop [2] { // 8 24 56 120 248
+    i = i + 4;
+  }
+
+  // i = 16
+  //return i;
+
+  loop [8] {
+    i = i - 1;
+    break;
+
+  } else {
+    i = 200;
+
+  }
+
+  // i = 15
+
+  return i;
+
+
+
+}

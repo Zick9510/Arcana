@@ -141,8 +141,9 @@ enum class Tt {
   PAREN_L, PAREN_R,
 
   // Arcanos
-  ARCANE, ARCANITO,
-  CODE, EXPR, KEY, RULES,
+  ARCANE, ARCANITE,
+  CODE, EXPR, KEY,
+  RULES, CHAINS,
 
   // Escritura
   ESCRITURA,
@@ -182,9 +183,10 @@ inline bool is_keyword(Tt t) {
 
     default: { return false; }
   }
+
 }
 
-// --- ParseMode ---
+// --- ParseMode --- //
 enum class Pm {
   STRICT,
   RELAXED
@@ -244,7 +246,7 @@ inline std::shared_ptr<ArcanaType> promoverN(std::shared_ptr<ArcanaType> prim, A
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 
 
-// --- Tipo Operador ---
+// --- Tipo Operador --- //
 enum class TipoOperador {
 
   LOGICO_O,
@@ -372,7 +374,7 @@ struct Token {
 };
 
 
-// --- Keywords ---
+// --- Keywords --- //
 inline std::map<std::string, Tt> keywords = {
 
   // Tipos Inferibles
@@ -418,8 +420,9 @@ inline std::map<std::string, Tt> keywords = {
   // --- Estructuras ---
   // Arcanos
   {"arcane"  , Tt::ARCANE  },
-  {"arcanito", Tt::ARCANITO},
+  {"arcanite", Tt::ARCANITE},
   {"rules"   , Tt::RULES   },
+  {"chains"  , Tt::CHAINS  },
 
   {"key" , Tt::KEY },
   {"expr", Tt::EXPR},
@@ -469,10 +472,40 @@ struct ReglaArcano {
 
 };
 
+struct EnlaceCadena {
+  std::string target_rule;
+  bool optional;
+};
+
 struct ParteArcano {
   std::string contenido;
   TPA tipo_dato;
 };
+
+// --- Meta Directivas --- //
+enum class MetaID {
+  CHAIN,
+  DESCONOCIDO
+};
+
+static const std::unordered_map<std::string, MetaID> meta_string_to_id = {
+  {"chain", MetaID::CHAIN},
+};
+
+inline MetaID metaStringToID(std::string name) {
+  auto it = meta_string_to_id.find(name);
+  if (it != meta_string_to_id.end()) {
+    return it->second;
+  }
+  return MetaID::DESCONOCIDO;
+}
+
+inline std::string metaIDToString(MetaID id) {
+  switch (id) {
+    case MetaID::CHAIN: { return "chain"  ; }
+    default           : { return "unknown"; }
+  }
+}
 
 // Auxiliares para manejar tipos
 std::string nombreTipo(Tt tipo);
@@ -520,6 +553,7 @@ class SentenciaFuncDecl;
 class SentenciaEscritura;
 class SentenciaArcano;
 class SentenciaLlamadaArcano;
+class SentenciaMetaDirective;
 
 class ASTVisitor {
 public:
@@ -568,6 +602,7 @@ public:
 
   virtual void visitar(SentenciaArcano* nodo)        = 0;
   virtual void visitar(SentenciaLlamadaArcano* nodo) = 0;
+  virtual void visitar(SentenciaMetaDirective* nood) = 0;
 
 };
 
@@ -674,6 +709,7 @@ struct ArcaneDef {
 
   std::vector<ParteArcano>  args    ; // Arcane args
   std::vector<ReglaArcano>  rules   ; // @rule1, @rule2, ... , @ruleN
+  std::unordered_map<std::string, std::vector<EnlaceCadena>> chains; // Maps a parent rule to the sequence of rules that can follow it
   std::vector<ArcaneBranch> branches;
 
   ArcaneDef() = default;
@@ -681,14 +717,15 @@ struct ArcaneDef {
   ArcaneDef& operator=(ArcaneDef&&) = default;
 
   ArcaneDef(const ArcaneDef& otra)
-    : name(otra.name), args(otra.args), rules(otra.rules), branches(otra.branches) {}
+    : name(otra.name), args(otra.args), rules(otra.rules), chains(otra.chains), branches(otra.branches) {}
 
   ArcaneDef& operator=(const ArcaneDef& otra) {
 
     if (this != &otra) {
-      name = otra.name;
-      args = otra.args;
-      rules = otra.rules;
+      name     = otra.name;
+      args     = otra.args;
+      rules    = otra.rules;
+      chains   = otra.chains;
       branches = otra.branches;
 
     }
@@ -822,7 +859,11 @@ struct StringData {
   std::string contenido;
 };
 
-using LiteralData = std::variant<NumberData, BooleanData, CharData, StringData>;
+struct RuleData {
+  std::string rule;
+};
+
+using LiteralData = std::variant<NumberData, BooleanData, CharData, StringData, RuleData>;
 
 class ExprLiteral : public NodoBase<Expresion, ExprLiteral> {
 public:
@@ -1350,7 +1391,7 @@ public:
     for (const auto& inst: otra.cuerpo_func) {
       cuerpo_func.push_back(inst->clonar());
     }
-  
+
   }
 
   void imprimir(int nivel = 0) const override {
@@ -1467,28 +1508,31 @@ public:
 
 class SentenciaLlamadaArcano : public NodoBase<Sentencia, SentenciaLlamadaArcano> {
 public:
-  std::string nombre;
+  std::string nombre;   // Keyword
+  std::string rule_tag; // Rule
   std::unordered_map<std::string, std::unique_ptr<Sentencia>> args;
   std::unordered_map<std::string, std::unique_ptr<Sentencia>> code;
   std::unordered_map<std::string, std::unique_ptr<Sentencia>> expr;
   size_t indice_rama;
 
-  SentenciaLlamadaArcano(std::string n,
+  std::vector<std::unique_ptr<SentenciaLlamadaArcano>> chains;
+
+  SentenciaLlamadaArcano(std::string n, std::string t,
                          std::unordered_map<std::string, std::unique_ptr<Sentencia>> a,
                          std::unordered_map<std::string, std::unique_ptr<Sentencia>> c,
                          std::unordered_map<std::string, std::unique_ptr<Sentencia>> e,
-                         size_t idx)
-    : nombre(std::move(n)), args(std::move(a)), code(std::move(c)), expr(std::move(e)), indice_rama(idx) {}
+                         std::vector<std::unique_ptr<SentenciaLlamadaArcano>> ch      ,
+                         size_t idx
+                         )
+    : nombre(std::move(n)), rule_tag(std::move(t)), args(std::move(a)), code(std::move(c)), expr(std::move(e)), indice_rama(idx), chains(std::move(ch)) {}
 
-  SentenciaLlamadaArcano(const SentenciaLlamadaArcano& otra) //... Todo: Clone args
+  SentenciaLlamadaArcano(const SentenciaLlamadaArcano& otra) //... Todo: Clone the rest of the thing
     : nombre(otra.nombre), indice_rama(otra.indice_rama) {}
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
-    std::cout << sangria << "Llamada a Arcano: " << nombre << ' ' << indice_rama << "\n";
-
-    /*
+    std::cout << sangria << "Llamada a Arcano: " << nombre << ' ' << rule_tag << '\n';
 
     if (!args.empty()) {
       std::cout << sangria << "ARGS:\n";
@@ -1514,7 +1558,50 @@ public:
       }
     }
 
-    */
+    if (!chains.empty()) {
+      std::cout << sangria << "CHAINS:\n";
+      for (const auto& i : chains) {
+        i->imprimir(nivel + 2);
+      }
+    }
+
+  }
+
+};
+
+class SentenciaMetaDirective : public NodoBase<Sentencia, SentenciaMetaDirective> {
+public:
+  MetaID id;
+  std::vector<std::unique_ptr<Expresion>> args;
+  std::unique_ptr<Sentencia> body;
+
+  SentenciaMetaDirective(MetaID i, std::vector<std::unique_ptr<Expresion>> a, std::unique_ptr<Sentencia> b)
+    : id(i), args(std::move(a)), body(std::move(b)) {}
+
+  SentenciaMetaDirective(const SentenciaMetaDirective& otra)
+    : id(otra.id) {
+    for (const auto& arg : otra.args) {
+      args.push_back(arg->clonar());
+    }
+
+    body = otra.body->clonar();
+
+  }
+
+  void imprimir(int nivel = 0) const override {
+    std::string sangria = "";
+    for (int i = 0; i < nivel; ++i) { sangria += "| "; }
+    std::cout << sangria << "Meta Directiva: " << metaIDToString(id) << '\n';
+    std::cout << sangria << "Args:\n";
+    if (!args.empty()) {
+      for (const auto& a : args) {
+        a->imprimir(nivel + 1);
+      }
+    }
+    std::cout << sangria << "Blocks:\n";
+    if (body) {
+      body->imprimir(nivel + 1);
+    }
   }
 
 };
@@ -1535,7 +1622,6 @@ struct CompilerConfig {
 
 
 /* --- Buffer --- */
-
 struct ResolvedPos {
   size_t line;
   size_t col ;

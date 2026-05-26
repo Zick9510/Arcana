@@ -277,14 +277,14 @@ InfoVariable Parser::parsearTipo() {
 
   }
 
-  std::cout << "[205, parser.cpp] Tipo: " << tipo_actual->toString() << '\n';
+  std::cout << "[280, parser.cpp] Tipo: " << tipo_actual->toString() << '\n';
   info.tipo = Dt(tipo_actual);
   return info;
 
 }
 
 std::unique_ptr<Expresion> Parser::parsearCasteo() {
-  std::cerr << "[211 parser.cpp] NO IMPLEMENTADO (parsearCasteo)\n";
+  std::cerr << "[287 parser.cpp] NO IMPLEMENTADO (parsearCasteo)\n";
   exit(1);
 }
 
@@ -451,7 +451,7 @@ std::pair<std::string, std::string> Parser::partirLexemaNum(std::string lexema) 
 std::unique_ptr<Expresion> Parser::parsearPrefijo() {
   Token t = peek();
 
-  std::cout << "[448, parser.cpp]\n";
+  std::cout << "[454, parser.cpp]\n";
   std::cout << t.lexema << '\n';
   std::cout << nombreTipo(t.tipo) << '\n';
 
@@ -484,6 +484,11 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
     case Tt::TRUE :
     case Tt::FALSE: {
       return std::make_unique<ExprLiteral>(BooleanData{t.lexema});
+    }
+
+    case Tt::ARROBA: {
+      Token t = check(Tt::IDENTIFICADOR);
+      return std::make_unique<ExprLiteral>(RuleData{"@" + t.lexema});
     }
 
     case Tt::IDENTIFICADOR: {
@@ -642,19 +647,20 @@ std::unique_ptr<Sentencia> Parser::parsearBloque() {
 std::unique_ptr<Sentencia> Parser::parsearSentencia() {
   Tt actual = peek().tipo;
 
-  if (actual == Tt::IF       ) { return parsearSi()       ; }
-  if (actual == Tt::ELSE     ) { return parsearSino()     ; }
-  if (actual == Tt::WHILE    ) { return parsearMientras() ; }
-  if (actual == Tt::BREAK    ) { return parsearBreak()    ; }
-  if (actual == Tt::CONTINUE ) { return parsearContinue() ; }
-  if (actual == Tt::REDO     ) { return parsearRedo()     ; }
-  if (actual == Tt::LLAVE_L  ) { return parsearBloque()   ; }
-  if (actual == Tt::TATETI   ) { return parsearBloque()   ; }
-  if (actual == Tt::FUNC     ) { return parsearFuncDecl() ; }
-  if (actual == Tt::PURE     ) { return parsearFuncDecl() ; }
-  if (actual == Tt::RETURN   ) { return parsearReturn()   ; }
-  if (actual == Tt::ESCRITURA) { return parsearEscritura(); }
-  if (actual == Tt::ARCANE   ) { return parsearArcano()   ; }
+  if (actual == Tt::IF       ) { return parsearSi           (); }
+  if (actual == Tt::ELSE     ) { return parsearSino         (); }
+  if (actual == Tt::WHILE    ) { return parsearMientras     (); }
+  if (actual == Tt::BREAK    ) { return parsearBreak        (); }
+  if (actual == Tt::CONTINUE ) { return parsearContinue     (); }
+  if (actual == Tt::REDO     ) { return parsearRedo         (); }
+  if (actual == Tt::LLAVE_L  ) { return parsearBloque       (); }
+  if (actual == Tt::TATETI   ) { return parsearBloque       (); }
+  if (actual == Tt::FUNC     ) { return parsearFuncDecl     (); }
+  if (actual == Tt::PURE     ) { return parsearFuncDecl     (); }
+  if (actual == Tt::RETURN   ) { return parsearReturn       (); }
+  if (actual == Tt::ESCRITURA) { return parsearEscritura    (); }
+  if (actual == Tt::ARCANE   ) { return parsearArcano       (); }
+  if (actual == Tt::PREGUNTA ) { return parsearMetaDirectiva(); }
 
   // Si empieza con un tipo de dato, es una delaración
   if (esTipo(actual) || esInfiere(actual)) {
@@ -878,7 +884,7 @@ std::pair<std::string, ReglaArcano> Parser::parsearReglaArcano() { //...
 
   check(Tt::DOS_PUNTOS); // :
 
-  par.second.keyword = check(Tt::IDENTIFICADOR).lexema; // Trigger keyword
+  par.second.keyword = check(Tt::IDENTIFICADOR, Pm::RELAXED).lexema; // Trigger keyword
 
   check(Tt::CORCH_L);
  
@@ -919,14 +925,77 @@ std::vector<std::pair<std::string, ReglaArcano>> Parser::parsearReglasArcano() {
 
 }
 
+std::unordered_map<std::string, std::vector<EnlaceCadena>> Parser::parsearCadenasArcano(
+  const std::vector<std::pair<std::string, ReglaArcano>>& reglasDeclaradas
+) {
+  auto existeRegla = [&](const std::string& etiqueta) {
+    for (const auto& r : reglasDeclaradas) {
+      if (r.first == etiqueta) { return true; }
+    }
+    return false;
+  };
+
+  std::unordered_map<std::string, std::vector<EnlaceCadena>> chains;
+
+  check(Tt::CHAINS);
+  check(Tt::CORCH_L);
+
+  while (peek().tipo != Tt::CORCH_R && peek().tipo != Tt::FIN_ARCHIVO) {
+    check(Tt::ARROBA);
+    std::string parent_rule = "@" + check(Tt::IDENTIFICADOR).lexema;
+
+    if (!existeRegla(parent_rule)) {
+      throw std::runtime_error("Error: La regla base '" + parent_rule + "' no existe en rules.");
+
+    }
+
+    check(Tt::FLECHA);
+
+    std::vector<EnlaceCadena> enlaces;
+
+    while (peek().tipo != Tt::PUNTO_COMA && peek().tipo != Tt::FIN_ARCHIVO) {
+      check(Tt::ARROBA);
+      std::string target_rule = "@" + check(Tt::IDENTIFICADOR).lexema;
+
+      if (!existeRegla(target_rule)) {
+        throw std::runtime_error("Error: La regla encadenada '" + target_rule + "' no existe.");
+
+      }
+
+      bool optional = false;
+      if (peek().tipo == Tt::PREGUNTA) {
+        get();
+        optional = true;
+      }
+
+      enlaces.push_back({target_rule, optional});
+
+      if (peek().tipo == Tt::FLECHA) {
+        get();
+      }
+
+    }
+
+    check(Tt::PUNTO_COMA);
+    chains[parent_rule] = std::move(enlaces);
+
+  }
+
+  check(Tt::CORCH_R);
+  check(Tt::PUNTO_COMA);
+
+  return chains;
+
+}
+
 std::vector<ArcaneBranch> Parser::parsearCuerpoArcano(
-  const std::vector<std::pair<std::string, ReglaArcano>>& reglas_declaradas
+  const std::vector<std::pair<std::string, ReglaArcano>>& reglasDeclaradas
   ) {
 
   std::vector<ArcaneBranch> ramas_totales;
 
   auto existe_regla = [&](const std::string& etiqueta) {
-    for (const auto& r : reglas_declaradas) {
+    for (const auto& r : reglasDeclaradas) {
       if (r.first == etiqueta) { return true; }
     }
     return false;
@@ -952,7 +1021,7 @@ std::vector<ArcaneBranch> Parser::parsearCuerpoArcano(
 
       while (peek().tipo != Tt::PUNTO_COMA && peek().tipo != Tt::FIN_ARCHIVO) {
         ArcaneSegment segmento;
-        segmento.br_key = check(Tt::IDENTIFICADOR).lexema; // 'inc' o 'boo'
+        segmento.br_key = check(Tt::IDENTIFICADOR, Pm::RELAXED).lexema;
 
         if (peek().tipo == Tt::CORCH_L) { // Argument parsing
           get();
@@ -1044,6 +1113,10 @@ std::unique_ptr<Sentencia> Parser::parsearArcano() {
 
   //std::cout << '\n';
 
+  if (peek().tipo == Tt::CHAINS) {
+    def.chains = parsearCadenasArcano(rules);
+  }
+
   // Cuerpo
   def.branches = parsearCuerpoArcano(rules);
 
@@ -1055,8 +1128,8 @@ std::unique_ptr<Sentencia> Parser::parsearArcano() {
 
 }
 
-std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() {
-  Token trigger = check(Tt::IDENTIFICADOR);
+std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano(bool checkSc) {
+  Token trigger = check(Tt::IDENTIFICADOR, Pm::RELAXED);
   std::string key = trigger.lexema;
 
   ArcaneDef& def = contextoArcanos.buscarDefinicionPorKeyword(key);
@@ -1084,9 +1157,7 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() {
   for (size_t i = 0; i < def.branches.size(); ++i) {
 
     auto& branch = def.branches[i];
-
     ReglaArcano rule = contextoArcanos.obtenerRegla(branch.rule_tag);
-
     auto& primer_seg = branch.segmentos[0];
 
     if (rule.keyword == key && primer_seg.br_args.size() == local_args.size()) {
@@ -1207,33 +1278,79 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano() {
 
   }
 
-
   if (!done && posibles_reglas.empty()) {
     throw std::runtime_error("Firma incompleta o no encontrada para '" + key + "'.");
 
   }
 
+  const auto& matched_branch = def.branches[rule.first];
+
   bool necesita_sc = true;
 
   if (!rule.second.componentes.empty()) {
     auto [tipo, nombre] = obtenerTipo(rule.second.componentes.back().lexema);
-
-    if (tipo == TPA::CODE) {
-      necesita_sc = false;
-    }
-
+    if (tipo == TPA::CODE) { necesita_sc = false; }
   }
 
-  if (necesita_sc) {
+  std::vector<std::unique_ptr<SentenciaLlamadaArcano>> chains;
+
+  auto it = def.chains.find(matched_branch.rule_tag);
+  if (it != def.chains.end()) {
+    for (const auto& enlace : it->second) {
+      ReglaArcano targete_info = contextoArcanos.obtenerRegla(enlace.target_rule);
+      if (peek().lexema == targete_info.keyword) {
+        auto sub = parsearLlamadaArcano(false);
+        auto sub_arcano = std::unique_ptr<SentenciaLlamadaArcano>(static_cast<SentenciaLlamadaArcano*>(sub.release()));
+
+        ReglaArcano last_rule = contextoArcanos.obtenerRegla(sub_arcano->rule_tag);
+        necesita_sc = true;
+        if (!last_rule.componentes.empty()) {
+          auto [t, _] = obtenerTipo(last_rule.componentes.back().lexema);
+          if (t == TPA::CODE) { necesita_sc = false; }
+        }
+        chains.push_back(std::move(sub_arcano));
+      }
+    }
+  }
+
+  if (necesita_sc && checkSc) {
     check(Tt::PUNTO_COMA);
   }
 
   return std::make_unique<SentenciaLlamadaArcano>(
     key,
+    matched_branch.rule_tag,
     std::move(mapa_args),
     std::move(mapa_code),
     std::move(mapa_expr),
+    std::move(chains)   ,
     rule.first
+  );
+
+}
+
+std::unique_ptr<Sentencia> Parser::parsearMetaDirectiva() {
+  check(Tt::PREGUNTA);
+  std::string name = check(Tt::IDENTIFICADOR).lexema;
+  MetaID id = metaStringToID(name);
+
+  check(Tt::PAREN_L);
+  std::vector<std::unique_ptr<Expresion>> args;
+
+  while (peek().tipo != Tt::PAREN_R && peek().tipo != Tt::FIN_ARCHIVO) {
+    std::unique_ptr<Expresion> arg = parsearExpresion(Pr::MINIMA);
+    args.push_back(std::move(arg));
+    if (peek().tipo == Tt::COMA) { get(); }
+
+  }
+
+  check(Tt::PAREN_R);
+  auto bloque = parsearBloque();
+
+  return std::make_unique<SentenciaMetaDirective>(
+    id,
+    std::move(args),
+    std::move(bloque)
   );
 
 }

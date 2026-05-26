@@ -1,6 +1,6 @@
 arcane DoWhile (do: key, body: code, while: key, cond: expr) {
   rules [
-    @standard  : do [ body while cond ];
+    @standard : do [ body while cond ];
 
   ];
 
