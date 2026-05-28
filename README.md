@@ -3,8 +3,8 @@
 > **Shape the Language. Control the Machine.**
 
 Arcana is an experimental, **metaprogramming-first** and **language-oriented** systems programming language.
-It is designed for developers who find existing languages too rigid and want the power to extend their tool without sacrificing the performance of a formal
-LLVM pipeline.
+It is designed for developers who find existing languages too rigid and want the power to extend their tool without sacrificing the performance of a
+formal LLVM pipeline.
 
 In Arcana, syntax is not a law-it is a malleable tool.
 
@@ -17,18 +17,13 @@ Arcana is currently in a heavy development phase. It is a proof-of-concept for l
 
 ## The Philosophy
 
-Most languages force you to wait for a committee to add a new feature. Arcana gives you the **Arcane** system:
-a way to expand the compiler's Abstract Syntax Tree (AST) directly from your source code.
+Most languages force you to wait for a committee to add a new feature; in Arcana, you are the committee that decides how the language should work.
 
-Arcana inverts this relationship. Through the **Arcane** and **Trait** systems, the language becomes a...
+A programming language is a tool to talk to the machine, to give it orders.
 
-### Side-Effect Clarity
-Strict visual separation between logic and data:
+We are not its prisoners; we are programmers. We are the ones that command and demand that the machine do what we tell it to do.
 
-* Code Blocks {}: Represent actions and side effects.
-* Expressions (): Represent values.
-
-#### Note: An expression can modify or assign values (e.g., ++i, (j = 2), (int k = 3)).
+That's why Arcana is being developed.
 
 ---
 
@@ -70,6 +65,7 @@ func main() -> int {
 
   loop [10] {
     x = x + 9;
+
   }
 
   return x;
@@ -79,7 +75,7 @@ func main() -> int {
 
 ### Meta-directives and Chainable Arcanes
 
-#### Example: loop-else
+#### Example: Loop - Else
 
 Create a ```loop``` construct that allows an optional ```else``` block afterwards.
 
@@ -163,7 +159,7 @@ Traits represent the behavioral properties of a code block. You can define how a
 essential for defining new constructs within the Arcane system, they are universal primitives that can be applied to **any** block of code to enforce specific
 behaviors.
 
-#### Example: Do While
+#### Example: Do - While
 
 The following example demonstrates how a post-condition behavior (a ```do-while``` pattern) is implemented by assigning the ```#loop``` trait to the code
 block.
@@ -172,7 +168,7 @@ block.
 arcane DoWhile (do: key, body: code, while: key, cond: expr) {
 
   rules [
-    @standard  : do [ body while cond ];
+    @standard: do [ body while cond ];
 
   ];
 
@@ -211,7 +207,7 @@ func main() -> int {
 Arcana is a call to action for anyone who believes a language should adapt to the programmer, not the other way around. We aren't just building a tool to write
 code-we are building a way to **redefine the relationship between the developer and the machine**.
 
-**We are looking for contributors.** Whether you are just starting your journey or you're someone who wants to break and rewrite the rules of what a language
+**We are looking for contributors.** Whether you are just starting your journey or you are someone who wants to break and rewrite the rules of what a language
 should look like, **your perspective is what moves this project forward**.
 
 **Let's build something impossible.**
