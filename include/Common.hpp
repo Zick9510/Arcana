@@ -171,13 +171,14 @@ inline bool isStructural(Tt t) {
 
 }
 
-inline bool is_keyword(Tt t) {
+inline bool isKeyword(Tt t) {
   switch (t) {
     case Tt::IF     :
     case Tt::ELSE   :
     case Tt::WHILE  :
     case Tt::FOR    :
-    case Tt::FOREACH: {
+    case Tt::FOREACH:
+    case Tt::RETURN : {
       return true;
     }
 

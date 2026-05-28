@@ -10,7 +10,8 @@ ErrorHandler::ErrorHandler(std::shared_ptr<SourceBuffer> b)
 
 std::string_view ErrorHandler::getTemplate(CE ce) {
   switch (ce) {
-    case CE::E_EXPECTED_TOKEN: { return "expected '{}' but '{}' token was found"; }
+    case CE::E_EXPECTED_TOKEN  : { return "expected '{}' but '{}' token was found"; }
+    case CE::E_UNEXPECTED_TOKEN: { return "unexpected '{}' token"                 ; }
     case CE::E_EXPECTED_EXPRESSION: { return "expected expression but '{}' token was found"; }
 
     default: { return "unkown error"; }

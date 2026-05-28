@@ -23,7 +23,7 @@ enum class CodigoError { // Codigo Error
 
   // --- Errores Sintácticos (2000) ---
   E_EXPECTED_TOKEN = 2000, // Se esperaba un token que no está
-  E_NO_ESPERABA = 2001, // No se esperaba un token que sí está
+  E_UNEXPECTED_TOKEN = 2001, // No se esperaba un token que sí está
 
   E_DESBALANCE_PARENTESIS = 2100,
   E_DESBALANCE_LLAVES = 2101,

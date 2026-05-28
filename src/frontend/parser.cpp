@@ -44,7 +44,7 @@ Token Parser::coincide(std::initializer_list<Tt> tipos) {
 }
 
 bool Parser::isStatement(Token t) {
-  if (is_keyword(t.tipo)) { return true; }
+  if (isKeyword(t.tipo)) { return true; }
   if (t.tipo == Tt::IDENTIFICADOR &&
       contextoArcanos.esKeywordArcano(t.lexema)) {
     return true;
@@ -74,7 +74,7 @@ bool Parser::sync(Tt target) {
 Token Parser::check(Tt tipoEsperado, Pm parseMode) {
 
   if (parseMode == Pm::RELAXED && tipoEsperado == Tt::IDENTIFICADOR) {
-    if (is_keyword(peek().tipo)) {
+    if (isKeyword(peek().tipo)) {
       return get();
     }
   }
@@ -448,108 +448,6 @@ std::pair<std::string, std::string> Parser::partirLexemaNum(std::string lexema) 
 
 }
 
-std::unique_ptr<Expresion> Parser::parsearPrefijo() {
-  Token t = peek();
-
-  std::cout << "[454, parser.cpp]\n";
-  std::cout << t.lexema << '\n';
-  std::cout << nombreTipo(t.tipo) << '\n';
-
-  // Error cases
-  switch (t.tipo) { //...
-    case Tt::PAREN_R:
-    case Tt::LLAVE_R:
-    case Tt::PUNTO_COMA: {
-      errHandler.report(CE::E_EXPECTED_EXPRESSION, peek().pos, nombreTipo(t.tipo));
-      return std::make_unique<ErrorNode>();
-    }
-
-    default: { break; }
-
-  }
-
-  get();
-
-  // Atom cases
-  switch (t.tipo) { //...
-    case Tt::NUMERO: {
-      auto [num, suf] = partirLexemaNum(t.lexema);
-      return std::make_unique<ExprLiteral>(NumberData{num, suf});
-    }
-
-    case Tt::CHAR: {
-      return std::make_unique<ExprLiteral>(CharData{&t.lexema[0]});
-    }
-
-    case Tt::TRUE :
-    case Tt::FALSE: {
-      return std::make_unique<ExprLiteral>(BooleanData{t.lexema});
-    }
-
-    case Tt::ARROBA: {
-      Token t = check(Tt::IDENTIFICADOR);
-      return std::make_unique<ExprLiteral>(RuleData{"@" + t.lexema});
-    }
-
-    case Tt::IDENTIFICADOR: {
-      return std::make_unique<ExprVariable>(t.lexema);
-    }
-
-    case Tt::PAREN_L: {
-      auto expr = parsearExpresion(Pr::MINIMA);
-      check(Tt::PAREN_R);
-      return expr;
-    }
-
-    case Tt::CORCH_L: {
-      return parsearRangoOArray();
-    }
-
-    default: {
-      break; // No es un átomo
-    }
-
-  }
-
-  if (t.tipo == Tt::POTENCIA) { // **
-    auto inner = parsearExpresion(Pr::PREFIJO);
-    auto primera_deref = std::make_unique<ExprUnaria>(TipoOperador::PTR_DEREF, std::move(inner), true);
-    return std::make_unique<ExprUnaria>(TipoOperador::PTR_DEREF, std::move(primera_deref), true);
-
-  }
-
-  if (t.tipo == Tt::Y_LOGICO) { // &&
-    auto inner = parsearExpresion(Pr::PREFIJO);
-    auto primera_ref = std::make_unique<ExprUnaria>(TipoOperador::PTR_REF, std::move(inner), true);
-    return std::make_unique<ExprUnaria>(TipoOperador::PTR_REF, std::move(primera_ref), true);
-
-  }
-
-  TipoOperador op;
-
-  switch (t.tipo) {
-    case Tt::MAS        : {op = TipoOperador::SUMA      ; break; }
-    case Tt::MENOS      : {op = TipoOperador::RESTA     ; break; }
-    case Tt::NO_LOGICO  : {op = TipoOperador::LOGICO_NO ; break; }
-    case Tt::NO_BITWISE : {op = TipoOperador::BITWISE_NO; break; }
-    case Tt::INCREMENTAR: {op = TipoOperador::INC_PREF  ; break; }
-    case Tt::DECREMENTAR: {op = TipoOperador::DEC_PREF  ; break; }
-    case Tt::ASTERISCO  : {op = TipoOperador::PTR_DEREF ; break; }
-    case Tt::AMPERSAND  : {op = TipoOperador::PTR_REF   ; break; }
-
-    default: {
-        std::cerr << "[536, parser.cpp]\n";
-        std::cerr << "No se esperaba el prefijo '" << t.lexema << "'\n";
-        exit(1);
-    }
-  }
-
-  auto operando = parsearExpresion(Pr::PREFIJO);
-  return std::make_unique<ExprUnaria>(op, std::move(operando), true);
-
-}
-
-
 std::unique_ptr<Sentencia> Parser::parsearDeclaracionVar() {
 
   InfoVariable tipo = parsearTipo();
@@ -641,10 +539,19 @@ std::unique_ptr<Sentencia> Parser::parsearBloque() {
 
   check(Tt::LLAVE_R);
   return bloque;
+
 }
 
 // Parsear Sentencias
 std::unique_ptr<Sentencia> Parser::parsearSentencia() {
+
+  while (isStructural(peek().tipo) && peek().tipo != Tt::FIN_ARCHIVO && peek().tipo != Tt::PUNTO_COMA) {
+    Token t = get();
+    errHandler.report(CE::E_UNEXPECTED_TOKEN, t.pos, t.lexema);
+    std::cout << "[551, parser.cpp]\n";
+
+  }
+
   Tt actual = peek().tipo;
 
   if (actual == Tt::IF       ) { return parsearSi           (); }
@@ -1432,6 +1339,107 @@ Pr Parser::obtenerPrecedencia(Tt tipo) {
     default            :
       return Pr::MINIMA;
   }
+}
+
+std::unique_ptr<Expresion> Parser::parsearPrefijo() {
+  Token t = peek();
+
+  std::cout << "[454, parser.cpp]\n";
+  std::cout << t.lexema << '\n';
+  std::cout << nombreTipo(t.tipo) << '\n';
+
+  // Error cases
+  switch (t.tipo) { //...
+    case Tt::PAREN_R:
+    case Tt::LLAVE_R:
+    case Tt::PUNTO_COMA: {
+      errHandler.report(CE::E_EXPECTED_EXPRESSION, peek().pos, nombreTipo(t.tipo));
+      return std::make_unique<ErrorNode>();
+    }
+
+    default: { break; }
+
+  }
+
+  get();
+
+  // Atom cases
+  switch (t.tipo) { //...
+    case Tt::NUMERO: {
+      auto [num, suf] = partirLexemaNum(t.lexema);
+      return std::make_unique<ExprLiteral>(NumberData{num, suf});
+    }
+
+    case Tt::CHAR: {
+      return std::make_unique<ExprLiteral>(CharData{&t.lexema[0]});
+    }
+
+    case Tt::TRUE :
+    case Tt::FALSE: {
+      return std::make_unique<ExprLiteral>(BooleanData{t.lexema});
+    }
+
+    case Tt::ARROBA: {
+      Token t = check(Tt::IDENTIFICADOR);
+      return std::make_unique<ExprLiteral>(RuleData{"@" + t.lexema});
+    }
+
+    case Tt::IDENTIFICADOR: {
+      return std::make_unique<ExprVariable>(t.lexema);
+    }
+
+    case Tt::PAREN_L: {
+      auto expr = parsearExpresion(Pr::MINIMA);
+      check(Tt::PAREN_R);
+      return expr;
+    }
+
+    case Tt::CORCH_L: {
+      return parsearRangoOArray();
+    }
+
+    default: {
+      break; // No es un átomo
+    }
+
+  }
+
+  if (t.tipo == Tt::POTENCIA) { // **
+    auto inner = parsearExpresion(Pr::PREFIJO);
+    auto primera_deref = std::make_unique<ExprUnaria>(TipoOperador::PTR_DEREF, std::move(inner), true);
+    return std::make_unique<ExprUnaria>(TipoOperador::PTR_DEREF, std::move(primera_deref), true);
+
+  }
+
+  if (t.tipo == Tt::Y_LOGICO) { // &&
+    auto inner = parsearExpresion(Pr::PREFIJO);
+    auto primera_ref = std::make_unique<ExprUnaria>(TipoOperador::PTR_REF, std::move(inner), true);
+    return std::make_unique<ExprUnaria>(TipoOperador::PTR_REF, std::move(primera_ref), true);
+
+  }
+
+  TipoOperador op;
+
+  switch (t.tipo) {
+    case Tt::MAS        : {op = TipoOperador::SUMA      ; break; }
+    case Tt::MENOS      : {op = TipoOperador::RESTA     ; break; }
+    case Tt::NO_LOGICO  : {op = TipoOperador::LOGICO_NO ; break; }
+    case Tt::NO_BITWISE : {op = TipoOperador::BITWISE_NO; break; }
+    case Tt::INCREMENTAR: {op = TipoOperador::INC_PREF  ; break; }
+    case Tt::DECREMENTAR: {op = TipoOperador::DEC_PREF  ; break; }
+    case Tt::ASTERISCO  : {op = TipoOperador::PTR_DEREF ; break; }
+    case Tt::AMPERSAND  : {op = TipoOperador::PTR_REF   ; break; }
+
+    default: {
+        std::cerr << "[536, parser.cpp]\n";
+        std::cerr << "No se esperaba el prefijo '" << t.lexema << "'\n";
+        exit(1);
+    }
+  }
+
+  auto operando = parsearExpresion(Pr::PREFIJO);
+  return std::make_unique<ExprUnaria>(op, std::move(operando), true);
+
 }
 
 // Algoritmo de Pratt

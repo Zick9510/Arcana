@@ -35,7 +35,6 @@ public:
   std::unique_ptr<Expresion> parsearRango();
   std::unique_ptr<Expresion> parsearAcceso(std::unique_ptr<Expresion> contenedor);
   std::pair<std::string, std::string> partirLexemaNum(std::string lexema);
-  std::unique_ptr<Expresion> parsearPrefijo();
   std::unique_ptr<Expresion> parsearCasteo();
   std::unique_ptr<Expresion> parsearFunctionCall(std::unique_ptr<Expresion> callee);
 
@@ -71,6 +70,7 @@ public:
 
   Pr obtenerPrecedencia(Tt tipo);
 
+  std::unique_ptr<Expresion> parsearPrefijo();
   std::unique_ptr<Expresion> parsearExpresion(Pr precedenciaMinima);
 
   std::vector<std::unique_ptr<Sentencia>> parsearPrograma();
