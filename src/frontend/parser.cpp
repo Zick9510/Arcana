@@ -953,17 +953,13 @@ std::vector<ArcaneBranch> Parser::parsearCuerpoArcano(
 
         check(Tt::ASIG_BLOQUE);
 
-        //if (es_primer_segmento) {
-        //    check(Tt::ASIG_BLOQUE); // <=>
-        //    es_primer_segmento = false;
-        //}
-
         segmento.br_cont = parsearBloque(); // { ... }
         rama_actual.segmentos.push_back(std::move(segmento));
 
         if (peek().tipo != Tt::IDENTIFICADOR && peek().tipo != Tt::PUNTO_COMA) {
           break;
         }
+
       }
 
       check(Tt::PUNTO_COMA);
@@ -1106,6 +1102,8 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano(bool checkSc) {
   std::pair<size_t, ReglaArcano> rule;
   bool done = false;
 
+  bool grupo_expr = false;
+
   while (!posibles_reglas.empty()) {
 
     std::vector<std::pair<size_t, ReglaArcano>> reglas_terminadas;
@@ -1143,7 +1141,8 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano(bool checkSc) {
       bool queda = false;
 
       if      (tipo == TPA::CODE && sig.tipo    == Tt::LLAVE_L) { queda = true; }
-      else if (tipo == TPA::EXPR && sig.tipo    == Tt::PAREN_L) { queda = true; }
+      //else if (tipo == TPA::EXPR && sig.tipo    == Tt::PAREN_L) { queda = true; }
+      else if (tipo == TPA::EXPR && (grupo_expr || sig.tipo == Tt::PAREN_L)) { queda = true; }
       else if (tipo == TPA::KEY  && sig.lexema  == nombre     ) { queda = true; }
       else if (tipo == TPA::NULO && (sig.lexema == nombre ||
               sig.tipo == r.second.componentes[comp_idx].tipo)) { queda = true; }
@@ -1160,7 +1159,7 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano(bool checkSc) {
         break;
 
       } else {
-        throw std::runtime_error("Error de sntaxis: Las estructuras provistas no coinciden con ninguna regla para '" + key + "'.");
+        throw std::runtime_error("Error de sintaxis: Las estructuras provistas no coinciden con ninguna regla para '" + key + "'.");
 
       }
 
@@ -1174,9 +1173,24 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano(bool checkSc) {
       mapa_code[nombre] = parsearBloque();
 
     } else if (tipo == TPA::EXPR) {
+
+      if (!grupo_expr) {
+        check(Tt::PAREN_L);
+      }
+
       mapa_expr[nombre] = std::make_unique<SentenciaExpr>(parsearExpresion(Pr::MINIMA));
 
-    } else if (tipo == TPA::KEY ) {
+      if (peek().tipo == Tt::PUNTO_COMA) {
+        get();
+        grupo_expr = true;
+
+      } else if (peek().tipo == Tt::PAREN_R) {
+        get();
+        grupo_expr = false;
+
+      }
+
+    } else if (tipo == TPA::KEY) {
       get();
 
     }

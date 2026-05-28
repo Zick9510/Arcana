@@ -176,8 +176,8 @@ inline bool isKeyword(Tt t) {
     case Tt::IF     :
     case Tt::ELSE   :
     case Tt::WHILE  :
-    case Tt::FOR    :
-    case Tt::FOREACH:
+    //case Tt::FOR    :
+    //case Tt::FOREACH:
     case Tt::RETURN : {
       return true;
     }
@@ -438,8 +438,8 @@ inline std::map<std::string, Tt> keywords = {
   //{"do"   , Tt::DO   },
 
   // For y foreach
-  {"for" , Tt::FOR    },
-  {"each", Tt::FOREACH},
+  //{"for" , Tt::FOR    },
+  //{"each", Tt::FOREACH},
 
   // Break, continue and pass
   {"break"   , Tt::BREAK   },

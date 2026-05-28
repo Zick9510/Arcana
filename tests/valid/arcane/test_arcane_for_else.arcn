@@ -1,0 +1,58 @@
+arcane ForElse (for: key, for_block: code, else: key, else_block: code, cond: expr) {
+
+  rules [
+    @simple   : for  [ cond  for_block ];
+    @with_else: else [      else_block ];
+
+  ];
+
+  chains [
+    @simple -> @with_else? ;
+
+  ];
+
+  @simple {
+
+    for [int* i] <=> {
+
+      bool finished = false;
+
+      while (cond) {
+        for_block;
+
+        *i = *i + 1;
+        if (!cond) { finished = true; }
+
+      }
+
+      ?chain(@with_else) {
+        if (finished) { else_block; }
+      }
+
+    };
+
+  }
+
+  @with_else {
+    else <=> {};
+
+  }
+
+}
+
+func main() -> int {
+
+  int a = 0;
+  int b = 1;
+
+  for [&a] (a < 5) {
+    b = b * 2;
+
+  } else {
+    b = b * 3;
+
+  }
+
+  return b;
+
+}

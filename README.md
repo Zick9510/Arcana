@@ -33,7 +33,7 @@ The heart of Arcana is the ability to define your own language constructs.
 
 #### Example: Custom Loop
 
-Define a loop that executes a block a specific number of times without the boilerplate of a traditional ```for``` loop.
+Define a loop that executes a block a specific number of times.
 
 ```arcn
 arcane CustomLoop (loop: key, block: code) {
@@ -75,47 +75,47 @@ func main() -> int {
 
 ### Meta-directives and Chainable Arcanes
 
-#### Example: Loop - Else
+#### Example: For - Else
 
-Create a ```loop``` construct that allows an optional ```else``` block afterwards.
+Create a ```for``` construct that allows an optional ```else``` block afterwards.
 
 ```arcn
-arcane LoopElse (loop: key, block_loop: code, else: key, block_else: code) {
+arcane ForElse (for: key, for_block: code, else: key, else_block: code, cond: expr) {
 
   rules [
-    @simple: loop [ block_loop ];
-    @else_r: else [ block_else ];
+    @simple   : for  [ cond  for_block ];
+    @with_else: else [      else_block ];
 
   ];
 
   chains [
-    @simple -> @else_r? ;
+    @simple -> @with_else? ;
 
   ];
 
   @simple {
 
-    loop [int a] <=> {
+    for [int* i] <=> {
 
       bool finished = false;
 
-      while (a) {
-        block_loop;
-        a = a - 1;
-        if (a == 0) { finished = true; }
+      while (cond) {
+        for_block;
+
+        *i = *i + 1;
+        if (!cond) { finished = true; }
 
       }
 
-      ?chain (@else_r) {
-        if (finished) { block_else; }
-
+      ?chain(@with_else) {
+        if (finished) { else_block; }
       }
 
     };
 
   }
 
-  @else_r {
+  @with_else {
     else <=> {};
 
   }
@@ -124,31 +124,18 @@ arcane LoopElse (loop: key, block_loop: code, else: key, block_else: code) {
 
 func main() -> int {
 
-  int i = 1;
+  int a = 0;
+  int b = 1;
 
-  loop [4] {
-    i = i * 2;
-
-  } else {
-    i = i - 8;
-
-  }
-
-  loop [2] {
-    i = i + 4;
-
-  }
-
-  loop [8]  {
-    i = i - 1;
-    break;
+  for [&a] (a < 5) {
+    b = b * 2;
 
   } else {
-    i = 200;
+    b = b * 3;
 
   }
 
-  return i;
+  return b;
 
 }
 ```
@@ -193,7 +180,6 @@ func main() -> int {
     j = j * 2;
 
   } while (i);
-
 
   return j;
 

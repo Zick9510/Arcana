@@ -3,6 +3,7 @@ arcane Twice_TwiceIf (twice: key, twice_if: key, expr1: expr, block1: code) {
   rules [
     @simple: twice    [ block1 ];
     @eval  : twice_if [ expr1 block1 ];
+
   ];
 
   @simple {
