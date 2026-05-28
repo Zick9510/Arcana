@@ -1,0 +1,15 @@
+func factorial(int n) -> int {
+
+  if (n <= 1) {
+    return 1;
+  }
+
+  return n * factorial(n - 1);
+
+}
+
+func main() -> int {
+
+  return factorial(5) + factorial(0) + factorial(-3) + factorial(3) * factorial( - 2 * 3 );
+
+}

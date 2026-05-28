@@ -42,6 +42,7 @@ public:
   virtual std::string toString()                          const = 0;
   virtual int getBitSize()                                const = 0;
   virtual bool esIgual(const ArcanaType* otro)            const = 0;
+  virtual bool isNumeric()                                const { return true   ; }
   virtual bool isSigned()                                 const { return false  ; }
   virtual std::shared_ptr<ArcanaType> getUnderlyingType() const { return nullptr; }
 
@@ -54,6 +55,7 @@ public:
   std::string toString()               const override;
   int getBitSize()                     const override;
   bool esIgual(const ArcanaType* otro) const override;
+  bool isNumeric()                     const override;
 
 };
 
@@ -64,6 +66,7 @@ public:
   std::string toString()               const override;
   int getBitSize()                     const override;
   bool esIgual(const ArcanaType* otro) const override;
+  bool isNumeric()                     const override;
 
 };
 
@@ -142,7 +145,7 @@ public:
   std::string toString()               const override;
   int getBitSize()                     const override;
   bool esIgual(const ArcanaType* otro) const override;
-
+  bool isNumeric()                     const override;
 };
 
 struct CampoShape {
@@ -159,6 +162,7 @@ public:
   std::string toString()               const override;
   int getBitSize()                     const override;
   bool esIgual(const ArcanaType* otro) const override;
+  bool isNumeric()                     const override;
 
 };
 

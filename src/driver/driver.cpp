@@ -53,6 +53,15 @@ bool Driver::compile(const CompilerConfig& config) {
   Checker checker(tablas, ast, err_handler, factory, contexto_arcanos);
   checker.verificarPrograma();
 
+
+  //... Debug
+  std::cout << "\n --- ARBOL DE SINTAXIS ABSTRACTA (AST) ---\n\n";
+  for (const auto& nodo : ast) {
+    if (nodo) { nodo->imprimir(); }
+    else      { std::cout << "[Nodo Nulo]\n"; }
+    std::cout << "---------------------------\n";
+  }
+
   if (err_handler.checkErrors()) { //... Hay al menos un error
     std::cerr << "[53 driver.cpp]: Error\n";
     err_handler.show();
@@ -73,14 +82,6 @@ bool Driver::compile(const CompilerConfig& config) {
   });
 
   emitter.generarArchivoIR(output_name.value());
-
-  //... Debug
-  std::cout << "\n --- ARBOL DE SINTAXIS ABSTRACTA (AST) ---\n\n";
-  for (const auto& nodo : ast) {
-    if (nodo) { nodo->imprimir(); }
-    else      { std::cout << "[Nodo Nulo]\n"; }
-    std::cout << "---------------------------\n";
-  }
 
   return true;
 

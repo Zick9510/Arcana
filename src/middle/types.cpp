@@ -19,6 +19,8 @@ bool UnknownType::esIgual(const ArcanaType* otro) const {
   return (otro->kind == TypeKind::DESCONOCIDO);
 }
 
+bool UnknownType::isNumeric() const { return false; }
+
 // --- VoidType ---
 VoidType::VoidType()
   : ArcanaType(TypeKind::VOID) {}
@@ -31,6 +33,8 @@ bool VoidType::esIgual(const ArcanaType* otro) const {
   return (otro->kind == TypeKind::VOID);
 
 }
+
+bool VoidType::isNumeric() const { return false; }
 
 // --- PointerType ---
 PointerType::PointerType(std::shared_ptr<ArcanaType> t_a)
@@ -157,6 +161,8 @@ bool MorphType::esIgual(const ArcanaType* otro) const {
   return true; //...
 }
 
+bool MorphType::isNumeric() const { return false; }
+
 // --- ShapeType ---
 ShapeType::ShapeType(std::vector<CampoShape> c)
   : ArcanaType(TypeKind::SHAPE), campos(c) {}
@@ -174,6 +180,8 @@ int ShapeType::getBitSize() const {
 bool ShapeType::esIgual(const ArcanaType* otro) const {
   return true; //...
 }
+
+bool ShapeType::isNumeric() const { return false; }
 
 /* --- Factory --- */
 

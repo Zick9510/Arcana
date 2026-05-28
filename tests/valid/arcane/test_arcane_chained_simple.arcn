@@ -33,10 +33,7 @@ arcane LoopElse (loop: key, block_loop: code, else: key, block_else: code) {
 
   @else_r {
 
-    else <=> {
-      //block_else;
-
-    };
+    else <=> {};
 
   }
 
@@ -55,14 +52,12 @@ func main() -> int {
   }
 
   // i = 8
-  //return i;
 
-  loop [2] { // 8 24 56 120 248
+  loop [2] {
     i = i + 4;
   }
 
   // i = 16
-  //return i;
 
   loop [8] {
     i = i - 1;
@@ -76,7 +71,5 @@ func main() -> int {
   // i = 15
 
   return i;
-
-
 
 }

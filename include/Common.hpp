@@ -875,7 +875,19 @@ public:
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
-    std::cout << sangria << "+- [" << tipo_resuelto.tipoString() << "]\n";
+    std::cout << sangria << "+- ";
+
+    std::visit([](const auto& arg) {
+      using T = std::decay_t<decltype(arg)>;
+
+      if      constexpr (std::is_same_v<T, NumberData >) { std::cout <<         arg.valor <<         arg.sufijo; }
+      else if constexpr (std::is_same_v<T, CharData   >) { std::cout << '\'' << arg.letra << '\'' << arg.sufijo; }
+      else if constexpr (std::is_same_v<T, RuleData   >) { std::cout << '@'  << arg.rule                       ; }
+      else if constexpr (std::is_same_v<T, BooleanData>) { std::cout <<         arg.valor                      ; }
+
+    }, datos);
+
+    std::cout << " [" << tipo_resuelto.tipoString() << "]\n";
   }
 
 };

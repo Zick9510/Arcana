@@ -265,6 +265,13 @@ void Emitter::visitar(ExprUnaria* nodo) {
 
   switch (nodo->operador) { //...
 
+    case TipoOperador::RESTA: {
+      std::cout << "[269, emitter.cpp] Resta\n";
+      llvmValor = nodo->tipo_resuelto.valor->kind == TypeKind::FLOAT ? llvmBuilder->CreateFNeg(llvmValor, "")
+                                                                     : llvmBuilder->CreateNeg (llvmValor, "");
+      break;
+    }
+
     case TipoOperador::BITWISE_NO:
     case TipoOperador::LOGICO_NO: {
       llvmValor = llvmBuilder->CreateNot(llvmValor, "");
@@ -305,7 +312,7 @@ void Emitter::visitar(ExprUnaria* nodo) {
     }
 
     default: {
-      std::cout << "[138, emitter.cpp] Error: Operador unario no implementado.";
+      std::cout << "[308, emitter.cpp] Error: Operador unario no implementado.";
       exit(1);
     }
 
@@ -314,7 +321,7 @@ void Emitter::visitar(ExprUnaria* nodo) {
 }
 
 void Emitter::visitar(ExprBinaria* nodo) {
-  //std::cout << "[146, emitter.cpp] ExprBinaria\n";
+  //std::cout << "[317, emitter.cpp] ExprBinaria\n";
   nodo->izquierda->accept(this);
   llvm::Value* left = llvmValor;
 
@@ -325,21 +332,21 @@ void Emitter::visitar(ExprBinaria* nodo) {
 
   switch (nodo->operador) { //...
     case TipoOperador::SUMA: {
-      std::cout << "[183, emitter.cpp]\n";
+      std::cout << "[328, emitter.cpp]\n";
       llvmValor = es_float ? llvmBuilder->CreateFAdd(left, right, "")
                            : llvmBuilder->CreateAdd(left, right, "");
       break;
     }
 
     case TipoOperador::RESTA: {
-      std::cout << "[189, emitter.cpp]\n";
+      std::cout << "[335, emitter.cpp]\n";
       llvmValor = es_float ? llvmBuilder->CreateFSub(left, right, "")
                            : llvmBuilder->CreateSub(left, right, "");
       break;
     }
 
     case TipoOperador::MULT: {
-      std::cout << "[196, emitter.cpp]\n";
+      std::cout << "[342, emitter.cpp]\n";
       llvmValor = es_float ? llvmBuilder->CreateFMul(left, right, "")
                            : llvmBuilder->CreateMul(left, right, "");
       break;
@@ -351,14 +358,14 @@ void Emitter::visitar(ExprBinaria* nodo) {
     case TipoOperador::CMP_DISTINTO:
     case TipoOperador::CMP_MENOR_IGUAL:
     case TipoOperador::CMP_MENOR: {
-      std::cout << "[203, emitter.cpp]\n";
+      std::cout << "[354, emitter.cpp]\n";
       llvm::CmpInst::Predicate pred = obtenerPredicadoCmp(nodo->operador, es_float, nodo->derecha->tipo_resuelto.valor->isSigned());
       llvmValor = llvmBuilder->CreateCmp(pred, left, right);
       break;
     }
 
     case TipoOperador::SWAP: {
-      std::cout << "[211, emitter.cpp]\n";
+      std::cout << "[361, emitter.cpp]\n";
 
       llvm::Value* ptr_l = nullptr;
       llvm::Value* ptr_r = nullptr;
@@ -855,10 +862,6 @@ void Emitter::visitar(SentenciaLlamadaArcano* nodo) { //...
       seg.br_cont->accept(this);
     }
   }
-
-  //for (const auto& c : nodo->chains) {
-  //  c->accept(this);
-  //}
 
   bloquesArcanoActivos = backup_bloques;
   tablas.salirScope();
