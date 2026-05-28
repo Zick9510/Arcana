@@ -77,6 +77,86 @@ func main() -> int {
 }
 ```
 
+### Meta-directives and Chainable Arcanes
+
+#### Example: loop-else
+
+Create a ```loop``` construct that allows an optional ```else``` block afterwards.
+
+```arcn
+arcane LoopElse (loop: key, block_loop: code, else: key, block_else: code) {
+
+  rules [
+    @simple: loop [ block_loop ];
+    @else_r: else [ block_else ];
+
+  ];
+
+  chains [
+    @simple -> @else_r? ;
+
+  ];
+
+  @simple {
+
+    loop [int a] <=> {
+
+      bool finished = false;
+
+      while (a) {
+        block_loop;
+        a = a - 1;
+        if (a == 0) { finished = true; }
+
+      }
+
+      ?chain (@else_r) {
+        if (finished) { block_else; }
+
+      }
+
+    };
+
+  }
+
+  @else_r {
+    else <=> {};
+
+  }
+
+}
+
+func main() -> int {
+
+  int i = 1;
+
+  loop [4] {
+    i = i * 2;
+
+  } else {
+    i = i - 8;
+
+  }
+
+  loop [2] {
+    i = i + 4;
+
+  }
+
+  loop [8]  {
+    i = i - 1;
+    break;
+
+  } else {
+    i = 200;
+
+  }
+
+  return i;
+
+}
+```
+
 ### The Trait System
 
 Traits represent the behavioral properties of a code block. You can define how a block executes and interacts with the machine's state. While Traits are
@@ -90,17 +170,17 @@ block.
 
 ```arcn
 arcane DoWhile (do: key, body: code, while: key, cond: expr) {
+
   rules [
     @standard  : do [ body while cond ];
 
   ];
 
   @standard {
-
     do <=> #loop {
       body;
-
       if (!cond) { break; }
+
     };
 
   }
