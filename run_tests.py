@@ -11,16 +11,17 @@ class Color:
     BOLD   = '\033[1m'
     END    = '\033[0m'
 
-COMPILER_PATH   : str = "./bin/arcana"
-VALID_TESTS_DIR : str = "tests/valid/"
-OUTPUT_TESTS_DIR: str = "tests/build/"
+COMPILER_PATH    : str = "./bin/arcana"
+VALID_TESTS_DIR  : str = "tests/valid/"
+INVALID_TESTS_DIR: str = "tests/invalid/"
+OUTPUT_TESTS_DIR : str = "tests/build/"
 
 failed_tests: list = []
 passed      : int  = 0
 failed      : int  = 0
 timeout_fail: int  = 0
 
-def run_single_test(filepath, filename):
+def runSingleTest(filepath, filename, expectFail = False):
     global passed, failed, timeout_fail
 
     os.makedirs(OUTPUT_TESTS_DIR, exist_ok=True)
@@ -37,6 +38,18 @@ def run_single_test(filepath, filename):
         print(f"{Color.YELLOW}[TIME] {filename} (Exceeded 500ms)")
         failed_tests.append((filename, "Timeout", b"", "Process killed after 500ms"))
         timeout_fail += 1
+        return
+
+    if (expectFail):
+        if (comp_result.returncode != 0):
+            print(f"{Color.GREEN}[OK]{Color.END} {filename}")
+            passed += 1
+
+        else:
+            failed_tests.append((filename, "Compilation should've failed", comp_result.stdout, comp_result.stderr))
+            print(f"  {Color.RED}[FAIL]{Color.END} {filename} (Compilation Error)")
+            failed += 1
+
         return
 
     if (comp_result.returncode != 0):
@@ -57,16 +70,17 @@ def run_single_test(filepath, filename):
         print(f"  {Color.RED}[FAIL]{Color.END} {filename} (Exec Error)")
         failed += 1
 
-def run_tests():
-    print(f"{Color.BOLD}{Color.MAG}--- ARCANA TEST SUITE ---{Color.END}\n")
-    start_time = time.perf_counter()
+def processDirectory(directory, expectFail = False):
+    if (not os.path.exists(directory)):
+        print(f"{Color.YELLOW}Directorio no encontrado: {directory}{Color.END}")
+        return
 
-    items = sorted(os.listdir(VALID_TESTS_DIR))
-    subdirs = [d for d in items if os.path.isdir(os.path.join(VALID_TESTS_DIR, d))]
-    root_files = [f for f in items if f.endswith(".arcn") and os.path.isfile(os.path.join(VALID_TESTS_DIR, f))]
+    items = sorted(os.listdir(directory))
+    subdirs = [d for d in items if os.path.isdir(os.path.join(directory, d))]
+    root_files = [f for f in items if f.endswith(".arcn") and os.path.isfile(os.path.join(directory, f))]
 
     for subdir in subdirs:
-        subdir_path = os.path.join(VALID_TESTS_DIR, subdir)
+        subdir_path = os.path.join(directory, subdir)
         files_subdir = [f for f in sorted(os.listdir(subdir_path)) if f.endswith(".arcn")]
 
         if (not files_subdir):
@@ -75,15 +89,25 @@ def run_tests():
         print(f"{Color.BOLD}{Color.CYAN}[ FOLDER: {subdir} ]{Color.END}")
         for filename in files_subdir:
             filepath = os.path.join(subdir_path, filename)
-            run_single_test(filepath, filename)
+            runSingleTest(filepath, filename, expectFail)
         print()
 
     if (root_files):
         print(f"{Color.BOLD}{Color.CYAN}[ MISC ]{Color.END}")
         for filename in root_files:
-            filepath = os.path.join(VALID_TESTS_DIR, filename)
-            run_single_test(filepath, filename)
+            filepath = os.path.join(directory, filename)
+            runSingleTest(filepath, filename, expectFail)
         print()
+
+def runTests():
+    print(f"{Color.BOLD}{Color.MAG}/* --- ARCANA TEST SUITE --- */{Color.END}\n")
+    start_time = time.perf_counter()
+
+    print(f"{Color.BOLD}{Color.MAG}--- PROCESSING VALID TESTS ---{Color.END}\n")
+    processDirectory(VALID_TESTS_DIR, expectFail=False)
+
+    print(f"{Color.BOLD}{Color.MAG}---PROCESSING INVALID TESTS ---{Color.END}\n")
+    processDirectory(INVALID_TESTS_DIR, expectFail=True)
 
     end_time = time.perf_counter() - start_time
 
@@ -96,15 +120,15 @@ def run_tests():
 
 
     print("\n" + "=" * 30)
-    print(f"{Color.BOLD}{Color.CYAN}Summary:{Color.END}")
-    print(f"{Color.GREEN}  PASSED: {passed}{Color.END}")
-    print(f"{Color.RED}  FAILED: {failed}{Color.END}")
+    print(f"{Color.BOLD  }{Color.CYAN}Summary:     {Color.END}")
+    print(f"{Color.GREEN }  PASSED : {passed      }{Color.END}")
+    print(f"{Color.RED   }  FAILED : {failed      }{Color.END}")
     print(f"{Color.YELLOW}  TIMEOUT: {timeout_fail}{Color.END}")
-    print(f"{Color.BOLD}{Color.CYAN}  TOTAL TIME: {end_time:.4f}s{Color.END}")
+    print(f"{Color.BOLD  }{Color.CYAN}  TOTAL TIME: {end_time:.4f}s{Color.END}")
     print("=" * 30)
 
 if (__name__ == '__main__'):
-    run_tests()
+    runTests()
 
 """
 Benchmark Environment
@@ -118,10 +142,15 @@ Benchmark Environment
 
 Reproducible Benchmarks:
 
-    deploy   build: 0.9 - 1.0 seconds
+    deploy   build: 1.7 - 1.8 seconds
 
-    shy      build: 1.0 - 1.3 seconds
+    shy      build: 2.3 - 2.7 seconds
 
-    segfault build: 1.4 - 1.6 seconds
+    fast     build: 1.6 - 1.8 seconds
+
+    segfault build: 3.7 - 3.7 seconds
+
+
+Last updated: 28/5/2026 (dd/mm/yyyy)
 
 """
