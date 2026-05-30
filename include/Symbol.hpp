@@ -60,6 +60,7 @@ struct Dt {
   bool esPrimitivo() const;
 
   std::string tipoString() const;
+
 };
 
 struct InfoVariable {

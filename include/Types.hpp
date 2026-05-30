@@ -106,11 +106,6 @@ public:
   bool isNumeric()                     const override;
 };
 
-//struct CampoStruct {
-//  std::shared_ptr<ArcanaType> tipo;
-//  std::string nombre; // Empty if anon (ej {int a, float b} vs {int, float})
-//};
-
 class StructType : public ArcanaType {
 public:
   std::string nombre;

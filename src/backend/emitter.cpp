@@ -27,10 +27,12 @@ void TraitEmitter::despacharTrait(Bloque* nodo, size_t idx) {
       handleLoop(nodo, idx);
       break;
     }
+
     default: {
       despacharTrait(nodo, idx + 1);
       break;
     }
+
   }
 }
 
@@ -383,6 +385,8 @@ void Emitter::visitar(ExprUnaria* nodo) {
 void Emitter::visitar(ExprBinaria* nodo) {
   //std::cout << "[317, emitter.cpp] ExprBinaria\n";
 
+  std::cout << "[386, emitter.cpp] nodo->overload: '" << nodo->overload << "'\n";
+
   if (!nodo->overload.empty()) {
     llvm::Function* func = llvmModulo->getFunction(nodo->overload);
     if (!func) {
@@ -555,7 +559,7 @@ void Emitter::visitar(ExprCasteo* nodo) {
         llvmValor = llvmBuilder->CreateICmpNE(
           val,
           llvm::ConstantInt::get(val->getType(), 0),
-          "cast_temp"
+          ""
         );
         break;
       }
@@ -621,6 +625,7 @@ void Emitter::visitar(ExprAccesoPunto* nodo) {
   } else { //...
 
   }
+
 }
 
 void Emitter::visitar(ExprFuncCall* nodo) {
@@ -706,7 +711,7 @@ void Emitter::visitar(SentenciaAsignarVar* nodo) {
     llvmBuilder->CreateStore(llvmValor, alloca);
 
   }
-  
+
   if (info) {
     info->alloca = alloca;
   }

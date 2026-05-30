@@ -1819,6 +1819,12 @@ struct Clase {
 // This & that == 0
 inline bool isPowerOf2(int num) { return (num > 0) && ((num & (num - 1)) == 0); }
 
+namespace dunder {
+  const std::string ADD  = "__add__" ;
+  const std::string SUB  = "__sub__" ;
+  const std::string MULT = "__mult__";
+
+};
 
 /* --- Colors --- */
 extern const std::string COLOR_RESET  ;

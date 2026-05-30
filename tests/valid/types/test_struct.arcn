@@ -7,17 +7,21 @@ struct Vec3 {
     return Vec3 { x + otro.x, y + otro.y, z + otro.z };
   }
 
+  func getTotal() -> float {
+    return x + y + z;
+  }
+
 };
 
 func main() -> int {
 
-  Vec3 v1 = Vec3 { 1.5 , 2, z: 3.0 };
+  Vec3 v1 = Vec3 { 1.5, 2, z: 3.0 };
   Vec3 v2;
 
-  v2.x = 3.5;
-  v2.y = v2.x + 1.5;
-  v2.z = v2.x * v2.y - 2.0;
+  v2.x = 3.5; // 3.5
+  v2.y = v2.x + 1.5; // 3.5 + 1.5 = 5.0
+  v2.z = v2.x * v2.y - 2.0; // 3.5 * 5.0 - 2.0 = 15.5
 
-  return (v1 + v2).x;
+  return (v1 + v2).x + v2.getTotal(); // 3.5 + 1.5 + 3.5 + 5.0 + 15.0 = 29.0
 
 }

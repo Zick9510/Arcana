@@ -13,10 +13,12 @@
  * Headers: PascalCase.hpp
  *
  * Classes: PascalCase
- * Structs: PascalCase
- *
  * Arguments (Classes, private): camelCase
- * Arguments (Classes, public): snake_case
+ * Arguments (Classes, public ): snake_case
+ *
+ * Structs: PascalCase
+ * Struct's properties: snake_case
+ * Struct's methods   : camelCase
  *
  * Functions : camelCase
  * Methods   : camelCase
@@ -73,7 +75,7 @@ CompilerConfig parseArguments(int argc, const char *argv[]) {
 
 }
 
-int main(int argc, const char *argv[]) { //... I am still translating the code to english
+int main(int argc, const char *argv[]) { //... We are still translating the code to english
 
   //... Debug. Just measuring speed
   auto start = std::chrono::high_resolution_clock::now();

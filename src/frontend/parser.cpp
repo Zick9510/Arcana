@@ -1342,6 +1342,8 @@ std::unique_ptr<Sentencia> Parser::parsearStruct() {
       auto nodo_func = parsearFuncDecl();
       auto* nodo_decl = static_cast<SentenciaFuncDecl*>(nodo_func.get());
 
+      Dt tipo_this;
+
       InfoFuncion info_func;
       info_func.nombre = nodo_decl->nombre_func;
       info_func.tipo_retorno = nodo_decl->ret_type;
@@ -1352,7 +1354,7 @@ std::unique_ptr<Sentencia> Parser::parsearStruct() {
         tipos_args.push_back(a.second.tipo);
       }
 
-      std::string firma = generarFirma(nodo_decl->nombre_func, tipos_args);
+      std::string firma = name + "_" + generarFirma(nodo_decl->nombre_func, tipos_args);
       std::cout << "[1356, parser.cpp] firma: '" << firma << "'\n";
 
       nodo_decl->nombre_func = firma;

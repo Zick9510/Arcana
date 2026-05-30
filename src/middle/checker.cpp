@@ -64,10 +64,12 @@ std::shared_ptr<ArcanaType> Checker::verificarSuma(const Dt& izq, const Dt& der)
   if (izq.valor->kind == TypeKind::STRUCT) {
     std::cout << "[65, checker.cpp] izq struct\n";
     auto struct_type =  std::static_pointer_cast<StructType>(izq.valor);
-    std::string firma_buscada = generarFirma("__add__", {der});
+    std::string firma_buscada = struct_type->info->nombre + "_" + generarFirma(dunder::ADD, {der});
 
+    std::cout << "[69, checker.cpp] firma: '" << firma_buscada << "'\n";
     auto it_metodo = struct_type->info->metodos.find(firma_buscada);
     if (it_metodo != struct_type->info->metodos.end()) {
+      std::cout << "[72, checker.cpp]\n";
       return it_metodo->second.tipo_retorno.valor;
 
     }

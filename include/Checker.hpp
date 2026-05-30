@@ -51,7 +51,7 @@ public:
   // --- Utilidad ---
   inline std::string getDunder(TipoOperador op) { //...
     switch (op) {
-      case TipoOperador::SUMA: { return "__add__"; }
+      case TipoOperador::SUMA: { return dunder::ADD; }
       default: { return ""; }
     }
   }
@@ -178,7 +178,8 @@ public:
     if (!dunder.empty() && tipo_izq.valor->kind == TypeKind::STRUCT) {
      auto struct_type = std::static_pointer_cast<StructType>(tipo_izq.valor);
 
-      std::string firma = generarFirma(dunder, {tipo_der});
+      std::string firma = struct_type->info->nombre + "_" + generarFirma(dunder, {tipo_der});
+      std::cout << "[182, Checker.hpp] firma: '" << firma << "'\n";
 
       auto it_metodo = struct_type->info->metodos.find(firma);
       if (it_metodo != struct_type->info->metodos.end()) {
@@ -414,6 +415,21 @@ public:
       return ;
     }
 
+    std::string prefijo_metodo = struct_type->info->nombre + "_" + nodo->propiedad;
+    bool es_metodo = false;
+
+    for (const auto& [firma, info] : struct_type->info->metodos) {
+      if (firma.find(prefijo_metodo) == 0) {
+        es_metodo = true;
+        break;
+      }
+    }
+
+    if (es_metodo) { //...
+      nodo->tipo_resuelto = Dt(typeFactory.getUnknown());
+      return ;
+    }
+
     std::cerr << "Error: El struct '" << struct_type->info->nombre << "' no tiene una propiedad o método llamado '" << nodo->propiedad << "'\n";
     exit(1);
 
@@ -456,12 +472,56 @@ public:
   }
 
   void visitar(ExprFuncCall* nodo) override { //...
-    //... Params, for now, we just blindly assume the output is an integer
-    nodo->tipo_resuelto.valor = typeFactory.getInteger(32, false);
+
+    if (auto* acceso = dynamic_cast<ExprAccesoPunto*>(nodo->callee.get())) {
+
+      acceso->izquierda->accept(this);
+      auto tipo_izq = acceso->izquierda->tipo_resuelto.valor;
+
+      if (tipo_izq->kind == TypeKind::STRUCT) {
+        auto struct_type = std::static_pointer_cast<StructType>(tipo_izq);
+
+        std::vector<Dt> tipos_args;
+        for (const auto& a : nodo->argumentos) {
+          a.second->accept(this);
+          tipos_args.push_back(a.second->tipo_resuelto);
+        }
+
+        std::string firma = struct_type->info->nombre + "_" + generarFirma(acceso->propiedad, tipos_args);
+
+        auto it_metodo = struct_type->info->metodos.find(firma);
+        if (it_metodo != struct_type->info->metodos.end()) {
+          nodo->tipo_resuelto = it_metodo->second.tipo_retorno;
+
+          auto instancia = std::move(acceso->izquierda);
+          auto func_var = std::make_unique<ExprVariable>(firma);
+          nodo->callee = std::move(func_var);
+
+          //nodo->argumentos.insert(nodo->argumentos.begin(), {"", std::move(instancia)});
+          auto ref_instancia = std::make_unique<ExprUnaria>(TipoOperador::PTR_REF, std::move(instancia), true);
+          ref_instancia->accept(this);
+          nodo->argumentos.insert(nodo->argumentos.begin(), {"", std::move(ref_instancia)});
+
+          return ;
+
+        } else {
+          std::cerr << "Eerror: El struct '" << struct_type->info->nombre << "' no tiene un método que coincide con la firma '" << firma << "'\n";
+          exit(1);
+
+        }
+
+      }
+
+    }
+
+    nodo->callee->accept(this);
 
     for (const auto& n : nodo->argumentos) {
       n.second->accept(this);
     }
+
+    nodo->tipo_resuelto.valor = typeFactory.getInteger(32, false); //... Blindly assume it returns i32
+
   }
 
   void visitar(ExprInitList* nodo) override { //...

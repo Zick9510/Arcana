@@ -222,6 +222,7 @@ bool GestorTablas::actualizarStruct(const std::string& name, InfoStruct infoActu
   }
 
   return false;
+
 }
 
 InfoStruct* GestorTablas::buscarStruct(const std::string& name) {
