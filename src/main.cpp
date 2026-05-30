@@ -10,18 +10,18 @@
  * Style Guide:
  *
  * Source : camelCase.cpp
- * Haeders: PascalCase.hpp
+ * Headers: PascalCase.hpp
  *
  * Classes: PascalCase
  * Structs: PascalCase
  *
- * Argumentos (Clases, privados): camelCase
- * Argumentos (Clases, publicos): snake_case
+ * Arguments (Classes, private): camelCase
+ * Arguments (Classes, public): snake_case
  *
  * Functions : camelCase
  * Methods   : camelCase
  *
- * Argumentos (Funciones): camelCase
+ * Arguments (Functions): camelCase
  *
  * Enums          : PascalCase
  * Enums' elements: SCREAMING_SNAKE_CASE
@@ -62,7 +62,7 @@ CompilerConfig parseArguments(int argc, const char *argv[]) {
       std::cerr << "Error: Flag desconocida '" << arg << "'.\n";
       exit(1);
 
-    } else { // No tiene signo menos, asumimos que es el archivo de entrada
+    } else { // No minus sign, we assume it is the input file
       config.archivo_entrada = arg;
 
     }
@@ -76,16 +76,16 @@ CompilerConfig parseArguments(int argc, const char *argv[]) {
 int main(int argc, const char *argv[]) { //... I am still translating the code to english
 
   //... Debug. Just measuring speed
-  auto inicio = std::chrono::high_resolution_clock::now();
+  auto start = std::chrono::high_resolution_clock::now();
 
   CompilerConfig config = parseArguments(argc, argv);
 
-  std::filesystem::path archivo_entrada;
-  std::filesystem::path archivo_salida;
+  std::filesystem::path input_file;
+  std::filesystem::path output_file;
 
   if (config.archivo_entrada.has_value()) {
     if (std::filesystem::exists(*config.archivo_entrada)) {
-      archivo_entrada = *config.archivo_entrada;
+      input_file = *config.archivo_entrada;
 
     } else {
       std::cerr << "Error: La ruta '" << *config.archivo_entrada << "' no existe.\n";
@@ -94,7 +94,7 @@ int main(int argc, const char *argv[]) { //... I am still translating the code t
   }
 
   if (config.archivo_salida.has_value()) {
-    archivo_salida = *config.archivo_salida;
+    output_file = *config.archivo_salida;
 
   } else {
     std::cerr << "Error: Se esperaba un valor para el archivo de salida.\n";
@@ -102,15 +102,15 @@ int main(int argc, const char *argv[]) { //... I am still translating the code t
   }
 
   Driver driver;
-  bool resultado = driver.compile(config);
+  bool result = driver.compile(config);
 
   //... Debug
-  auto fin = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double, std::milli> tiempo = fin - inicio;
+  auto end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double, std::milli> time = end - start;
 
-  std::cout << '\n' << "Time: " << tiempo.count() << " ms.\n";
+  std::cout << '\n' << "Time: " << time.count() << " ms.\n";
 
-  if (resultado) {
+  if (result) {
     return 0;
 
   } else {
