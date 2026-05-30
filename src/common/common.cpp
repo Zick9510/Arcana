@@ -205,6 +205,39 @@ void GestorTablas::popFunction() {
 
 }
 
+bool GestorTablas::añadirStruct(const std::string& name, InfoStruct info) {
+  if (scopeActual->structs.count(name)) { return false; }
+
+  scopeActual->structs[name] = std::move(info);
+  return true;
+
+}
+
+bool GestorTablas::actualizarStruct(const std::string& name, InfoStruct infoActualizada) {
+  InfoStruct* info = buscarStruct(name);
+
+  if (info != nullptr) {
+    *info = std::move(infoActualizada);
+    return true;
+  }
+
+  return false;
+}
+
+InfoStruct* GestorTablas::buscarStruct(const std::string& name) {
+  Scope* cursor = scopeActual;
+
+  while (cursor != nullptr) {
+    auto it = cursor->structs.find(name);
+    if (it != cursor->structs.end()) { return &(it->second); }
+    cursor = cursor->padre;
+
+  }
+
+  return nullptr;
+
+}
+
 /* --- Colores para la terminal --- */
 
 inline const std::string COLOR_RESET   = "\033[0m"   ;

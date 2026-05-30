@@ -1,7 +1,7 @@
 // types.cpp
 
 #include "Types.hpp"
-
+#include "Common.hpp"
 #include "Includes.hpp"
 
 /* --- Arcana Types --- */
@@ -164,24 +164,35 @@ bool MorphType::esIgual(const ArcanaType* otro) const {
 bool MorphType::isNumeric() const { return false; }
 
 // --- ShapeType ---
-ShapeType::ShapeType(std::vector<CampoShape> c)
-  : ArcanaType(TypeKind::SHAPE), campos(c) {}
+StructType::StructType(InfoStruct* i)
+  : ArcanaType(TypeKind::STRUCT), info(i) {}
 
-std::string ShapeType::toString() const {
-  return ""; //...
-
-}
-
-int ShapeType::getBitSize() const {
-  return -1; //...
+std::string StructType::toString() const {
+  return info->nombre;
 
 }
 
-bool ShapeType::esIgual(const ArcanaType* otro) const {
-  return true; //...
+int StructType::getBitSize() const {
+  int total_bits = 0;
+
+  for (const auto& [nombre, var] : info->propiedades) {
+    total_bits += var.tipo.valor->getBitSize();
+
+  }
+
+  return total_bits;
+
 }
 
-bool ShapeType::isNumeric() const { return false; }
+bool StructType::esIgual(const ArcanaType* otro) const {
+  if (otro->kind != TypeKind::STRUCT) { return false; }
+
+  auto o = static_cast<const StructType*>(otro);
+  return (this->info->nombre == o->info->nombre);
+
+}
+
+bool StructType::isNumeric() const { return false; }
 
 /* --- Factory --- */
 
@@ -226,6 +237,7 @@ std::shared_ptr<PointerType> TypeFactory::getPointer(std::shared_ptr<ArcanaType>
 }
 
 std::shared_ptr<BooleanType> TypeFactory::getBoolean() {
+
   if (cacheBoolean != nullptr)  {
     return cacheBoolean;
 
@@ -278,12 +290,16 @@ std::shared_ptr<CharType> TypeFactory::getChar(int bits) {
 
 std::shared_ptr<MorphType> TypeFactory::getMorph(std::vector<std::shared_ptr<ArcanaType>> subtipos) {
   std::string firma = "[";
+
   for (size_t i = 0; i < subtipos.size(); ++i) {
     if (subtipos[i] != nullptr) {
       firma += subtipos[i]->toString();
       if (i + 1 < subtipos.size()) { firma += ", "; }
+
     }
+
   }
+
   firma += "]";
 
   if (cacheMorph.find(firma) != cacheMorph.end()) {
@@ -295,8 +311,14 @@ std::shared_ptr<MorphType> TypeFactory::getMorph(std::vector<std::shared_ptr<Arc
   return nueva_instancia;
 }
 
-std::shared_ptr<ShapeType> TypeFactory::getShape(std::vector<CampoShape> campos) {
+std::shared_ptr<StructType> TypeFactory::getStruct(InfoStruct* info) {
+
+  if (cacheStruct.find(info->nombre) != cacheStruct.end()) {
+    return cacheStruct[info->nombre];
+  }
+
+  auto nueva_instancia = std::make_shared<StructType>(info);
+  cacheStruct[info->nombre] = nueva_instancia;
+  return nueva_instancia;
 
 }
-
-//... GenericType (Templates)

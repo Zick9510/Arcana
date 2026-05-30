@@ -39,16 +39,16 @@ bool Driver::compile(const CompilerConfig& config) {
   // 4. Syntactic Analysis (Tokens -> AST)
   std::cout << "--- PARSER ---\n";
 
+  std::vector<Scope> scopes;
+  GestorTablas tablas;
   TypeFactory factory;
   ContextoArcanos contexto_arcanos;
-  Parser parser(tokens, err_handler, contexto_arcanos, factory);
+  Parser parser(tokens, tablas, err_handler, contexto_arcanos, factory);
   std::vector<std::unique_ptr<Sentencia>> ast = std::move(parser.parsearPrograma());
 
   // 5. Semantic Analysis (AST Check)
   std::cout << "--- CHECKER ---\n";
 
-  std::vector<Scope> scopes;
-  GestorTablas tablas;
 
   Checker checker(tablas, ast, err_handler, factory, contexto_arcanos);
   checker.verificarPrograma();

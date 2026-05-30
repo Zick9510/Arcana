@@ -49,18 +49,19 @@ public:
   std::shared_ptr<ArcanaType> verificarCmpIgualdad  (const Dt& izq, const Dt& der);
 
   // --- Utilidad ---
+  inline std::string getDunder(TipoOperador op) { //...
+    switch (op) {
+      case TipoOperador::SUMA: { return "__add__"; }
+      default: { return ""; }
+    }
+  }
+
   bool esCasteoValido(const Dt& tipo_original, const Dt& tipo_destino);
   std::unique_ptr<Expresion> forzarTipo(std::unique_ptr<Expresion> hijo, const Dt& tipoEsperado);
 
-  inline std::string generarFirma(const std::string& nombre, const std::vector<Dt>& tiposArgs) {
-    std::string firma = nombre;
-    for (const auto& tipo : tiposArgs) {
-      firma += "_" + tipo.tipoString();
-    }
-    return firma;
-  }
-
   // --- AST Visitor ---
+
+  // Expresiones
 
   void visitar(ErrorNode* nodo) override {}
 
@@ -172,6 +173,21 @@ public:
     Dt tipo_izq = nodo->izquierda->tipo_resuelto;
     Dt tipo_der = nodo->derecha  ->tipo_resuelto;
 
+    std::string dunder = getDunder(nodo->operador);
+
+    if (!dunder.empty() && tipo_izq.valor->kind == TypeKind::STRUCT) {
+     auto struct_type = std::static_pointer_cast<StructType>(tipo_izq.valor);
+
+      std::string firma = generarFirma(dunder, {tipo_der});
+
+      auto it_metodo = struct_type->info->metodos.find(firma);
+      if (it_metodo != struct_type->info->metodos.end()) {
+        nodo->tipo_resuelto = it_metodo->second.tipo_retorno;
+        nodo->overload = firma;
+        return ;
+      }
+    }
+
     std::shared_ptr<ArcanaType> tipo_c = promoverTipos(tipo_izq.valor, tipo_der.valor);
 
     nodo->tipo_resuelto = verificarOperandos(tipo_izq, tipo_der, nodo->operador);
@@ -262,8 +278,7 @@ public:
   void visitar(ExprArray* nodo) override {
     for (const auto& elemento : nodo->elementos) {
       elemento->accept(this);
-
-    }
+}
 
     //... Asignar el tipo de dato al array y comprobar que todos los tipos de datos dentro sean iguales
   }
@@ -381,6 +396,29 @@ public:
 
   }
 
+  void visitar(ExprAccesoPunto* nodo) override { //...
+    nodo->izquierda->accept(this);
+
+    auto tipo_izq = nodo->izquierda->tipo_resuelto.valor;
+    if (!tipo_izq || tipo_izq->kind != TypeKind::STRUCT) {
+      std::cerr << "Error: El lado izquierdo del '.' debe ser un struct\n";
+      nodo->tipo_resuelto = Dt(typeFactory.getUnknown());
+      return ;
+    }
+
+    auto struct_type = std::static_pointer_cast<StructType>(tipo_izq);
+
+    auto it_prop = struct_type->info->propiedades.find(nodo->propiedad);
+    if (it_prop != struct_type->info->propiedades.end()) {
+      nodo->tipo_resuelto = it_prop->second.tipo;
+      return ;
+    }
+
+    std::cerr << "Error: El struct '" << struct_type->info->nombre << "' no tiene una propiedad o método llamado '" << nodo->propiedad << "'\n";
+    exit(1);
+
+  }
+
   void visitar(Bloque* nodo) override {
 
     tablas.entrarScope();
@@ -426,6 +464,78 @@ public:
     }
   }
 
+  void visitar(ExprInitList* nodo) override { //...
+
+    if (!nodo->tipo_resuelto.valor || nodo->tipo_resuelto.valor->kind != TypeKind::STRUCT) {
+      std::cerr << "Error: Lista de inicialización sin un tipo de struct de destino claro\n";
+      nodo->tipo_resuelto = Dt(typeFactory.getUnknown());
+      return ;
+
+    }
+
+    auto struct_type = std::static_pointer_cast<StructType>(nodo->tipo_resuelto.valor);
+
+    const auto& props_esperadas = struct_type->info->propiedades;
+    const auto& orden_props = struct_type->info->orden_props;
+
+    if (nodo->args.size() != props_esperadas.size()) {
+      std::cerr << "Error: Argumentos mismatch en lista de inicialización\n";
+      nodo->tipo_resuelto = Dt(typeFactory.getUnknown());
+      return ;
+
+    }
+
+    std::vector<bool> prop_ocupada(props_esperadas.size(), false);
+
+    for (auto& arg : nodo->args) {
+      if (arg.name.has_value()) {
+        bool encontrada = false;
+        for (size_t i = 0; i < props_esperadas.size(); ++i) {
+          if (orden_props[i] == arg.name.value()) {
+            if (prop_ocupada[i]) {
+              std::cerr << "Error: La propiedad '" << arg.name.value() << "' fue inicializada más de una vez\n";
+              exit(1);
+            }
+
+            prop_ocupada[i] = true;
+            encontrada = true;
+            break;
+
+          }
+        }
+
+        if (!encontrada) {
+          std::cerr << "Error: El struct no tiene una propiedad llamada '" << arg.name.value() << "'\n";
+          exit(1);
+        }
+      }
+    }
+
+    size_t idx = 0;
+    for (auto& arg : nodo->args) {
+      if (!arg.name.has_value()) {
+        while (idx < orden_props.size() && prop_ocupada[idx]) {
+          idx++;
+        }
+        if (idx < props_esperadas.size()) {
+          arg.name = orden_props[idx];
+          prop_ocupada[idx] = true;
+        }
+      }
+    }
+
+    for (auto& arg : nodo->args) {
+      arg.value->accept(this);
+
+      Dt tipo_esperado = props_esperadas.at(arg.name.value()).tipo;
+
+      arg.value = forzarTipo(std::move(arg.value), tipo_esperado);
+
+    }
+
+  }
+
+  // Sentencias
   void visitar(SentenciaExpr* nodo) override {
     nodo->expresion->accept(this);
   }
@@ -434,7 +544,22 @@ public:
     nodo->izquierda->accept(this);
     nodo->derecha  ->accept(this);
 
+    Dt t_destino = nodo->izquierda->tipo_resuelto;
+
+    if (t_destino.valor->kind == TypeKind::DESCONOCIDO) {
+      return ;
+    }
+
+    if (!nodo->izquierda->isLValue()) {
+      std::cerr << "Error: Solo L-values pueden ser asigandos\n";
+      return ;
+
+    }
+
+    nodo->derecha = forzarTipo(std::move(nodo->derecha), t_destino);
+
     //... Check if the left side and right side have the same type
+
   }
 
   void visitar(SentenciaSi* nodo) override {
@@ -540,6 +665,24 @@ public:
 
   }
 
+  void visitar(SentenciaStruct* nodo) override {
+
+    if (!nodo->propiedades.empty()) {
+      for (const auto& p : nodo->propiedades) {
+        p->accept(this);
+      }
+
+    }
+
+    if (!nodo->metodos.empty()) {
+      for (const auto& m : nodo->metodos) {
+        m->accept(this);
+      }
+
+    }
+
+  }
+
   void visitar(SentenciaEscritura* nodo) override {
 
   }
@@ -590,10 +733,6 @@ public:
         seg.br_cont->accept(this);
       }
     }
-
-    //for (const auto& c : nodo->chains) {
-    //  c->accept(this);
-    //}
 
     auto bloque_expandido = std::make_unique<Bloque>();
     for (const auto& seg : rama->segmentos) {

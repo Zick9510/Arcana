@@ -104,11 +104,55 @@ llvm::Type* Emitter::obtenerTipoLLVM(std::shared_ptr<ArcanaType> tipo) {
       return llvm::PointerType::getUnqual(llvmCtx);
     }
 
+    case TypeKind::STRUCT: {
+      return llvmStructs[tipo->toString()];
+    }
+
     default: {
       return nullptr;
     }
 
   }
+
+}
+
+llvm::Value* Emitter::obtenerPuntero(Expresion* nodo) {
+
+  if (auto* var = dynamic_cast<ExprVariable*>(nodo)) {
+    InfoVariable* info = tablas.buscarVariable(var->nombre);
+    return info ? info->alloca : nullptr;
+  }
+
+  if (auto* unaria = dynamic_cast<ExprUnaria*>(nodo)) {
+    if (unaria->operador == TipoOperador::PTR_DEREF) {
+      unaria->operando->accept(this);
+      return llvmValor;
+    }
+  }
+
+  if (auto* acceso = dynamic_cast<ExprAccesoPunto*>(nodo)) {
+    llvm::Value* ptr_izq = obtenerPuntero(acceso->izquierda.get());
+    if (!ptr_izq) { return nullptr; }
+
+    auto tipo_izq = acceso->izquierda->tipo_resuelto.valor;
+    auto struct_type = std::static_pointer_cast<StructType>(tipo_izq);
+    const auto& orden_props = struct_type->info->orden_props;
+
+    unsigned idx = 0;
+    for (size_t i = 0; i < orden_props.size(); ++i) {
+      if (orden_props[i] == acceso->propiedad) {
+        idx = i;
+        break;
+      }
+    }
+
+    llvm::Type* tipo_struct_llvm = obtenerTipoLLVM(struct_type);
+    return llvmBuilder->CreateStructGEP(tipo_struct_llvm, ptr_izq, idx, "");
+
+  }
+
+  return nullptr;
+
 }
 
 llvm::CmpInst::Predicate Emitter::obtenerPredicadoCmp(TipoOperador op, bool esFloat, bool esSigned) {
@@ -247,6 +291,22 @@ void Emitter::visitar(ExprVariable* nodo) {
     return ;
   }
 
+  if (llvmThis != nullptr && !structActual.empty()) {
+    InfoStruct* info_struct = tablas.buscarStruct(structActual);
+    if (info_struct) {
+      auto it = std::find(info_struct->orden_props.begin(), info_struct->orden_props.end(), nodo->nombre);
+
+      if (it != info_struct->orden_props.end()) {
+        int i = std::distance(info_struct->orden_props.begin(), it);
+        llvm::Value* ptr_campo = llvmBuilder->CreateStructGEP(llvmStructActual, llvmThis, i, "");
+
+        llvm::Type* tipo_campo = obtenerTipoLLVM(info_struct->propiedades[nodo->nombre].tipo.valor);
+        llvmValor = llvmBuilder->CreateLoad(tipo_campo, ptr_campo, nodo->nombre);
+        return ;
+      }
+    }
+  }
+
   std::cerr << "Error: Variable '" << nodo->nombre << "' no encontrada.\n";
 
 }
@@ -322,6 +382,35 @@ void Emitter::visitar(ExprUnaria* nodo) {
 
 void Emitter::visitar(ExprBinaria* nodo) {
   //std::cout << "[317, emitter.cpp] ExprBinaria\n";
+
+  if (!nodo->overload.empty()) {
+    llvm::Function* func = llvmModulo->getFunction(nodo->overload);
+    if (!func) {
+      std::cerr << "Error: No se encontró el método '" << nodo->overload << "'\n";
+      return ;
+    }
+
+    llvm::Value* ptr_this = nullptr;
+
+    if (auto* var_izq = dynamic_cast<ExprVariable*>(nodo->izquierda.get())) {
+      InfoVariable* info = tablas.buscarVariable(var_izq->nombre);
+      if (info) { ptr_this = info->alloca; }
+    }
+
+    if (!ptr_this) {
+      std::cerr << "Error: No se pudo obtener la dirección de memoria para 'this'\n";
+      return ;
+    }
+
+    nodo->derecha->accept(this);
+    llvm::Value* arg_derecha = llvmValor;
+
+    std::vector<llvm::Value*> args_call = { ptr_this, arg_derecha };
+    llvmValor = llvmBuilder->CreateCall(func, args_call, "");
+    return ;
+
+  }
+
   nodo->izquierda->accept(this);
   llvm::Value* left = llvmValor;
 
@@ -332,21 +421,21 @@ void Emitter::visitar(ExprBinaria* nodo) {
 
   switch (nodo->operador) { //...
     case TipoOperador::SUMA: {
-      std::cout << "[328, emitter.cpp]\n";
+      std::cout << "[408, emitter.cpp]\n";
       llvmValor = es_float ? llvmBuilder->CreateFAdd(left, right, "")
                            : llvmBuilder->CreateAdd(left, right, "");
       break;
     }
 
     case TipoOperador::RESTA: {
-      std::cout << "[335, emitter.cpp]\n";
+      std::cout << "[415, emitter.cpp]\n";
       llvmValor = es_float ? llvmBuilder->CreateFSub(left, right, "")
                            : llvmBuilder->CreateSub(left, right, "");
       break;
     }
 
     case TipoOperador::MULT: {
-      std::cout << "[342, emitter.cpp]\n";
+      std::cout << "[422, emitter.cpp]\n";
       llvmValor = es_float ? llvmBuilder->CreateFMul(left, right, "")
                            : llvmBuilder->CreateMul(left, right, "");
       break;
@@ -358,14 +447,14 @@ void Emitter::visitar(ExprBinaria* nodo) {
     case TipoOperador::CMP_DISTINTO:
     case TipoOperador::CMP_MENOR_IGUAL:
     case TipoOperador::CMP_MENOR: {
-      std::cout << "[354, emitter.cpp]\n";
+      std::cout << "[434, emitter.cpp]\n";
       llvm::CmpInst::Predicate pred = obtenerPredicadoCmp(nodo->operador, es_float, nodo->derecha->tipo_resuelto.valor->isSigned());
       llvmValor = llvmBuilder->CreateCmp(pred, left, right);
       break;
     }
 
     case TipoOperador::SWAP: {
-      std::cout << "[361, emitter.cpp]\n";
+      std::cout << "[441, emitter.cpp]\n";
 
       llvm::Value* ptr_l = nullptr;
       llvm::Value* ptr_r = nullptr;
@@ -403,7 +492,7 @@ void Emitter::visitar(ExprBinaria* nodo) {
     }
 
     default: {
-      std::cout << "[184, emitter.cpp]\n";
+      std::cout << "[479, emitter.cpp]\n";
       break;
     }
   }
@@ -506,6 +595,34 @@ void Emitter::visitar(ExprAcceso* nodo) {
 
 }
 
+void Emitter::visitar(ExprAccesoPunto* nodo) {
+  nodo->izquierda->accept(this);
+  llvm::Value* struct_agregado = llvmValor;
+
+  if (!struct_agregado) { return ; }
+
+  auto tipo_izq = nodo->izquierda->tipo_resuelto.valor;
+  auto struct_type = std::static_pointer_cast<StructType>(tipo_izq);
+  const auto& orden_props = struct_type->info->orden_props;
+
+  unsigned idx = 0;
+  bool es_prop = false;
+  for (size_t i = 0; i < orden_props.size(); ++i) {
+    if (orden_props[i] == nodo->propiedad) {
+      idx = i;
+      es_prop = true;
+      break;
+    }
+  }
+
+  if (es_prop) {
+    llvmValor = llvmBuilder->CreateExtractValue(struct_agregado, idx, "");
+
+  } else { //...
+
+  }
+}
+
 void Emitter::visitar(ExprFuncCall* nodo) {
   //std::cout << "[247, emitter.cpp] ExprFuncCall\n";
   auto* var_callee = dynamic_cast<ExprVariable*>(nodo->callee.get());
@@ -533,6 +650,36 @@ void Emitter::visitar(ExprFuncCall* nodo) {
 
 }
 
+void Emitter::visitar(ExprInitList* nodo) {
+  auto struct_type = std::static_pointer_cast<StructType>(nodo->tipo_resuelto.valor);
+  llvm::Type* struct_llvm_type = obtenerTipoLLVM(struct_type);
+
+  llvm::Value* struct_val = llvm::UndefValue::get(struct_llvm_type);
+
+  const auto& orden_props = struct_type->info->orden_props;
+
+  for (const auto& arg : nodo->args) {
+
+    arg.value->accept(this);
+    llvm::Value* arg_val = llvmValor;
+
+    unsigned idx = 0;
+    for (size_t i = 0; i < orden_props.size(); ++i) {
+      if (orden_props[i] == arg.name.value()) {
+        idx = i;
+        break;
+
+      }
+    }
+
+    struct_val = llvmBuilder->CreateInsertValue(struct_val, arg_val, idx);
+
+  }
+
+  llvmValor = struct_val;
+
+}
+
 // --- Sentencias --- //
 
 void Emitter::visitar(Bloque* nodo) {
@@ -550,21 +697,20 @@ void Emitter::visitar(SentenciaAsignarVar* nodo) {
   //std::cout << "[289, emitter.cpp] SentenciaAsignarVar\n";
 
   llvm::Type* tipo_llvm = obtenerTipoLLVM(nodo->tipo_explicito.tipo.valor);
-
   llvm::AllocaInst* alloca = llvmBuilder->CreateAlloca(tipo_llvm, nullptr, nodo->nombre);
 
   InfoVariable* info = tablas.buscarVariable(nodo->nombre);
 
+  if (nodo->valor_inicial) {
+    nodo->valor_inicial->accept(this);
+    llvmBuilder->CreateStore(llvmValor, alloca);
+
+  }
+  
   if (info) {
     info->alloca = alloca;
   }
 
-  if (nodo->valor_inicial) {
-    nodo->valor_inicial->accept(this);
-
-    llvmBuilder->CreateStore(llvmValor, alloca);
-
-  }
 
 }
 
@@ -577,23 +723,12 @@ void Emitter::visitar(SentenciaExpr* nodo) {
 }
 
 void Emitter::visitar(SentenciaReasignacionVar* nodo) {
-  llvm::Value* destino_ptr = nullptr;
+  llvm::Value* destino_ptr = obtenerPuntero(nodo->izquierda.get());
 
-  if (auto* var_izq = dynamic_cast<ExprVariable*>(nodo->izquierda.get())) {
-    InfoVariable* info = tablas.buscarVariable(var_izq->nombre);
-    if (info) { destino_ptr = info->alloca; }
+  nodo->derecha->accept(this);
+  llvm::Value* valor_asignar = llvmValor;
 
-  } else if (auto* unaria = dynamic_cast<ExprUnaria*>(nodo->izquierda.get())) {
-    if (unaria->operador == TipoOperador::PTR_DEREF) {
-      unaria->operando->accept(this);
-      destino_ptr = llvmValor;
-    }
-  }
-
-  if (destino_ptr) {
-    nodo->derecha->accept(this);
-    llvmBuilder->CreateStore(llvmValor, destino_ptr);
-  }
+  llvmBuilder->CreateStore(valor_asignar, destino_ptr);
 
 }
 
@@ -748,6 +883,10 @@ void Emitter::visitar(SentenciaFuncDecl* nodo) {
   //std::cout << "[473, emitter.cpp] SentenciaFuncDecl\n";
   std::vector<llvm::Type*> tipo_args;
 
+  if (!structActual.empty()) {
+    tipo_args.push_back(llvm::PointerType::getUnqual(llvmCtx));
+  }
+
   for (auto const& [nombre, info] : nodo->args_type) {
     tipo_args.push_back((obtenerTipoLLVM(info.tipo.valor)));
   }
@@ -774,9 +913,27 @@ void Emitter::visitar(SentenciaFuncDecl* nodo) {
 
   tablas.entrarScope();
 
+  auto arg_it = f->arg_begin();
+  if (!structActual.empty()) {
+    llvmThis = &(*arg_it);
+    llvmThis->setName("this");
+    arg_it++;
+  }
+
   auto it_args_name = nodo->args_type.begin();
-  for (auto &arg : f->args()) {
+  //for (auto &arg : f->args()) {
+  //  const std::string& nombre_arg = it_args_name->first;
+  //  llvm::AllocaInst* alloca = llvmBuilder->CreateAlloca(arg.getType(), nullptr, "");
+  //  llvmBuilder->CreateStore(&arg, alloca);
+  //  InfoVariable* info = tablas.buscarVariable(nombre_arg);
+  //  if (info) { info->alloca = alloca; }
+  //  it_args_name++;
+  //}
+
+  for (; arg_it != f->arg_end(); ++arg_it) {
+    llvm::Argument& arg = * arg_it;
     const std::string& nombre_arg = it_args_name->first;
+    arg.setName(nombre_arg);
 
     llvm::AllocaInst* alloca = llvmBuilder->CreateAlloca(arg.getType(), nullptr, "");
     llvmBuilder->CreateStore(&arg, alloca);
@@ -800,6 +957,34 @@ void Emitter::visitar(SentenciaFuncDecl* nodo) {
   llvm::verifyFunction(*f);
 
   tablas.salirScope();
+
+  llvmThis = nullptr;
+
+}
+
+void Emitter::visitar(SentenciaStruct* nodo) {
+  llvm::StructType* struct_type = llvm::StructType::create(llvmCtx, nodo->name);
+  llvmStructs[nodo->name] = struct_type;
+
+  std::vector<llvm::Type*> tipos_elementos;
+  for (auto& prop : nodo->propiedades) {
+    auto* nodo_prop = static_cast<SentenciaAsignarVar*>(prop.get());
+    llvm::Type* tipo_prop = obtenerTipoLLVM(nodo_prop->tipo_explicito.tipo.valor);
+    tipos_elementos.push_back(tipo_prop);
+
+  }
+
+  struct_type->setBody(tipos_elementos, false);
+
+  structActual = nodo->name;
+  llvmStructActual = struct_type;
+
+  for (auto& m : nodo->metodos) {
+    m->accept(this);
+  }
+
+  structActual = "";
+  llvmStructActual = nullptr;
 
 }
 
@@ -921,5 +1106,7 @@ void Emitter::visitar(SentenciaMetaDirective* nodo) {
     }
 
     default: { break; }
+
   }
+
 }

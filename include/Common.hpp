@@ -77,7 +77,8 @@ enum class Tt {
 
   ENUM,
 
-  SHAPE,
+  STRUCT,
+  SHAPE, //...?
 
   // Modificadores
   UNSIGNED, LONG, VERY_LONG, FULL_LONG, COMPLEJO,
@@ -195,6 +196,14 @@ enum class Pm {
 
 /* --- Tipos --- */
 
+inline std::string generarFirma(const std::string& nombre, const std::vector<Dt>& tiposArgs) {
+  std::string firma = nombre;
+  for (const auto& tipo : tiposArgs) {
+    firma += "_" + tipo.tipoString();
+  }
+  return firma;
+}
+
 inline int obtenerRangoNum(TypeKind t) { //... Distinguir entre tamaño de bits
   switch (t) {
     case TypeKind::BOOLEAN: { return 1; }
@@ -207,22 +216,6 @@ inline int obtenerRangoNum(TypeKind t) { //... Distinguir entre tamaño de bits
 
 inline bool esNum  (TypeKind t) { return obtenerRangoNum(t) > 0; }
 inline bool esFloat(TypeKind t) { return t == TypeKind::FLOAT  ; }
-
-struct Dt {
-  std::shared_ptr<ArcanaType> valor;
-  bool es_const = false;
-
-  Dt(std::shared_ptr<ArcanaType> v)
-    : valor(v) {}
-
-  Dt() : valor(nullptr) {}
-
-  bool operator==(const Dt& otro) const;
-
-  bool esPrimitivo() const;
-
-  std::string tipoString() const;
-};
 
 inline std::shared_ptr<ArcanaType> promoverTipos(std::shared_ptr<ArcanaType> izq, std::shared_ptr<ArcanaType> der) {
   int tipoIzq = obtenerRangoNum(izq->kind);
@@ -402,7 +395,7 @@ inline std::map<std::string, Tt> keywords = {
   {"slice", Tt::SLICE_TYPE},  // Slice
 
   {"enum", Tt::ENUM}, // Enums
-  {"shape", Tt::SHAPE}, // Variants
+  {"struct", Tt::STRUCT},
 
   // Modificadores de Tipos
 
@@ -456,14 +449,6 @@ inline std::map<std::string, Tt> keywords = {
 };
 
 /* --- Arcanos --- */
-
-struct InfoVariable {
-  Dt tipo;
-  bool es_const = false;
-
-  llvm::AllocaInst* alloca = nullptr;
-
-};
 
 enum class TPA { NULO, KEY, EXPR, CODE };
 
@@ -532,8 +517,11 @@ class ExprCasteo;
 
 class ExprRango;
 class ExprAcceso;
+class ExprAccesoPunto;
 
 class ExprFuncCall;
+
+class ExprInitList;
 
 class Bloque;
 
@@ -550,6 +538,8 @@ class SentenciaRedo;
 
 class SentenciaReturn;
 class SentenciaFuncDecl;
+
+class SentenciaStruct;
 
 class SentenciaEscritura;
 class SentenciaArcano;
@@ -574,10 +564,13 @@ public:
 
   virtual void visitar(ExprCasteo* nodo)  = 0;
 
-  virtual void visitar(ExprRango* nodo)  = 0;
-  virtual void visitar(ExprAcceso* nodo) = 0;
+  virtual void visitar(ExprRango* nodo)       = 0;
+  virtual void visitar(ExprAcceso* nodo)      = 0;
+  virtual void visitar(ExprAccesoPunto* nodo) = 0;
 
   virtual void visitar(ExprFuncCall* nodo) = 0;
+
+  virtual void visitar(ExprInitList* nodo) = 0;
 
   // Sentencias
   virtual void visitar(Bloque* nodo)        = 0;
@@ -598,6 +591,8 @@ public:
 
   virtual void visitar(SentenciaReturn  * nodo) = 0;
   virtual void visitar(SentenciaFuncDecl* nodo) = 0;
+
+  virtual void visitar(SentenciaStruct* nodo) = 0;
 
   virtual void visitar(SentenciaEscritura* nodo) = 0;
 
@@ -980,6 +975,7 @@ public:
   TipoOperador operador;
   std::unique_ptr<Expresion> izquierda;
   std::unique_ptr<Expresion> derecha;
+  std::string overload = "";
 
   ExprBinaria(TipoOperador op, std::unique_ptr<Expresion> izq, std::unique_ptr<Expresion> der)
     : operador(op), izquierda(std::move(izq)), derecha(std::move(der)) {}
@@ -1127,6 +1123,31 @@ public:
 
 };
 
+class ExprAccesoPunto : public NodoBase<Expresion, ExprAccesoPunto> {
+public:
+  std::unique_ptr<Expresion> izquierda;
+  std::string propiedad;
+
+  ExprAccesoPunto(std::unique_ptr<Expresion> izq, std::string prop)
+    : izquierda(std::move(izq)), propiedad(std::move(prop)) {}
+
+  ExprAccesoPunto(const ExprAccesoPunto& otra)
+    : izquierda(otra.izquierda->clonar()), propiedad(otra.propiedad) {}
+
+  bool isLValue() const override { return true; }
+
+  void imprimir(int nivel = 0) const override {
+    std::string sangria = "";
+    for (int i = 0; i < nivel; ++i) { sangria += "| "; }
+
+    std::cout << sangria << "ExprAccesoPunto [" << tipo_resuelto.valor->toString() << "]\n";
+    izquierda->imprimir(nivel + 1);
+    std::cout << sangria << "| +- " << propiedad << '\n';
+
+  }
+
+};
+
 class ExprFuncCall : public NodoBase<Expresion, ExprFuncCall> {
 public:
   std::unique_ptr<Expresion> callee;
@@ -1158,6 +1179,60 @@ public:
     for (const auto& [arg_name, arg_value] : argumentos) {
       arg_value->imprimir(nivel + 1);
     }
+  }
+
+};
+
+struct ArgumentoInit {
+  std::optional<std::string> name ;
+  std::unique_ptr<Expresion> value;
+
+};
+
+class ExprInitList : public NodoBase<Expresion, ExprInitList> {
+public:
+  std::vector<ArgumentoInit> args;
+
+  ExprInitList(std::vector<ArgumentoInit> a)
+    : args(std::move(a)) {}
+
+  ExprInitList(const ExprInitList& otra) {
+    for (const auto& a : otra.args) {
+      args.push_back(ArgumentoInit{a.name, a.value->clonar()});
+
+    }
+
+  }
+
+  void imprimir(int nivel = 0) const override {
+    std::string sangria = "";
+    for (int i = 0; i < nivel; ++i) { sangria += "| "; }
+
+    std::cout << sangria <<  "ExprInitList";
+
+    if (tipo_resuelto.valor != nullptr) {
+      std::cout << " [" << tipo_resuelto.valor->toString() << "]";
+    }
+
+    std::cout << '\n';
+    for (const auto& a : args) {
+
+      std::cout << sangria << "| +- ";
+
+      if (a.name.has_value()) {
+        std::cout << a.name.value();
+
+      } else {
+        std::cout << "[Anon]";
+
+      }
+
+      std::cout << '\n';
+
+      a.value->imprimir(nivel + 2);
+
+    }
+
   }
 
 };
@@ -1593,6 +1668,7 @@ public:
 
   SentenciaMetaDirective(const SentenciaMetaDirective& otra)
     : id(otra.id) {
+
     for (const auto& arg : otra.args) {
       args.push_back(arg->clonar());
     }
@@ -1604,17 +1680,63 @@ public:
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
+
     std::cout << sangria << "Meta Directiva: " << metaIDToString(id) << '\n';
     std::cout << sangria << "Args:\n";
+
     if (!args.empty()) {
       for (const auto& a : args) {
         a->imprimir(nivel + 1);
       }
     }
+
     std::cout << sangria << "Blocks:\n";
     if (body) {
       body->imprimir(nivel + 1);
     }
+
+  }
+
+};
+
+class SentenciaStruct : public NodoBase<Sentencia, SentenciaStruct> {
+public:
+  std::string name;
+
+  std::vector<std::unique_ptr<Sentencia>> propiedades;
+  std::vector<std::unique_ptr<Sentencia>> metodos    ;
+
+  SentenciaStruct(std::string n, std::vector<std::unique_ptr<Sentencia>> prop, std::vector<std::unique_ptr<Sentencia>> met)
+    : name(std::move(n)), propiedades(std::move(prop)), metodos(std::move(met)) {}
+
+  SentenciaStruct(const SentenciaStruct& otra)
+    : name(otra.name) {
+
+    for (const auto& prop : otra.propiedades) {
+      propiedades.push_back(prop->clonar());
+    }
+
+    for (const auto& met : otra.metodos) {
+      metodos.push_back(met->clonar());
+    }
+
+  }
+
+  void imprimir(int nivel = 0) const override {
+    std::string sangria = "";
+    for (int i = 0; i < nivel; ++i) { sangria += "| "; }
+    std::cout << sangria << "Struct Decl: " << name << '\n';
+
+    std::cout << sangria << "| +- Props:\n";
+    for (const auto& p : propiedades) {
+      p->imprimir(nivel + 1);
+    }
+
+    std::cout << sangria << "| +- Methods:\n";
+    for (const auto& m : metodos) {
+      m->imprimir(nivel + 1);
+    }
+
   }
 
 };
@@ -1690,67 +1812,6 @@ struct Clase {
   std::unordered_map<std::string, FirmaMetodo> metodos;
   std::unordered_map<std::string, Dt> campos;
 };
-
-struct InfoFuncion {
-  std::string nombre;
-  Dt tipo_retorno;
-  std::vector<std::pair<std::string, InfoVariable>> tipos_parametros;
-};
-
-struct Scope {
-  std::unordered_map<std::string, InfoVariable> variables;
-  std::unordered_map<std::string, InfoFuncion > funciones;
-
-  Scope* padre = nullptr;
-  std::vector<std::unique_ptr<Scope>> hijos;
-  size_t hijo_actual = 0;
-
-  explicit Scope(Scope* padrePtr = nullptr) : padre(padrePtr) {}
-
-  Scope(const Scope&)            = delete;
-  Scope& operator=(const Scope&) = delete;
-  Scope(Scope&&)            = default;
-  Scope& operator=(Scope&&) = default;
-
-  void resetNavegacion() {
-    hijo_actual = 0;
-    for (auto& hijo : hijos) { hijo->resetNavegacion(); }
-  }
-
-};
-
-class GestorTablas {
-private:
-  //ErrorHandler& errHandler;
-
-  std::unique_ptr<Scope> root;
-  Scope* scopeActual;
-
-  bool lectura = false;
-  std::vector<InfoFuncion*> pilaFuncs;
-
-public:
-  GestorTablas();
-
-  void prepareForEmitter();
-
-  void entrarScope();
-  void salirScope();
-
-  // --- Variables ---
-  bool añadirVariable(const std::string& name, InfoVariable info);
-  InfoVariable* buscarVariable(const std::string& name);
-
-  // --- Functions ---
-  bool añadirFunction(const std::string& name, InfoFuncion info);
-  InfoFuncion* buscarFunction(const std::string& name);
-  InfoFuncion* getCurrentFunction();
-
-  void pushFunction(InfoFuncion* function);
-  void popFunction();
-
-};
-
 
 /* --- Extra --- */
 // A power of 2 is just 10..00

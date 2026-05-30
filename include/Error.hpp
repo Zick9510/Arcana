@@ -32,6 +32,7 @@ enum class CodigoError { // Codigo Error
   E_EXPECTED_EXPRESSION = 2200,
   E_EXPRESION_INVALIDA = 2201, // Ej: 2 +-+ 3. 3**
 
+  E_STRUCT_POS_AFTER_NAMED = 2300, // Non-named argument after a named argument when struct
 
   // --- Erores Semánticos (3000) ---
 

@@ -111,8 +111,22 @@ Token Parser::check(Tt tipoEsperado, Pm parseMode) {
 
 }
 
-Parser::Parser(std::vector<Token> t, ErrorHandler& e, ContextoArcanos& ca, TypeFactory& tf)
-  : tokens(std::move(t)), pos(0), errHandler(e), contextoArcanos(ca), typeFactory(tf) {}
+bool Parser::isType(Token t) {
+
+  if (esTipo(t.tipo)) {
+    return true;
+  }
+
+  if (t.tipo == Tt::IDENTIFICADOR) {
+    return (tablas.buscarStruct(t.lexema) != nullptr);
+  }
+
+  return false;
+
+}
+
+Parser::Parser(std::vector<Token> tok, GestorTablas& t, ErrorHandler& e, ContextoArcanos& ca, TypeFactory& tf)
+  : tokens(std::move(tok)), tablas(t), pos(0), errHandler(e), contextoArcanos(ca), typeFactory(tf) {}
 
 int extraerBits(std::string lexema, int defaultBits) {
   if (lexema == "int" || lexema == "raw" || lexema == "float") { return defaultBits; }
@@ -155,51 +169,51 @@ InfoVariable Parser::parsearTipo() {
 
     // --- Tipos Compuestos (ADTs) ---
 
-    case Tt::CORCH_L: { // Morphs
-      get();
+    //case Tt::CORCH_L: { // Morphs
+    //  get();
 
-      std::vector<std::shared_ptr<ArcanaType>> subtipos;
+    //  std::vector<std::shared_ptr<ArcanaType>> subtipos;
 
-      while (peek().tipo != Tt::CORCH_R) {
-        InfoVariable sub_info = parsearTipo();
-        subtipos.push_back(sub_info.tipo.valor);
+    //  while (peek().tipo != Tt::CORCH_R) {
+    //    InfoVariable sub_info = parsearTipo();
+    //    subtipos.push_back(sub_info.tipo.valor);
 
-        if (peek().tipo == Tt::COMA) { get(); }
+    //    if (peek().tipo == Tt::COMA) { get(); }
 
-      }
+    //  }
 
-      get();
+    //  get();
 
-      tipo_actual = typeFactory.getMorph(subtipos);
-      break;
+    //  tipo_actual = typeFactory.getMorph(subtipos);
+    //  break;
 
-    }
+    //}
 
-    case Tt::LLAVE_L: { // Shapes
-      get();
+    //case Tt::LLAVE_L: { // Structs
+    //  get();
 
-      std::vector<CampoShape> campos;
+    //  std::vector<CampoStruct> campos;
 
-      while (peek().tipo != Tt::LLAVE_R) {
-        CampoShape campo;
+    //  while (peek().tipo != Tt::LLAVE_R) {
+    //    CampoStruct campo;
 
-        InfoVariable sub_info = parsearTipo();
-        campo.tipo = sub_info.tipo.valor;
+    //    InfoVariable sub_info = parsearTipo();
+    //    campo.tipo = sub_info.tipo.valor;
 
-        if (peek().tipo == Tt::IDENTIFICADOR) {
-          campo.nombre = get().lexema;
-        }
+    //    if (peek().tipo == Tt::IDENTIFICADOR) {
+    //      campo.nombre = get().lexema;
+    //    }
 
-        campos.push_back(campo);
-        if (peek().tipo == Tt::COMA) { get(); }
-      }
+    //    campos.push_back(campo);
+    //    if (peek().tipo == Tt::COMA) { get(); }
+    //  }
 
-      get();
+    //  get();
 
-      tipo_actual = typeFactory.getShape(campos);
-      break;
+    //  tipo_actual = typeFactory.getStruct(campos);
+    //  break;
 
-    }
+    //}
 
     //... What about T1<T2> ?
 
@@ -255,8 +269,22 @@ InfoVariable Parser::parsearTipo() {
       break;
     }
 
+    case Tt::IDENTIFICADOR: {
+      std::string name = get().lexema;
+      auto* struct_info = tablas.buscarStruct(name);
+      if (struct_info != nullptr) {
+        tipo_actual = typeFactory.getStruct(struct_info);
+
+      } else {
+        throw std::runtime_error("[279, parser.cpp] Error: Tipo no definido");
+
+      }
+
+      break;
+    }
+
     default: { //...
-      std::cout << "[185, parser.cpp] Type not implemented: " << peek().lexema << '\n';
+      std::cout << "[285, parser.cpp] Type not implemented: " << peek().lexema << '\n';
       exit(1);
       break;
     }
@@ -425,6 +453,7 @@ std::unique_ptr<Sentencia> Parser::parsearEscritura() {
   aliasLexicos[alias.lexema] = original.tipo;
  
   return std::make_unique<SentenciaEscritura>(alias.lexema, original.tipo);
+
 }
 
 std::pair<std::string, std::string> Parser::partirLexemaNum(std::string lexema) {
@@ -542,7 +571,6 @@ std::unique_ptr<Sentencia> Parser::parsearBloque() {
 
 }
 
-// Parsear Sentencias
 std::unique_ptr<Sentencia> Parser::parsearSentencia() {
 
   while (isStructural(peek().tipo) && peek().tipo != Tt::FIN_ARCHIVO && peek().tipo != Tt::PUNTO_COMA) {
@@ -557,20 +585,26 @@ std::unique_ptr<Sentencia> Parser::parsearSentencia() {
   if (actual == Tt::IF       ) { return parsearSi           (); }
   if (actual == Tt::ELSE     ) { return parsearSino         (); }
   if (actual == Tt::WHILE    ) { return parsearMientras     (); }
+
   if (actual == Tt::BREAK    ) { return parsearBreak        (); }
   if (actual == Tt::CONTINUE ) { return parsearContinue     (); }
   if (actual == Tt::REDO     ) { return parsearRedo         (); }
+
   if (actual == Tt::LLAVE_L  ) { return parsearBloque       (); }
   if (actual == Tt::TATETI   ) { return parsearBloque       (); }
+
   if (actual == Tt::FUNC     ) { return parsearFuncDecl     (); }
   if (actual == Tt::PURE     ) { return parsearFuncDecl     (); }
   if (actual == Tt::RETURN   ) { return parsearReturn       (); }
+
+  if (actual == Tt::STRUCT   ) { return parsearStruct       (); }
+
   if (actual == Tt::ESCRITURA) { return parsearEscritura    (); }
   if (actual == Tt::ARCANE   ) { return parsearArcano       (); }
   if (actual == Tt::PREGUNTA ) { return parsearMetaDirectiva(); }
 
   // Si empieza con un tipo de dato, es una delaración
-  if (esTipo(actual) || esInfiere(actual)) {
+  if (isType(peek()) || esInfiere(actual)) {
     return parsearDeclaracionVar();
 
   }
@@ -1276,6 +1310,110 @@ std::unique_ptr<Sentencia> Parser::parsearMetaDirectiva() {
 
 }
 
+std::unique_ptr<Sentencia> Parser::parsearStruct() {
+  check(Tt::STRUCT);
+  std::string name = check(Tt::IDENTIFICADOR).lexema;
+
+  InfoStruct info_temp;
+  info_temp.nombre = name;
+  tablas.añadirStruct(name, info_temp);
+
+  check(Tt::LLAVE_L);
+
+  std::vector<std::unique_ptr<Sentencia>> propiedades;
+  std::vector<std::unique_ptr<Sentencia>> metodos    ;
+
+  InfoStruct info;
+  info.nombre = name;
+
+  while (peek().tipo != Tt::LLAVE_R && peek().tipo != Tt::FIN_ARCHIVO) {
+
+    if (isType(peek())) {
+      auto nodo_var = parsearDeclaracionVar();
+
+      auto* nodo_decl = static_cast<SentenciaAsignarVar*>(nodo_var.get());
+
+      info.propiedades[nodo_decl->nombre] = nodo_decl->tipo_explicito;
+      info.orden_props.push_back(nodo_decl->nombre);
+
+      propiedades.push_back(std::move(nodo_var));
+
+    } else if (peek().tipo == Tt::FUNC) {
+      auto nodo_func = parsearFuncDecl();
+      auto* nodo_decl = static_cast<SentenciaFuncDecl*>(nodo_func.get());
+
+      InfoFuncion info_func;
+      info_func.nombre = nodo_decl->nombre_func;
+      info_func.tipo_retorno = nodo_decl->ret_type;
+      info_func.tipos_parametros = nodo_decl->args_type;
+
+      std::vector<Dt> tipos_args;
+      for (const auto& a : nodo_decl->args_type) {
+        tipos_args.push_back(a.second.tipo);
+      }
+
+      std::string firma = generarFirma(nodo_decl->nombre_func, tipos_args);
+      std::cout << "[1356, parser.cpp] firma: '" << firma << "'\n";
+
+      nodo_decl->nombre_func = firma;
+      info.metodos[firma] = std::move(info_func);
+      metodos.push_back(std::move(nodo_func));
+
+    } else if (peek().tipo == Tt::STRUCT) {
+      propiedades.push_back(parsearStruct());
+
+    }
+
+    else { // Error
+      throw std::runtime_error("[1346, parser.cpp] Error: structs");
+
+    }
+
+  }
+
+  check(Tt::LLAVE_R);
+  check(Tt::PUNTO_COMA);
+
+  tablas.actualizarStruct(name, std::move(info));
+
+  return std::make_unique<SentenciaStruct>(name, std::move(propiedades), std::move(metodos));
+
+}
+
+std::unique_ptr<Expresion> Parser::parsearInitList() {
+  std::vector<ArgumentoInit> args;
+  bool seen_named = false;
+
+  while (peek().tipo != Tt::LLAVE_R && peek().tipo != Tt::FIN_ARCHIVO) {
+    std::optional<std::string> name = std::nullopt;
+
+    if (peek().tipo == Tt::IDENTIFICADOR && peek(1).tipo == Tt::DOS_PUNTOS) {
+      seen_named = true;
+      name = get().lexema;
+      get(); // :
+
+    } else if (seen_named) {
+      errHandler.report(CE::E_STRUCT_POS_AFTER_NAMED, peek().pos);
+      return std::make_unique<ErrorNode>();
+
+    }
+
+    auto valor = parsearExpresion(Pr::MINIMA);
+    args.push_back(ArgumentoInit{name, std::move(valor)});
+
+    if (peek().tipo != Tt::LLAVE_R) {
+      check(Tt::COMA);
+
+    }
+
+  }
+
+  check(Tt::LLAVE_R);
+
+  return std::make_unique<ExprInitList>(std::move(args));
+
+}
+
 // Precedencias de las operaciones
 Pr Parser::obtenerPrecedencia(Tt tipo) {
   switch (tipo) {
@@ -1344,6 +1482,7 @@ Pr Parser::obtenerPrecedencia(Tt tipo) {
       return Pr::SWAP;
 
     // --- Extra ---
+    case Tt::PUNTO     :
     case Tt::CORCH_L   :
       return Pr::ACCESO;
 
@@ -1399,13 +1538,36 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
     }
 
     case Tt::IDENTIFICADOR: {
+      if (peek().tipo == Tt::LLAVE_L) { // This is a init list
+        auto* info_struct = tablas.buscarStruct(t.lexema);
+        if (info_struct == nullptr) { //... Error, no existe
+          std::cerr << "[1535, parser.cpp] Error, la struct no existe\n";
+          exit(1);
+        }
+
+        Dt tipo_struct = Dt(typeFactory.getStruct(info_struct));
+        get();
+
+        auto nodo_init_list = parsearInitList();
+
+        nodo_init_list->tipo_resuelto = tipo_struct;
+
+        return nodo_init_list;
+
+      }
+
       return std::make_unique<ExprVariable>(t.lexema);
+
     }
 
     case Tt::PAREN_L: {
       auto expr = parsearExpresion(Pr::MINIMA);
       check(Tt::PAREN_R);
       return expr;
+    }
+
+    case Tt::LLAVE_L: {
+      return parsearInitList();
     }
 
     case Tt::CORCH_L: {
@@ -1487,7 +1649,7 @@ std::unique_ptr<Expresion> Parser::parsearExpresion(Pr precedenciaMinima) {
     */
 
     // C-Style
-    if (op.tipo == Tt::PAREN_L && esTipo(peek().tipo)) {
+    if (op.tipo == Tt::PAREN_L && isType(peek())) {
       izquierda = parsearCasteo();
       continue;
     }
@@ -1500,6 +1662,12 @@ std::unique_ptr<Expresion> Parser::parsearExpresion(Pr precedenciaMinima) {
     // Function call
     if (op.tipo == Tt::PAREN_L) {
       izquierda = parsearFunctionCall(std::move(izquierda));
+      continue;
+    }
+
+    if (op.tipo == Tt::PUNTO) {
+      auto propiedad = check(Tt::IDENTIFICADOR).lexema;
+      izquierda = std::make_unique<ExprAccesoPunto>(std::move(izquierda), std::move(propiedad));
       continue;
     }
 

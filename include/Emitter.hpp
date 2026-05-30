@@ -25,6 +25,11 @@ private:
   std ::unique_ptr<llvm::Module>                         llvmModulo         ;
   std ::unique_ptr<llvm::IRBuilder<>>                    llvmBuilder        ;
   llvm::Value*                                           llvmValor = nullptr;
+  std::map<std::string, llvm::StructType*>               llvmStructs        ;
+
+  std::string structActual = "";
+  llvm::StructType* llvmStructActual = nullptr;
+  llvm::Value* llvmThis = nullptr;
 
   std::vector<llvm::BasicBlock*> pilaBreaks   ;
   std::vector<llvm::BasicBlock*> pilaContinues;
@@ -43,6 +48,7 @@ public:
   Emitter(ContextoArcanos& ca, GestorTablas& t);
 
   llvm::Type*              obtenerTipoLLVM    (std::shared_ptr<ArcanaType> tipo);
+  llvm::Value*             obtenerPuntero     (Expresion* nodo);
   llvm::CmpInst::Predicate obtenerPredicadoCmp(TipoOperador op, bool esFloat, bool esSigned);
 
   void generarArchivoIR(const std::filesystem::path& nombreArchivo);
@@ -59,10 +65,13 @@ public:
 
   void visitar(ExprCasteo* nodo) override;
 
-  void visitar(ExprRango * nodo) override;
-  void visitar(ExprAcceso* nodo) override;
+  void visitar(ExprRango      * nodo) override;
+  void visitar(ExprAcceso     * nodo) override;
+  void visitar(ExprAccesoPunto* nodo) override;
 
   void visitar(ExprFuncCall* nodo) override;
+
+  void visitar(ExprInitList* nodo) override;
 
   void visitar(Bloque* nodo) override;
  
@@ -82,6 +91,8 @@ public:
 
   void visitar(SentenciaReturn  * nodo) override;
   void visitar(SentenciaFuncDecl* nodo) override;
+
+  void visitar(SentenciaStruct* nodo) override;
  
   void visitar(SentenciaEscritura* nodo) override;
  

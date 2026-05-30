@@ -10,9 +10,10 @@ private:
   unsigned long long pos;
   std::unordered_map<std::string, Tt> aliasLexicos;
 
-  ErrorHandler&    errHandler;
+  GestorTablas   & tablas         ;
+  ErrorHandler   & errHandler     ;
   ContextoArcanos& contextoArcanos;
-  TypeFactory&     typeFactory;
+  TypeFactory    & typeFactory    ;
 
   Token resolverAlias(Token t);
   Token peek(size_t offset = 0);
@@ -23,8 +24,10 @@ private:
 
   bool sync(Tt target);
 
+  bool isType(Token t);
+
 public:
-  Parser(std::vector<Token> t, ErrorHandler& e, ContextoArcanos& ca, TypeFactory& tf);
+  Parser(std::vector<Token> tok, GestorTablas& t,  ErrorHandler& e, ContextoArcanos& ca, TypeFactory& tf);
 
   bool isStatement(Token t);
 
@@ -36,7 +39,10 @@ public:
   std::unique_ptr<Expresion> parsearAcceso(std::unique_ptr<Expresion> contenedor);
   std::pair<std::string, std::string> partirLexemaNum(std::string lexema);
   std::unique_ptr<Expresion> parsearCasteo();
+
   std::unique_ptr<Expresion> parsearFunctionCall(std::unique_ptr<Expresion> callee);
+
+  std::unique_ptr<Expresion> parsearInitList();
 
   std::unique_ptr<Sentencia> parsearEscritura();
   std::unique_ptr<Sentencia> parsearDeclaracionVar();
@@ -68,10 +74,13 @@ public:
   std::unique_ptr<Sentencia> parsearLlamadaArcano(bool checkSc = true);
   std::unique_ptr<Sentencia> parsearMetaDirectiva();
 
+  std::unique_ptr<Sentencia> parsearStruct();
+
   Pr obtenerPrecedencia(Tt tipo);
 
   std::unique_ptr<Expresion> parsearPrefijo();
   std::unique_ptr<Expresion> parsearExpresion(Pr precedenciaMinima);
 
   std::vector<std::unique_ptr<Sentencia>> parsearPrograma();
+
 };

@@ -30,8 +30,6 @@ std::unique_ptr<Expresion> Checker::forzarTipo(std::unique_ptr<Expresion> hijo, 
     casteo->tipo_resuelto = tipoEsperado;
     casteo->es_implicito  = true;
 
-    //... Warning, implicit cast
-
     return casteo;
 
   }
@@ -44,8 +42,9 @@ std::unique_ptr<Expresion> Checker::forzarTipo(std::unique_ptr<Expresion> hijo, 
 
 // --- Verificar Expresiones --- //
 std::shared_ptr<ArcanaType> Checker::verificarSuma(const Dt& izq, const Dt& der) {
-
+  std::cout << "[45, checker.cpp] verificarSuma\n";
   if (izq.esPrimitivo() && der.esPrimitivo()) {
+    std::cout << "[47, checker.cpp] ambos primitivos\n";
     TypeKind p_izq = izq.valor->kind;
     TypeKind p_der = der.valor->kind;
 
@@ -58,6 +57,21 @@ std::shared_ptr<ArcanaType> Checker::verificarSuma(const Dt& izq, const Dt& der)
 
     //... Regla 3: Concatenación de arrays (Maps, sets, etc.)
  
+  }
+
+  std::cout << "[62, checker.cpp] alguno no primitivo\n";
+
+  if (izq.valor->kind == TypeKind::STRUCT) {
+    std::cout << "[65, checker.cpp] izq struct\n";
+    auto struct_type =  std::static_pointer_cast<StructType>(izq.valor);
+    std::string firma_buscada = generarFirma("__add__", {der});
+
+    auto it_metodo = struct_type->info->metodos.find(firma_buscada);
+    if (it_metodo != struct_type->info->metodos.end()) {
+      return it_metodo->second.tipo_retorno.valor;
+
+    }
+
   }
 
   // Si el código llega acá, se intentó sumar cosas inválidas

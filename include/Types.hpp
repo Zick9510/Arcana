@@ -4,49 +4,7 @@
 
 #include "Includes.hpp"
 
-/* --- Type System --- */
-
-enum class TypeKind { //...
-
-  VOID,
-
-  POINTER,
-
-  BOOLEAN,
-  INTEGER,
-  FLOAT,
-
-  CHAR,
-  STRING,
-
-  ARRAY,
-
-  MORPH,
-
-  SHAPE,
-
-  ERROR,
-
-  DESCONOCIDO,
-
-};
-
-class ArcanaType {
-public:
-  TypeKind kind;
-
-  ArcanaType(TypeKind k)
-    : kind(k) {}
-
-  virtual ~ArcanaType()                                            ;
-  virtual std::string toString()                          const = 0;
-  virtual int getBitSize()                                const = 0;
-  virtual bool esIgual(const ArcanaType* otro)            const = 0;
-  virtual bool isNumeric()                                const { return true   ; }
-  virtual bool isSigned()                                 const { return false  ; }
-  virtual std::shared_ptr<ArcanaType> getUnderlyingType() const { return nullptr; }
-
-};
+#include "Symbol.hpp"
 
 class UnknownType : public ArcanaType {
 public:
@@ -148,16 +106,17 @@ public:
   bool isNumeric()                     const override;
 };
 
-struct CampoShape {
-  std::shared_ptr<ArcanaType> tipo;
-  std::string nombre; // Empty if anon (ej {int a, float b} vs {int, float})
-};
+//struct CampoStruct {
+//  std::shared_ptr<ArcanaType> tipo;
+//  std::string nombre; // Empty if anon (ej {int a, float b} vs {int, float})
+//};
 
-class ShapeType : public ArcanaType {
+class StructType : public ArcanaType {
 public:
-  std::vector<CampoShape> campos;
+  std::string nombre;
+  InfoStruct*  info ;
 
-  ShapeType(std::vector<CampoShape> c);
+  StructType(InfoStruct* i);
 
   std::string toString()               const override;
   int getBitSize()                     const override;
@@ -181,6 +140,7 @@ private:
   std::map<int                        , std::shared_ptr<CharType   >> cacheChar   ;
 
   std::map<std::string                , std::shared_ptr<MorphType  >> cacheMorph  ;
+  std::map<std::string                , std::shared_ptr<StructType >> cacheStruct ;
 
 public:
   std::shared_ptr<UnknownType> getUnknown();
@@ -195,6 +155,6 @@ public:
   std::shared_ptr<CharType   > getChar   (int bits);
 
   std::shared_ptr<MorphType  > getMorph  (std::vector<std::shared_ptr<ArcanaType>> subtipos);
-  std::shared_ptr<ShapeType  > getShape  (std::vector<CampoShape> campos);
+  std::shared_ptr<StructType > getStruct (InfoStruct* info);
 
 };
