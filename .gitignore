@@ -24,6 +24,10 @@ a
 *.s
 *.bc
 
+# --- Archivos Arcana ----
+.arcn
+!tests/**.arcn
+
 # --- Tests ---
 tests/build/
 tests/pending/
