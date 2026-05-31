@@ -27,6 +27,7 @@ a
 # --- Archivos Arcana ----
 .arcn
 !tests/**.arcn
+ig/
 
 # --- Tests ---
 tests/build/
