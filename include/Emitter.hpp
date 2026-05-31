@@ -16,6 +16,7 @@ public:
   void despacharTrait(Bloque* nodo, size_t idx);
 
   void handleLoop(Bloque* nodo, size_t idx);
+  void handleNoscope(Bloque* nodo, size_t idx);
 
 };
 
@@ -35,12 +36,15 @@ private:
   std::vector<llvm::BasicBlock*> pilaContinues;
   std::vector<llvm::BasicBlock*> pilaRedos    ;
 
+  bool enScopeGlobal = true;
+
   ContextoArcanos& contextoArcanos;
   GestorTablas&    tablas         ;
   TraitEmitter     traits         ;
   friend class TraitEmitter;
 
   std::map<std::string,    Sentencia*> bloquesArcanoActivos;
+  std::map<std::string,    Expresion*> varsArcanosActivos  ;
   std::vector<SentenciaLlamadaArcano*> stackArcanos        ;
 
 public:

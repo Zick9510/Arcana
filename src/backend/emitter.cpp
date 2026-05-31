@@ -28,6 +28,11 @@ void TraitEmitter::despacharTrait(Bloque* nodo, size_t idx) {
       break;
     }
 
+    case BT::NOSCOPE: {
+      handleNoscope(nodo, idx);
+      break;
+    }
+
     default: {
       despacharTrait(nodo, idx + 1);
       break;
@@ -60,6 +65,12 @@ void TraitEmitter::handleLoop(Bloque* nodo, size_t idx) {
   func->insert(func->end(), end_bb);
   emitter.llvmBuilder->SetInsertPoint(end_bb);
 
+}
+
+void TraitEmitter::handleNoscope(Bloque* nodo, size_t idx) {
+  emitter.tablas.salirScope();
+  despacharTrait(nodo, idx + 1);
+  emitter.tablas.entrarScope();
 }
 
 /* --- Emitter --- */
@@ -357,24 +368,28 @@ void Emitter::visitar(ExprUnaria* nodo) {
         InfoVariable* info = tablas.buscarVariable(var->nombre);
         if (info && info->alloca) {
           llvmValor = info->alloca;
-          return ;
+          break;
         }
       }
 
       if (auto* unaria = dynamic_cast<ExprUnaria*>(nodo->operando.get())) {
         if (unaria->operador == TipoOperador::PTR_DEREF) {
           unaria->operando->accept(this);
-          return ;
+          break;
         }
       }
 
-      std::cerr << "Error: Solo se puede tomar la dirección de L-Values\n";
-      exit(1);
+      llvm::Type* tipo_val = val->getType();
+      llvm::AllocaInst* tmp_alloca = llvmBuilder->CreateAlloca(tipo_val, nullptr, "");
+
+      llvmBuilder->CreateStore(val, tmp_alloca);
+      llvmValor = tmp_alloca;
+      break;
 
     }
 
     default: {
-      std::cout << "[308, emitter.cpp] Error: Operador unario no implementado.";
+      std::cout << "[392, emitter.cpp] Error: Operador unario no implementado.";
       exit(1);
     }
 
@@ -402,8 +417,13 @@ void Emitter::visitar(ExprBinaria* nodo) {
     }
 
     if (!ptr_this) {
-      std::cerr << "Error: No se pudo obtener la dirección de memoria para 'this'\n";
-      return ;
+      nodo->izquierda->accept(this);
+      llvm::Value* valor_izq = llvmValor;
+
+      llvm::Type* tipo_valor = valor_izq->getType();
+      ptr_this = llvmBuilder->CreateAlloca(tipo_valor, nullptr, "");
+      llvmBuilder->CreateStore(valor_izq, ptr_this);
+
     }
 
     nodo->derecha->accept(this);
@@ -692,7 +712,15 @@ void Emitter::visitar(Bloque* nodo) {
 
   tablas.entrarScope();
 
-  traits.despacharTrait(nodo, 0);
+  if (enScopeGlobal) {
+    for (const auto& inst : nodo->instrucciones) {
+      inst->accept(this);
+    }
+
+  } else {
+    traits.despacharTrait(nodo, 0);
+
+  }
 
   tablas.salirScope();
 
@@ -886,6 +914,10 @@ void Emitter::visitar(SentenciaReturn* nodo) {
 
 void Emitter::visitar(SentenciaFuncDecl* nodo) {
   //std::cout << "[473, emitter.cpp] SentenciaFuncDecl\n";
+
+  bool scope_anterior = enScopeGlobal;
+  enScopeGlobal = false;
+
   std::vector<llvm::Type*> tipo_args;
 
   if (!structActual.empty()) {
@@ -903,7 +935,7 @@ void Emitter::visitar(SentenciaFuncDecl* nodo) {
   llvm::Function* f = llvm::Function::Create(
     ft,
     llvm::Function::ExternalLinkage,
-    nodo->nombre_func,
+    nodo->firma_mangled,
     llvmModulo.get()
   );
 
@@ -926,14 +958,6 @@ void Emitter::visitar(SentenciaFuncDecl* nodo) {
   }
 
   auto it_args_name = nodo->args_type.begin();
-  //for (auto &arg : f->args()) {
-  //  const std::string& nombre_arg = it_args_name->first;
-  //  llvm::AllocaInst* alloca = llvmBuilder->CreateAlloca(arg.getType(), nullptr, "");
-  //  llvmBuilder->CreateStore(&arg, alloca);
-  //  InfoVariable* info = tablas.buscarVariable(nombre_arg);
-  //  if (info) { info->alloca = alloca; }
-  //  it_args_name++;
-  //}
 
   for (; arg_it != f->arg_end(); ++arg_it) {
     llvm::Argument& arg = * arg_it;
@@ -964,6 +988,8 @@ void Emitter::visitar(SentenciaFuncDecl* nodo) {
   tablas.salirScope();
 
   llvmThis = nullptr;
+
+  enScopeGlobal = scope_anterior;
 
 }
 
@@ -1018,6 +1044,11 @@ void Emitter::visitar(SentenciaLlamadaArcano* nodo) { //...
 
   tablas.entrarScope();
 
+  auto backup_vars = varsArcanosActivos;
+  for (const auto& [nombre_arg, ast_arg] : nodo->vars) {
+    varsArcanosActivos[nombre_arg] = ast_arg.get();
+  }
+
   auto backup_bloques = bloquesArcanoActivos;
 
   for (const auto& [nombre_arg, ast_arg] : nodo->args) {
@@ -1047,18 +1078,30 @@ void Emitter::visitar(SentenciaLlamadaArcano* nodo) { //...
     bloquesArcanoActivos[nombre_arg] = ast_arg.get();
   }
 
-  for (const auto& seg: rama_elegida->segmentos) {
-    if (seg.br_cont) {
-      seg.br_cont->accept(this);
-    }
+  //for (const auto& seg: rama_elegida->segmentos) {
+  //  if (seg.br_cont) {
+  //    seg.br_cont->accept(this);
+  //  }
+  //}
+
+  for (const auto& inst : nodo->nodos_expandidos) {
+    inst->accept(this);
   }
 
+  varsArcanosActivos = backup_vars;
   bloquesArcanoActivos = backup_bloques;
+
   tablas.salirScope();
 
   stackArcanos.pop_back();
 
 }
+
+//void Emitter::visitar(SentenciaLlamadaArcano* nodo) {
+//  for (const auto& inst : nodo->nodos_expandidos) {
+//    inst->accept(this);
+//  }
+//}
 
 void Emitter::visitar(SentenciaMetaDirective* nodo) {
   std::cout << "[871, emitter.cpp] SentenciaMetaDirective\n";

@@ -171,48 +171,32 @@ InfoVariable Parser::parsearTipo() {
 
     //case Tt::CORCH_L: { // Morphs
     //  get();
-
     //  std::vector<std::shared_ptr<ArcanaType>> subtipos;
-
     //  while (peek().tipo != Tt::CORCH_R) {
     //    InfoVariable sub_info = parsearTipo();
     //    subtipos.push_back(sub_info.tipo.valor);
-
     //    if (peek().tipo == Tt::COMA) { get(); }
-
     //  }
-
     //  get();
-
     //  tipo_actual = typeFactory.getMorph(subtipos);
     //  break;
-
     //}
-
     //case Tt::LLAVE_L: { // Structs
     //  get();
-
     //  std::vector<CampoStruct> campos;
-
     //  while (peek().tipo != Tt::LLAVE_R) {
     //    CampoStruct campo;
-
     //    InfoVariable sub_info = parsearTipo();
     //    campo.tipo = sub_info.tipo.valor;
-
     //    if (peek().tipo == Tt::IDENTIFICADOR) {
     //      campo.nombre = get().lexema;
     //    }
-
     //    campos.push_back(campo);
     //    if (peek().tipo == Tt::COMA) { get(); }
     //  }
-
     //  get();
-
     //  tipo_actual = typeFactory.getStruct(campos);
     //  break;
-
     //}
 
     //... What about T1<T2> ?
@@ -276,7 +260,11 @@ InfoVariable Parser::parsearTipo() {
         tipo_actual = typeFactory.getStruct(struct_info);
 
       } else {
-        throw std::runtime_error("[279, parser.cpp] Error: Tipo no definido");
+        //get();
+
+        InfoVariable tipo_pendiente;
+        tipo_pendiente.tipo = Dt(typeFactory.getUnresolved(t_base.lexema));
+        return tipo_pendiente;
 
       }
 
@@ -284,7 +272,7 @@ InfoVariable Parser::parsearTipo() {
     }
 
     default: { //...
-      std::cout << "[285, parser.cpp] Type not implemented: " << peek().lexema << '\n';
+      std::cout << "[271, parser.cpp] Type not implemented: " << peek().lexema << '\n';
       exit(1);
       break;
     }
@@ -499,9 +487,9 @@ std::unique_ptr<Sentencia> Parser::parsearDeclaracionVar() {
 }
 
 std::unique_ptr<Sentencia> Parser::parsearSentenciaExpresion() {
-  std::cout << "[570, parser.cpp]\n";
+  std::cout << "[502, parser.cpp]\n";
   std::unique_ptr<Expresion> izquierda = parsearExpresion(Pr::MINIMA);
-  std::cout << "[572, parser.cpp]\n";
+  std::cout << "[504, parser.cpp]\n";
 
   if (peek().tipo == Tt::IGUAL_ASIG) { // ... = ...;
     get();
@@ -515,7 +503,7 @@ std::unique_ptr<Sentencia> Parser::parsearSentenciaExpresion() {
 
   // If you get a "Expected ';', got [something else]"
   // Please check this line and inc the counter
-  // 23. Yikes.
+  // 27. Yikes.
   // Also, the bug you are looking for is most certainly not in this function.
   // Cheers
 
@@ -609,10 +597,15 @@ std::unique_ptr<Sentencia> Parser::parsearSentencia() {
 
   }
  
-  // Manejo de arcanos
   if (actual == Tt::IDENTIFICADOR) {
+    // Arcanos
     if (contextoArcanos.esKeywordArcano(peek().lexema)) {
       return parsearLlamadaArcano();
+    }
+
+    // Tipos
+    if (peek(1).tipo == Tt::IDENTIFICADOR) {
+      return parsearDeclaracionVar();
     }
   }
  
@@ -1026,6 +1019,7 @@ std::unique_ptr<Sentencia> Parser::parsearArcano() {
     if      (t_tipo.lexema == "code") { tipo = TPA::CODE; }
     else if (t_tipo.lexema == "expr") { tipo = TPA::EXPR; }
     else if (t_tipo.lexema == "key" ) { tipo = TPA::KEY ; }
+    else if (t_tipo.lexema == "var" ) { tipo = TPA::VAR ; }
 
     def.args.push_back({nombre_param.lexema, tipo});
 
@@ -1116,6 +1110,7 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano(bool checkSc) {
   std::unordered_map<std::string, std::unique_ptr<Sentencia>> mapa_args;
   std::unordered_map<std::string, std::unique_ptr<Sentencia>> mapa_code;
   std::unordered_map<std::string, std::unique_ptr<Sentencia>> mapa_expr;
+  std::unordered_map<std::string, std::unique_ptr<Expresion>> mapa_vars;
 
   for (size_t i = 0; i < local_args.size(); ++i) {
     std::string nombre_local = def.branches[posibles_reglas[0].first].segmentos[0].br_args[i].first;
@@ -1174,12 +1169,12 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano(bool checkSc) {
       auto [tipo, nombre] = obtenerTipo(r.second.componentes[comp_idx].lexema);
       bool queda = false;
 
-      if      (tipo == TPA::CODE && sig.tipo    == Tt::LLAVE_L) { queda = true; }
-      //else if (tipo == TPA::EXPR && sig.tipo    == Tt::PAREN_L) { queda = true; }
+      if      (tipo == TPA::CODE && sig.tipo    == Tt::LLAVE_L)              { queda = true; }
       else if (tipo == TPA::EXPR && (grupo_expr || sig.tipo == Tt::PAREN_L)) { queda = true; }
-      else if (tipo == TPA::KEY  && sig.lexema  == nombre     ) { queda = true; }
+      else if (tipo == TPA::KEY  && sig.lexema  == nombre     )              { queda = true; }
+      else if (tipo == TPA::VAR  && sig.tipo    == Tt::IDENTIFICADOR)        { queda = true; }
       else if (tipo == TPA::NULO && (sig.lexema == nombre ||
-              sig.tipo == r.second.componentes[comp_idx].tipo)) { queda = true; }
+              sig.tipo == r.second.componentes[comp_idx].tipo))              { queda = true; }
 
       if (queda) { restantes.push_back(r); }
 
@@ -1226,6 +1221,9 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano(bool checkSc) {
 
     } else if (tipo == TPA::KEY) {
       get();
+
+    } else if (tipo == TPA::VAR) {
+      mapa_vars[nombre] = std::make_unique<ExprVariable>(check(Tt::IDENTIFICADOR).lexema);
 
     }
 
@@ -1278,6 +1276,7 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano(bool checkSc) {
     std::move(mapa_args),
     std::move(mapa_code),
     std::move(mapa_expr),
+    std::move(mapa_vars),
     std::move(chains)   ,
     rule.first
   );
@@ -1316,7 +1315,6 @@ std::unique_ptr<Sentencia> Parser::parsearStruct() {
 
   InfoStruct info_temp;
   info_temp.nombre = name;
-  tablas.añadirStruct(name, info_temp);
 
   check(Tt::LLAVE_L);
 
@@ -1354,20 +1352,30 @@ std::unique_ptr<Sentencia> Parser::parsearStruct() {
         tipos_args.push_back(a.second.tipo);
       }
 
-      std::string firma = name + "_" + generarFirma(nodo_decl->nombre_func, tipos_args);
-      std::cout << "[1356, parser.cpp] firma: '" << firma << "'\n";
+      //std::string firma = name + "_" + generarFirma(nodo_decl->nombre_func, tipos_args);
+      //std::cout << "[1362, parser.cpp] firma: '" << firma << "'\n";
 
-      nodo_decl->nombre_func = firma;
-      info.metodos[firma] = std::move(info_func);
+      //nodo_decl->nombre_func = firma;
+      //info.metodos[firma] = std::move(info_func);
       metodos.push_back(std::move(nodo_func));
 
     } else if (peek().tipo == Tt::STRUCT) {
       propiedades.push_back(parsearStruct());
 
-    }
+    } else if (peek().tipo == Tt::IDENTIFICADOR) {
+      Token t = get();
+      check(Tt::PUNTO_COMA);
 
-    else { // Error
-      throw std::runtime_error("[1346, parser.cpp] Error: structs");
+      auto placeholder = std::make_unique<SentenciaExpr>(
+        std::make_unique<ExprVariable>(t.lexema)
+      );
+
+      propiedades.push_back(std::move(placeholder));
+
+    } else { // Error
+      std::cerr << "[1374, parser.cpp] Error, lexema: '" << peek().lexema << "'\n";
+      std::cerr << nombreTipo(peek().tipo) << '\n';
+      throw std::runtime_error("[1374, parser.cpp] Error: structs");
 
     }
 
@@ -1375,8 +1383,6 @@ std::unique_ptr<Sentencia> Parser::parsearStruct() {
 
   check(Tt::LLAVE_R);
   check(Tt::PUNTO_COMA);
-
-  tablas.actualizarStruct(name, std::move(info));
 
   return std::make_unique<SentenciaStruct>(name, std::move(propiedades), std::move(metodos));
 
@@ -1499,7 +1505,7 @@ Pr Parser::obtenerPrecedencia(Tt tipo) {
 std::unique_ptr<Expresion> Parser::parsearPrefijo() {
   Token t = peek();
 
-  std::cout << "[454, parser.cpp]\n";
+  std::cout << "[1516, parser.cpp]\n";
   std::cout << t.lexema << '\n';
   std::cout << nombreTipo(t.tipo) << '\n';
 
@@ -1540,23 +1546,30 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
     }
 
     case Tt::IDENTIFICADOR: {
-      if (peek().tipo == Tt::LLAVE_L) { // This is a init list
-        auto* info_struct = tablas.buscarStruct(t.lexema);
-        if (info_struct == nullptr) { //... Error, no existe
-          std::cerr << "[1535, parser.cpp] Error, la struct no existe\n";
-          exit(1);
-        }
 
-        Dt tipo_struct = Dt(typeFactory.getStruct(info_struct));
+      if (peek().tipo == Tt::LLAVE_L) {
+        Dt tipo_struct = Dt(typeFactory.getUnresolved(t.lexema));
         get();
 
         auto nodo_init_list = parsearInitList();
-
         nodo_init_list->tipo_resuelto = tipo_struct;
 
         return nodo_init_list;
 
       }
+
+      //if (peek().tipo == Tt::LLAVE_L) { // This is a init list
+      //  auto* info_struct = tablas.buscarStruct(t.lexema);
+      //  if (info_struct == nullptr) { //... Error, no existe
+      //    std::cerr << "[1553, parser.cpp] Error, la struct no existe\n";
+      //    exit(1);
+      //  }
+      //  Dt tipo_struct = Dt(typeFactory.getStruct(info_struct));
+      //  get();
+      //  auto nodo_init_list = parsearInitList();
+      //  nodo_init_list->tipo_resuelto = tipo_struct;
+      //  return nodo_init_list;
+      //}
 
       return std::make_unique<ExprVariable>(t.lexema);
 
@@ -1609,7 +1622,7 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
     case Tt::AMPERSAND  : {op = TipoOperador::PTR_REF   ; break; }
 
     default: {
-        std::cerr << "[536, parser.cpp]\n";
+        std::cerr << "[1626, parser.cpp]\n";
         std::cerr << "No se esperaba el prefijo '" << t.lexema << "'\n";
         exit(1);
     }

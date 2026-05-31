@@ -1,0 +1,33 @@
+arcane OOP ( class: key, name: var, block: code ) {
+
+  rules [
+    @def: class [ name block ];
+
+  ];
+
+  @def {
+
+    class <=> {
+      struct name {
+        block;
+      };
+    };
+
+  }
+
+}
+
+class Car {
+  int year;
+
+}
+
+func main() -> int {
+
+  Car car = Car { year: 2000 };
+
+  return car.year;
+
+  return 0;
+
+}

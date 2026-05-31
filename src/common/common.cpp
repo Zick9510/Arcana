@@ -206,9 +206,9 @@ void GestorTablas::popFunction() {
 }
 
 bool GestorTablas::añadirStruct(const std::string& name, InfoStruct info) {
-  if (scopeActual->structs.count(name)) { return false; }
+  if (root->structs.count(name)) { return false; }
 
-  scopeActual->structs[name] = std::move(info);
+  root->structs[name] = std::move(info);
   return true;
 
 }
@@ -226,14 +226,9 @@ bool GestorTablas::actualizarStruct(const std::string& name, InfoStruct infoActu
 }
 
 InfoStruct* GestorTablas::buscarStruct(const std::string& name) {
-  Scope* cursor = scopeActual;
 
-  while (cursor != nullptr) {
-    auto it = cursor->structs.find(name);
-    if (it != cursor->structs.end()) { return &(it->second); }
-    cursor = cursor->padre;
-
-  }
+  auto it = root->structs.find(name);
+  if (it != root->structs.end()) { return &(it->second); }
 
   return nullptr;
 

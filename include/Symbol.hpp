@@ -26,6 +26,7 @@ enum class TypeKind { //...
   ERROR,
 
   DESCONOCIDO,
+  UNRESOLVED,
 
 };
 

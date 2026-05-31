@@ -8,6 +8,37 @@
 TraitChecker::TraitChecker(Checker& c)
   : checker(c) {}
 
+void TraitChecker::despacharTrait(Bloque* nodo, size_t idx) {
+  if (idx >= nodo->traits.size()) {
+    for (const auto& inst : nodo->instrucciones) {
+      inst->accept(&checker);
+    }
+    return ;
+  }
+
+  auto trait = nodo->traits[idx];
+
+  switch (trait) {
+    case BT::NOSCOPE: {
+      handleNoscope(nodo, idx);
+      break;
+    }
+
+    default: {
+      despacharTrait(nodo, idx + 1);
+      break;
+    }
+
+  }
+}
+
+void TraitChecker::handleNoscope(Bloque* nodo, size_t idx) {
+  checker.tablas.salirScope();
+  despacharTrait(nodo, idx + 1);
+  checker.tablas.entrarScope();
+
+}
+
 /* --- Checker --- */
 Checker::Checker(GestorTablas& t, std::vector<std::unique_ptr<Sentencia>>& a, ErrorHandler& e, TypeFactory& tf, ContextoArcanos& ca)
   : tablas(t), ast(a), errHandler(e), typeFactory(tf), contextoArcanos(ca), traits(*this) {}
@@ -376,6 +407,12 @@ bool Checker::esCasteoValido(const Dt& origen, const Dt& destino) {
 }
 
 void Checker::verificarPrograma() {
+
+  for (auto& nodo : ast) {
+    nodo->accept(this);
+  }
+
+  mode = ModoChecker::VERIFICACION;
 
   for (auto& nodo : ast) {
     nodo->accept(this);

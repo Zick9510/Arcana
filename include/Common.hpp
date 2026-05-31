@@ -59,7 +59,7 @@ inline int operator-(Pr lhs, int rhs) {
 enum class Tt {
 
   // Tipos Inferibles
-  VAR,
+  LET,
 
   // Constantes
   CONST,
@@ -143,7 +143,7 @@ enum class Tt {
 
   // Arcanos
   ARCANE, ARCANITE,
-  CODE, EXPR, KEY,
+  CODE, EXPR, KEY, VAR,
   RULES, CHAINS,
 
   // Escritura
@@ -327,6 +327,7 @@ inline TipoOperador convertirEnTipoOperador(Tt op) { //... Agregar los demás ca
 // --- Traits --- //
 enum class BlockTrait {
   LOOP,
+  NOSCOPE,
   UNKNOWN
 };
 
@@ -334,6 +335,7 @@ using BT = BlockTrait;
 
 static const std::unordered_map<std::string_view, BT> string_traits = {
   {"loop", BT::LOOP},
+  {"noscope", BT::NOSCOPE},
 };
 
 inline BT stringToTrait(std::string_view name) {
@@ -348,19 +350,14 @@ inline BT stringToTrait(std::string_view name) {
 
 inline std::string_view traitToString(BT trait) {
   switch (trait) {
-    case BT::LOOP: { return "loop"   ; }
-    default:       { return "unknown"; }
+    case BT::LOOP   : { return "loop"   ; }
+    case BT::NOSCOPE: { return "noscope"; }
+    default         : { return "unknown"; }
   }
 }
 
 
 /* --- Lexer --- */
-//struct Range {
-//  Pos    start;
-//  Pos    end;
-//  size_t file_id; //...
-//};
-
 struct Token {
   Tt tipo;
   std::string lexema;
@@ -372,7 +369,7 @@ struct Token {
 inline std::map<std::string, Tt> keywords = {
 
   // Tipos Inferibles
-  {"var", Tt::VAR}, // auto
+  {"let", Tt::LET},
 
   // Tipos explícitos
   {"void", Tt::VOID_TYPE}, // void
@@ -418,9 +415,10 @@ inline std::map<std::string, Tt> keywords = {
   {"rules"   , Tt::RULES   },
   {"chains"  , Tt::CHAINS  },
 
-  {"key" , Tt::KEY },
-  {"expr", Tt::EXPR},
   {"code", Tt::CODE},
+  {"expr", Tt::EXPR},
+  {"key" , Tt::KEY },
+  {"var" , Tt::VAR},
 
   // If-else
   {"if"  , Tt::IF  },
@@ -450,7 +448,7 @@ inline std::map<std::string, Tt> keywords = {
 
 /* --- Arcanos --- */
 
-enum class TPA { NULO, KEY, EXPR, CODE };
+enum class TPA { NULO, KEY, EXPR, CODE, VAR };
 
 struct ReglaArcano {
   std::string keyword; // trigger keyword
@@ -1565,7 +1563,9 @@ public:
         std::cout << sangria << "| +- ";
         std::string t_str = (arg.tipo_dato == TPA::CODE ? "code" :
                              arg.tipo_dato == TPA::EXPR ? "expr" :
-                             arg.tipo_dato == TPA::KEY  ? "key"  : "unknown");
+                             arg.tipo_dato == TPA::KEY  ? "key"  :
+                             arg.tipo_dato == TPA::VAR  ? "var"   : "unknown");
+
         std::cout << arg.contenido << " <" << t_str << ">";
         std::cout << "\n";
     }
@@ -1601,18 +1601,28 @@ public:
   std::unordered_map<std::string, std::unique_ptr<Sentencia>> args;
   std::unordered_map<std::string, std::unique_ptr<Sentencia>> code;
   std::unordered_map<std::string, std::unique_ptr<Sentencia>> expr;
+  std::unordered_map<std::string, std::unique_ptr<Expresion>> vars;
   size_t indice_rama;
 
   std::vector<std::unique_ptr<SentenciaLlamadaArcano>> chains;
+
+  std::vector<std::unique_ptr<Sentencia>> nodos_expandidos;
 
   SentenciaLlamadaArcano(std::string n, std::string t,
                          std::unordered_map<std::string, std::unique_ptr<Sentencia>> a,
                          std::unordered_map<std::string, std::unique_ptr<Sentencia>> c,
                          std::unordered_map<std::string, std::unique_ptr<Sentencia>> e,
+                         std::unordered_map<std::string, std::unique_ptr<Expresion>> v,
                          std::vector<std::unique_ptr<SentenciaLlamadaArcano>> ch      ,
                          size_t idx
                          )
-    : nombre(std::move(n)), rule_tag(std::move(t)), args(std::move(a)), code(std::move(c)), expr(std::move(e)), indice_rama(idx), chains(std::move(ch)) {}
+    : nombre(std::move(n)), rule_tag(std::move(t)),
+      args(std::move(a)),
+      code(std::move(c)),
+      expr(std::move(e)),
+      vars(std::move(v)),
+
+      indice_rama(idx), chains(std::move(ch)) {}
 
   SentenciaLlamadaArcano(const SentenciaLlamadaArcano& otra) //... Todo: Clone the rest of the thing
     : nombre(otra.nombre), indice_rama(otra.indice_rama) {}

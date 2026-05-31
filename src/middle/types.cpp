@@ -8,7 +8,7 @@
 
 ArcanaType::~ArcanaType() = default;
 
-// --- UnkownType ---
+// --- UnknownType ---
 UnknownType::UnknownType()
   : ArcanaType(TypeKind::DESCONOCIDO) {}
 std::string UnknownType::toString() const { return "unkown"; }
@@ -20,6 +20,18 @@ bool UnknownType::esIgual(const ArcanaType* otro) const {
 }
 
 bool UnknownType::isNumeric() const { return false; }
+
+// --- UnresolvedType ---
+UnresolvedType::UnresolvedType(std::string s)
+  : ArcanaType(TypeKind::UNRESOLVED), pending_type(s) {}
+
+std::string UnresolvedType::toString() const { return "unresolved"; }
+
+int UnresolvedType::getBitSize() const { return -1; }
+
+bool UnresolvedType::esIgual(const ArcanaType* otro) const { return false; }
+
+bool UnresolvedType::isNumeric() const { return false; }
 
 // --- VoidType ---
 VoidType::VoidType()
@@ -208,6 +220,20 @@ std::shared_ptr<UnknownType> TypeFactory::getUnknown() {
   return nueva_instancia;
 
 }
+
+std::shared_ptr<UnresolvedType> TypeFactory::getUnresolved(std::string name) {
+
+  if (cacheUnresolved.find(name) != cacheUnresolved.end()) {
+    return cacheUnresolved[name];
+
+  }
+
+  auto nueva_instancia = std::make_shared<UnresolvedType>(name);
+  cacheUnresolved[name] = nueva_instancia;
+  return nueva_instancia;
+
+}
+
 
 std::shared_ptr<VoidType> TypeFactory::getVoid() {
 

@@ -17,6 +17,19 @@ public:
 
 };
 
+class UnresolvedType : public ArcanaType {
+public:
+  std::string pending_type;
+
+  UnresolvedType(std::string n);
+
+  std::string toString()               const override;
+  int getBitSize()                     const override;
+  bool esIgual(const ArcanaType* otro) const override;
+  bool isNumeric()                     const override;
+
+};
+
 class VoidType : public ArcanaType {
 public:
   VoidType();
@@ -104,6 +117,7 @@ public:
   int getBitSize()                     const override;
   bool esIgual(const ArcanaType* otro) const override;
   bool isNumeric()                     const override;
+
 };
 
 class StructType : public ArcanaType {
@@ -128,28 +142,24 @@ private:
   std::shared_ptr<VoidType   > cacheVoid;
   std::shared_ptr<BooleanType> cacheBoolean;
 
-  std::map<std::shared_ptr<ArcanaType>, std::shared_ptr<PointerType>> cachePointer;
-  std::map<std::tuple<int, bool>      , std::shared_ptr<IntegerType>> cacheInteger;
-  std::map<int                        , std::shared_ptr<FloatType  >> cacheFloat  ;
-
-  std::map<int                        , std::shared_ptr<CharType   >> cacheChar   ;
-
-  std::map<std::string                , std::shared_ptr<MorphType  >> cacheMorph  ;
-  std::map<std::string                , std::shared_ptr<StructType >> cacheStruct ;
+  std::map<std::string                , std::shared_ptr<UnresolvedType>> cacheUnresolved;
+  std::map<std::shared_ptr<ArcanaType>, std::shared_ptr<PointerType   >> cachePointer   ;
+  std::map<std::tuple<int, bool>      , std::shared_ptr<IntegerType   >> cacheInteger   ;
+  std::map<int                        , std::shared_ptr<FloatType     >> cacheFloat     ;
+  std::map<int                        , std::shared_ptr<CharType      >> cacheChar      ;
+  std::map<std::string                , std::shared_ptr<MorphType     >> cacheMorph     ;
+  std::map<std::string                , std::shared_ptr<StructType    >> cacheStruct    ;
 
 public:
-  std::shared_ptr<UnknownType> getUnknown();
-  std::shared_ptr<VoidType   > getVoid   ();
-
-  std::shared_ptr<PointerType> getPointer(std::shared_ptr<ArcanaType> base);
-
-  std::shared_ptr<BooleanType> getBoolean();
-  std::shared_ptr<IntegerType> getInteger(int bits, bool is_unsigned);
-  std::shared_ptr<FloatType  > getFloat  (int bits);
-
-  std::shared_ptr<CharType   > getChar   (int bits);
-
-  std::shared_ptr<MorphType  > getMorph  (std::vector<std::shared_ptr<ArcanaType>> subtipos);
-  std::shared_ptr<StructType > getStruct (InfoStruct* info);
+  std::shared_ptr<UnknownType   > getUnknown   ();
+  std::shared_ptr<UnresolvedType> getUnresolved(std::string name);
+  std::shared_ptr<VoidType      > getVoid      ();
+  std::shared_ptr<PointerType   > getPointer   (std::shared_ptr<ArcanaType> base);
+  std::shared_ptr<BooleanType   > getBoolean   ();
+  std::shared_ptr<IntegerType   > getInteger   (int bits, bool is_unsigned);
+  std::shared_ptr<FloatType     > getFloat     (int bits);
+  std::shared_ptr<CharType      > getChar      (int bits);
+  std::shared_ptr<MorphType     > getMorph     (std::vector<std::shared_ptr<ArcanaType>> subtipos);
+  std::shared_ptr<StructType    > getStruct    (InfoStruct* info);
 
 };
