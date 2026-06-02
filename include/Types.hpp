@@ -105,6 +105,21 @@ public:
 
 };
 
+class ArrayType : public ArcanaType {
+public:
+  std::shared_ptr<ArcanaType> base;
+  int size;
+
+  ArrayType(std::shared_ptr<ArcanaType> b, int s = -1);
+
+  std::string toString()                          const override;
+  int getBitSize()                                const override;
+  bool esIgual(const ArcanaType* otro)            const override;
+  bool isNumeric()                                const override;
+  std::shared_ptr<ArcanaType> getUnderlyingType() const override;
+
+};
+
 class MorphType : public ArcanaType {
 public:
   int selector_bytes; // Bytes to select the one thing we need
@@ -142,13 +157,14 @@ private:
   std::shared_ptr<VoidType   > cacheVoid;
   std::shared_ptr<BooleanType> cacheBoolean;
 
-  std::map<std::string                , std::shared_ptr<UnresolvedType>> cacheUnresolved;
-  std::map<std::shared_ptr<ArcanaType>, std::shared_ptr<PointerType   >> cachePointer   ;
-  std::map<std::tuple<int, bool>      , std::shared_ptr<IntegerType   >> cacheInteger   ;
-  std::map<int                        , std::shared_ptr<FloatType     >> cacheFloat     ;
-  std::map<int                        , std::shared_ptr<CharType      >> cacheChar      ;
-  std::map<std::string                , std::shared_ptr<MorphType     >> cacheMorph     ;
-  std::map<std::string                , std::shared_ptr<StructType    >> cacheStruct    ;
+  std::map<std::string                                , std::shared_ptr<UnresolvedType>> cacheUnresolved;
+  std::map<std::shared_ptr<ArcanaType>                , std::shared_ptr<PointerType   >> cachePointer   ;
+  std::map<std::tuple<int, bool>                      , std::shared_ptr<IntegerType   >> cacheInteger   ;
+  std::map<int                                        , std::shared_ptr<FloatType     >> cacheFloat     ;
+  std::map<int                                        , std::shared_ptr<CharType      >> cacheChar      ;
+  std::map<std::pair<std::shared_ptr<ArcanaType>, int>, std::shared_ptr<ArrayType     >> cacheArray     ;
+  std::map<std::string                                , std::shared_ptr<StructType    >> cacheStruct    ;
+  std::map<std::string                                , std::shared_ptr<MorphType     >> cacheMorph     ;
 
 public:
   std::shared_ptr<UnknownType   > getUnknown   ();
@@ -159,7 +175,8 @@ public:
   std::shared_ptr<IntegerType   > getInteger   (int bits, bool is_unsigned);
   std::shared_ptr<FloatType     > getFloat     (int bits);
   std::shared_ptr<CharType      > getChar      (int bits);
-  std::shared_ptr<MorphType     > getMorph     (std::vector<std::shared_ptr<ArcanaType>> subtipos);
+  std::shared_ptr<ArrayType     > getArray     (std::shared_ptr<ArcanaType> base, int size);
   std::shared_ptr<StructType    > getStruct    (InfoStruct* info);
+  std::shared_ptr<MorphType     > getMorph     (std::vector<std::shared_ptr<ArcanaType>> subtipos);
 
 };

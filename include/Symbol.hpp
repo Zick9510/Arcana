@@ -18,6 +18,7 @@ enum class TypeKind { //...
   STRING,
 
   ARRAY,
+  RANGE,
 
   MORPH,
 
@@ -69,6 +70,7 @@ struct InfoVariable {
   bool es_const = false;
 
   llvm::AllocaInst* alloca = nullptr;
+  llvm::Value* array_size = nullptr;
 
 };
 

@@ -571,9 +571,9 @@ public:
   virtual void visitar(ExprInitList* nodo) = 0;
 
   // Sentencias
-  virtual void visitar(Bloque* nodo)        = 0;
+  virtual void visitar(Bloque* nodo) = 0;
 
-  virtual void visitar(SentenciaAsignarVar* nodo)  = 0;
+  virtual void visitar(SentenciaAsignarVar* nodo) = 0;
   virtual void visitar(SentenciaExpr* nodo) = 0;
 
   virtual void visitar(SentenciaReasignacionVar* nodo) = 0;
@@ -959,6 +959,8 @@ public:
 
   }
 
+  bool isLValue() const override { return operador == TipoOperador::PTR_DEREF; }
+
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
     for (int i = 0; i < nivel; ++i) { sangria += "| "; }
@@ -1027,6 +1029,7 @@ public:
     rama_false->imprimir(nivel + 1);
 
   }
+
 };
 
 class ExprCasteo : public NodoBase<Expresion, ExprCasteo> {
@@ -1110,6 +1113,8 @@ public:
       this->pos           = otra.pos          ;
 
   }
+
+  bool isLValue() const override { return true; }
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";
@@ -1241,13 +1246,15 @@ public:
   std::string nombre;
   InfoVariable tipo_explicito;
   std::unique_ptr<Expresion> valor_inicial;
+  std::unique_ptr<Expresion> size;
 
-  SentenciaAsignarVar(std::string nom, InfoVariable tipo, std::unique_ptr<Expresion> val)
-    : nombre(nom), tipo_explicito(tipo), valor_inicial(std::move(val)) {}
+  SentenciaAsignarVar(std::string nom, InfoVariable tipo, std::unique_ptr<Expresion> val, std::unique_ptr<Expresion> s)
+    : nombre(nom), tipo_explicito(tipo), valor_inicial(std::move(val)), size(std::move(s)) {}
 
   SentenciaAsignarVar(const SentenciaAsignarVar& otra)
     : nombre(otra.nombre), tipo_explicito(otra.tipo_explicito),
-      valor_inicial(otra.valor_inicial ? otra.valor_inicial->clonar() : nullptr) {}
+      valor_inicial(otra.valor_inicial ? otra.valor_inicial->clonar() : nullptr),
+      size(otra.size ? otra.size->clonar() : nullptr) {}
 
   void imprimir(int nivel = 0) const override {
     std::string sangria = "";

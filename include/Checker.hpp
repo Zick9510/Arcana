@@ -4,6 +4,7 @@
 
 #include "Common.hpp"
 
+#include "ConstEval.hpp"
 
 class Checker;
 
@@ -293,11 +294,26 @@ public:
 
 
   void visitar(ExprArray* nodo) override {
-    for (const auto& elemento : nodo->elementos) {
-      elemento->accept(this);
+
+    if (nodo->elementos.empty()) {
+      nodo->tipo_resuelto.valor = typeFactory.getArray(typeFactory.getUnknown(), 0);
+      return ;
     }
 
-    //... Asignar el tipo de dato al array y comprobar que todos los tipos de datos dentro sean iguales
+    nodo->elementos[0]->accept(this);
+    auto tipo_base = nodo->elementos[0]->tipo_resuelto.valor;
+
+    for (size_t i = 1; i < nodo->elementos.size(); ++i) {
+      nodo->elementos[i]->accept(this);
+      tipo_base = promoverTipos(tipo_base, nodo->elementos[i]->tipo_resuelto.valor);
+    }
+
+    for (size_t i = 0; i < nodo->elementos.size(); ++i) {
+      nodo->elementos[i] = forzarTipo(std::move(nodo->elementos[i]), Dt(tipo_base));
+    }
+
+    nodo->tipo_resuelto.valor = typeFactory.getArray(tipo_base, nodo->elementos.size());
+
   }
 
 
@@ -392,12 +408,24 @@ public:
 
     if (nodo->inicio) {
         nodo->inicio->accept(this);
+        auto tipo_indice = nodo->inicio->tipo_resuelto.valor;
+
+      if (tipo_indice->kind != TypeKind::INTEGER) {
+        nodo->inicio = forzarTipo(std::move(nodo->inicio), Dt(typeFactory.getInteger(32, false)));
+
+      }
+
+      nodo->tipo_resuelto.valor = nodo->inicio->tipo_resuelto.valor;
+
+
     }
-    if (nodo->fin   ) {
-        nodo->fin   ->accept(this);
+
+    if (nodo->fin) {
+        nodo->fin->accept(this);
     }
-    if (nodo->paso  ) {
-        nodo->paso  ->accept(this);
+
+    if (nodo->paso) {
+        nodo->paso->accept(this);
     }
 
   }
@@ -406,37 +434,25 @@ public:
     nodo->contenedor->accept(this);
     nodo->rango->accept(this);
 
-  }
+    auto tipo_contenedor = nodo->contenedor->tipo_resuelto.valor;
+    auto tipo_rango = nodo->rango->tipo_resuelto.valor;
 
-  //void visitar(ExprAccesoPunto* nodo) override { //...
-  //  nodo->izquierda->accept(this);
-  //  auto tipo_izq = nodo->izquierda->tipo_resuelto.valor;
-  //  if (!tipo_izq || tipo_izq->kind != TypeKind::STRUCT) {
-  //    std::cerr << "Error: El lado izquierdo del '.' debe ser un struct\n";
-  //    nodo->tipo_resuelto = Dt(typeFactory.getUnknown());
-  //    return ;
-  //  }
-  //  auto struct_type = std::static_pointer_cast<StructType>(tipo_izq);
-  //  auto it_prop = struct_type->info->propiedades.find(nodo->propiedad);
-  //  if (it_prop != struct_type->info->propiedades.end()) {
-  //    nodo->tipo_resuelto = it_prop->second.tipo;
-  //    return ;
-  //  }
-  //  std::string prefijo_metodo = struct_type->info->nombre + "_" + nodo->propiedad;
-  //  bool es_metodo = false;
-  //  for (const auto& [firma, info] : struct_type->info->metodos) {
-  //    if (firma.find(prefijo_metodo) == 0) {
-  //      es_metodo = true;
-  //      break;
-  //    }
-  //  }
-  //  if (es_metodo) { //...
-  //    nodo->tipo_resuelto = Dt(typeFactory.getUnknown());
-  //    return ;
-  //  }
-  //  std::cerr << "Error: El struct '" << struct_type->info->nombre << "' no tiene una propiedad o método llamado '" << nodo->propiedad << "'\n";
-  //  exit(1);
-  //}
+    if (tipo_contenedor->kind != TypeKind::ARRAY) {
+      std::cerr << "Error: El objeto no es indexable\n";
+      return ;
+    }
+
+    auto tipo_base = tipo_contenedor->getUnderlyingType();
+
+    if (tipo_rango->kind == TypeKind::INTEGER) {
+      nodo->tipo_resuelto.valor = tipo_base;
+
+    } else if (tipo_rango->kind == TypeKind::RANGE) {
+      nodo->tipo_resuelto.valor = tipo_contenedor;
+
+    }
+
+  }
 
   void visitar(ExprAccesoPunto* nodo) override {
     nodo->izquierda->accept(this);
@@ -521,6 +537,37 @@ public:
 
     }
 
+    if (nodo->size) {
+      nodo->size->accept(this);
+
+      if (!nodo->size->tipo_resuelto.valor->isNumeric()) {
+        throw std::runtime_error("Error: El tamaño del arreglo '" + nodo->nombre + "' debe ser un entero\n");
+      }
+
+      ConstantEvaluator eval;
+      auto res_size = eval.eval(nodo->size.get());
+      if (!res_size.has_value()) {
+        throw std::runtime_error("Error: El tamaño del arreglo '" + nodo->nombre + "' debe ser una expresion constante\n");
+      }
+
+      long long s;
+      std::visit([&](const auto& arg) {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, NumberData>) {
+          s = std::stoll(arg.valor);
+          if (s <= 0) {
+            throw std::runtime_error("Error: El tamaño del arreglo '" + nodo->nombre + "' debe ser positivo\n");
+          }
+        }
+
+      }, *res_size);
+
+      nodo->size = forzarTipo(std::move(nodo->size), Dt(typeFactory.getInteger(64, true)));
+
+      nodo->tipo_explicito.tipo.valor = typeFactory.getArray(nodo->tipo_explicito.tipo.valor, s);
+
+    }
+
     if (nodo->valor_inicial) {
 
       if (auto* init_list = dynamic_cast<ExprInitList*>(nodo->valor_inicial.get())) {
@@ -536,7 +583,7 @@ public:
     }
 
     InfoVariable* info = tablas.buscarVariable(nodo->nombre);
-    if (info == nullptr) { // Si la variable no existe, creamos una
+    if (info == nullptr) { // Creamos la variable
       InfoVariable nueva_info;
       nueva_info.tipo = nodo->tipo_explicito.tipo.valor;
       tablas.añadirVariable(nodo->nombre, nueva_info);
@@ -832,88 +879,6 @@ public:
 
   }
 
-  //void visitar(SentenciaStruct* nodo) override {
-  //  if (!nodo->propiedades.empty()) {
-  //    for (const auto& p : nodo->propiedades) {
-  //      p->accept(this);
-  //    }
-  //  }
-  //  if (!nodo->metodos.empty()) {
-  //    for (const auto& m : nodo->metodos) {
-  //      m->accept(this);
-  //    }
-  //  }
-  //}
-
-  //void visitar(SentenciaStruct* nodo) override {
-  //  std::string nombre_real = nodo->name;
-  //  if (varsArcanosActivos.count(nombre_real)) {
-  //    if (auto* e_var = dynamic_cast<ExprVariable*>(varsArcanosActivos[nombre_real])) {
-  //      nombre_real = e_var->nombre;
-  //      nodo->name = e_var->nombre;
-  //    } else {
-  //      throw std::runtime_error("Error: Se esperaba un identificador para la variable '" + nombre_real + "'\n");
-  //    }
-  //  }
-  //  std::vector<std::unique_ptr<Sentencia>> props_expandidas;
-  //  for (auto& prop : nodo->propiedades) {
-  //    bool es_placeholder = false;
-  //    if (auto* expr_stmt = dynamic_cast<SentenciaExpr*>(prop.get())) {
-  //      if (auto* var_expr = dynamic_cast<ExprVariable*>(expr_stmt->expresion.get())) {
-  //        if (bloquesArcanoActivos.count(var_expr->nombre)) {
-  //          es_placeholder = true;
-  //          auto* nodo_arg = bloquesArcanoActivos[var_expr->nombre];
-  //          if (auto* bloque = dynamic_cast<Bloque*>(nodo_arg)) {
-  //            for (const auto& inst : bloque->instrucciones) {
-  //              props_expandidas.push_back(inst->clonar());
-  //            }
-  //          } else {
-  //            props_expandidas.push_back(nodo_arg->clonar());
-  //          }
-  //        }
-  //      }
-  //    }
-  //    if (!es_placeholder) {
-  //      props_expandidas.push_back(std::move(prop));
-  //    }
-  //  }
-  //  nodo->propiedades = std::move(props_expandidas);
-  //  InfoStruct info;
-  //  info.nombre = nombre_real;
-  //  for (const auto& p : nodo->propiedades) {
-  //    p->accept(this);
-  //    if (auto* var_decl = dynamic_cast<SentenciaAsignarVar*>(p.get())) {
-  //      if (info.propiedades.count(var_decl->nombre)) {
-  //        throw std::runtime_error("Error: La propiedad '" + var_decl->nombre + "' redefinida\n");
-  //      }
-  //      info.propiedades[var_decl->nombre] = var_decl->tipo_explicito;
-  //      info.orden_props.push_back(var_decl->nombre);
-  //    }
-  //  }
-  //  if (!nodo->metodos.empty()) {
-  //    for (const auto& m : nodo->metodos) {
-  //      m->accept(this);
-  //      if (auto* func_decl = dynamic_cast<SentenciaFuncDecl*>(m.get())) {
-  //        InfoFuncion info_func;
-  //        info_func.nombre = func_decl->nombre_func;
-  //        info_func.tipo_retorno = func_decl->ret_type;
-  //        info_func.tipos_parametros = func_decl->args_type;
-  //        std::vector<Dt> tipos_args;
-  //        for (const auto& a : func_decl->args_type) {
-  //          tipos_args.push_back(a.second.tipo);
-  //        }
-  //        std::string firma = nombre_real + "_" + generarFirma(func_decl->nombre_func, tipos_args);
-  //        func_decl->nombre_func = firma;
-  //        info.metodos[firma] = std::move(info_func);
-  //      }
-  //    }
-  //  }
-  //  std::cout << "[843, Checker.hpp] nombre_real: '" << nombre_real << "'\n";
-  //  if (!tablas.añadirStruct(nombre_real, info)) {
-  //    throw std::runtime_error("Error: El struct '" + nombre_real + "' ya está definido\n");
-  //  }
-  //}
-
   void visitar(SentenciaStruct* nodo) override {
 
     std::string nombre_real = nodo->name;
@@ -1037,31 +1002,6 @@ public:
 
         structActual = "";
 
-        //InfoStruct* info_struct = tablas.buscarStruct(nombre_real);
-
-        //for (const auto& m : nodo->metodos) {
-        //  if (auto* func_decl = dynamic_cast<SentenciaFuncDecl*>(m.get())) {
-
-        //    std::vector<Dt> tipos_args;
-        //    for (const auto& a : func_decl->args_type) {
-        //      tipos_args.push_back(a.second.tipo);
-        //    }
-
-        //    std::string firma = nombre_real + "_" + generarFirma(func_decl->nombre_func, tipos_args);
-        //    std::cout << "[1014, Checker.hpp] firma: '" << firma << "'\n";
-
-        //    if (info_struct->metodos.count(func_decl->nombre_func)) {
-        //      InfoFuncion info_func = info_struct->metodos[func_decl->nombre_func];
-
-        //      tablas.añadirFunction(firma, info_func);
-
-        //      //std::string nombre = func_decl->nombre_func;
-        //      func_decl->nombre_func = firma;
-        //      m->accept(this);
-
-        //    }
-        //}
-        //}
       }
     }
   }
@@ -1076,62 +1016,6 @@ public:
     def = nodo->def;
 
   }
-
-  /* void visitar(SentenciaLlamadaArcano* nodo) override {
-
-    pilaLlamadasArcano.push_back(nodo);
-
-    ArcaneDef& def     = contextoArcanos.buscarDefinicionPorKeyword(nodo->nombre);
-    ArcaneBranch* rama = &def.branches[nodo->indice_rama];
-
-    tablas.entrarScope();
-
-    for (const auto& [nombre_arg, ast_arg] : nodo->args) {
-      ast_arg->accept(this);
-
-      InfoVariable info;
-
-      if (auto* s_expr = dynamic_cast<SentenciaExpr*>(ast_arg.get())) {
-        info.tipo = s_expr->expresion->tipo_resuelto;
-      } else {
-        info.tipo = Dt(typeFactory.getUnknown());
-      }
-
-      tablas.añadirVariable(nombre_arg, info);
-
-    }
-
-    auto backup_bloques = bloquesArcanoActivos;
-
-    for (const auto& [nombre_arg, ast_arg] : nodo->expr) {
-      bloquesArcanoActivos[nombre_arg] = ast_arg.get();
-    }
-
-    for (const auto& [nombre_arg, ast_arg] : nodo->code) {
-      bloquesArcanoActivos[nombre_arg] = ast_arg.get();
-    }
-
-    for (const auto& seg : rama->segmentos) {
-      if (seg.br_cont) {
-        seg.br_cont->accept(this);
-      }
-    }
-
-    auto bloque_expandido = std::make_unique<Bloque>();
-    for (const auto& seg : rama->segmentos) {
-      if (seg.br_cont) {
-        bloque_expandido->instrucciones.push_back(seg.br_cont->clonar());
-      }
-    }
-
-    bloque_expandido->accept(this);
-
-    bloquesArcanoActivos = backup_bloques;
-    tablas.salirScope();
-
-    pilaLlamadasArcano.pop_back();
-
-  } */
 
   void visitar(SentenciaLlamadaArcano* nodo) override {
     pilaLlamadasArcano.push_back(nodo);

@@ -376,6 +376,7 @@ std::unique_ptr<Expresion> Parser::parsearRangoOArray() {
     return std::make_unique<ExprArray>(std::move(contenido_array));
 
   }
+
 }
 
 std::unique_ptr<Expresion> Parser::parsearRango() {
@@ -469,20 +470,29 @@ std::unique_ptr<Sentencia> Parser::parsearDeclaracionVar() {
 
   InfoVariable tipo = parsearTipo();
 
-  Token nombre = check(Tt::IDENTIFICADOR);
+  Token nombre = check(Tt::IDENTIFICADOR); // Type Var
+  std::unique_ptr<Expresion> size = nullptr;
+
+  if (peek().tipo == Tt::CORCH_L) { // [ Expr ]
+    get();
+    size = parsearExpresion(Pr::MINIMA);
+    check(Tt::CORCH_R);
+
+  }
 
   std::unique_ptr<Expresion> valor = nullptr;
 
-  if (peek().tipo == Tt::IGUAL_ASIG) { // [TIPO] [ID] = [EXPR];
+  if (peek().tipo == Tt::IGUAL_ASIG) { // = Expr ;
     get();
     valor = parsearExpresion(Pr::MINIMA);
 
   }
-  // else: [TIPO] [ID];
+
+  // else: Type Var ;
 
   check(Tt::PUNTO_COMA);
 
-  return std::make_unique<SentenciaAsignarVar>(nombre.lexema, tipo, std::move(valor));
+  return std::make_unique<SentenciaAsignarVar>(nombre.lexema, tipo, std::move(valor), std::move(size));
 
 }
 
@@ -1557,19 +1567,6 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
         return nodo_init_list;
 
       }
-
-      //if (peek().tipo == Tt::LLAVE_L) { // This is a init list
-      //  auto* info_struct = tablas.buscarStruct(t.lexema);
-      //  if (info_struct == nullptr) { //... Error, no existe
-      //    std::cerr << "[1553, parser.cpp] Error, la struct no existe\n";
-      //    exit(1);
-      //  }
-      //  Dt tipo_struct = Dt(typeFactory.getStruct(info_struct));
-      //  get();
-      //  auto nodo_init_list = parsearInitList();
-      //  nodo_init_list->tipo_resuelto = tipo_struct;
-      //  return nodo_init_list;
-      //}
 
       return std::make_unique<ExprVariable>(t.lexema);
 

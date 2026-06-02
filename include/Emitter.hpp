@@ -22,11 +22,11 @@ public:
 
 class Emitter : public ASTVisitor {
 private:
-  llvm::LLVMContext                                      llvmCtx            ;
-  std ::unique_ptr<llvm::Module>                         llvmModulo         ;
-  std ::unique_ptr<llvm::IRBuilder<>>                    llvmBuilder        ;
-  llvm::Value*                                           llvmValor = nullptr;
-  std::map<std::string, llvm::StructType*>               llvmStructs        ;
+  llvm::LLVMContext                        llvmCtx            ;
+  std ::unique_ptr<llvm::Module>           llvmModulo         ;
+  std ::unique_ptr<llvm::IRBuilder<>>      llvmBuilder        ;
+  llvm::Value*                             llvmValor = nullptr;
+  std::map<std::string, llvm::StructType*> llvmStructs        ;
 
   std::string structActual = "";
   llvm::StructType* llvmStructActual = nullptr;
@@ -48,10 +48,9 @@ private:
   std::vector<SentenciaLlamadaArcano*> stackArcanos        ;
 
 public:
-
   Emitter(ContextoArcanos& ca, GestorTablas& t);
 
-  llvm::Type*              obtenerTipoLLVM    (std::shared_ptr<ArcanaType> tipo);
+  llvm::Type*              obtenerTipoLLVM    (std::shared_ptr<ArcanaType> tipo, bool asPointer = true);
   llvm::Value*             obtenerPuntero     (Expresion* nodo);
   llvm::CmpInst::Predicate obtenerPredicadoCmp(TipoOperador op, bool esFloat, bool esSigned);
 

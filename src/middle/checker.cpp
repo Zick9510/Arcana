@@ -74,10 +74,21 @@ std::unique_ptr<Expresion> Checker::forzarTipo(std::unique_ptr<Expresion> hijo, 
 // --- Verificar Expresiones --- //
 std::shared_ptr<ArcanaType> Checker::verificarSuma(const Dt& izq, const Dt& der) {
   std::cout << "[45, checker.cpp] verificarSuma\n";
+
+  TypeKind p_izq = izq.valor->kind;
+  TypeKind p_der = der.valor->kind;
+
+  if (p_izq == TypeKind::POINTER && p_der == TypeKind::INTEGER) {
+    return izq.valor;
+  }
+
+  if (p_izq == TypeKind::INTEGER && p_der == TypeKind::POINTER) {
+    return der.valor;
+  }
+
+
   if (izq.esPrimitivo() && der.esPrimitivo()) {
     std::cout << "[47, checker.cpp] ambos primitivos\n";
-    TypeKind p_izq = izq.valor->kind;
-    TypeKind p_der = der.valor->kind;
 
     // Regla 1: Suma de números
     if (esNum(p_izq) && esNum(p_der)) {
@@ -110,14 +121,24 @@ std::shared_ptr<ArcanaType> Checker::verificarSuma(const Dt& izq, const Dt& der)
   // Si el código llega acá, se intentó sumar cosas inválidas
   //... Reportar al errHandler
 
-  return nullptr; //... Quizás retornar un tipo error?
+  return typeFactory.getUnknown(); //... Quizás retornar un tipo error?
 
 }
 
 std::shared_ptr<ArcanaType> Checker::verificarResta(const Dt& izq, const Dt& der) {
+
+  TypeKind p_izq = izq.valor->kind;
+  TypeKind p_der = der.valor->kind;
+
+  if (p_izq == TypeKind::POINTER && p_der == TypeKind::INTEGER) {
+    return izq.valor;
+  }
+
+  if (p_izq == TypeKind::POINTER && p_der == TypeKind::POINTER) {
+    return typeFactory.getInteger(64, false);
+  }
+
   if (izq.esPrimitivo() && der.esPrimitivo()) {
-    TypeKind p_izq = izq.valor->kind;
-    TypeKind p_der = der.valor->kind;
 
     // Regla 1: Resta de números
     if (esNum(p_izq) && esNum(p_der)) {
@@ -127,7 +148,7 @@ std::shared_ptr<ArcanaType> Checker::verificarResta(const Dt& izq, const Dt& der
   }
 
   //... Reportar al errHandler
-  return nullptr;
+  return typeFactory.getUnknown();
 
 }
 
@@ -400,6 +421,18 @@ bool Checker::esCasteoValido(const Dt& origen, const Dt& destino) {
   }
 
   //... Relga 3: Punteros
+
+  if (origen.valor->kind == TypeKind::POINTER && destino.valor->kind == TypeKind::POINTER) {
+    auto base_original = origen.valor->getUnderlyingType();
+    auto base_destino = destino.valor->getUnderlyingType();
+
+    if (base_original->kind == TypeKind::ARRAY) {
+      auto tipo_elemento = base_original->getUnderlyingType();
+      if (tipo_elemento->kind == base_destino->kind) {
+        return true;
+      }
+    }
+  }
 
   // No se puede
   return false;

@@ -149,6 +149,38 @@ bool CharType::esIgual(const ArcanaType* otro) const {
 
 }
 
+// --- ArrayType ---
+ArrayType::ArrayType(std::shared_ptr<ArcanaType> b, int s)
+  : ArcanaType(TypeKind::ARRAY), base(b), size(s) {}
+
+std::string ArrayType::toString() const {
+  return "[" + base->toString() + "]";
+}
+
+int ArrayType::getBitSize() const {
+  return 64;
+}
+
+bool ArrayType::esIgual(const ArcanaType* otro) const {
+
+  if (otro->kind != TypeKind::ARRAY) {
+    return false;
+  }
+
+  auto o = static_cast<const ArrayType*>(otro);
+
+  return base->esIgual(o->base.get());
+
+}
+
+bool ArrayType::isNumeric() const {
+  return false;
+}
+
+std::shared_ptr<ArcanaType> ArrayType::getUnderlyingType() const {
+  return base;
+}
+
 // --- MorphType ---
 MorphType::MorphType(std::vector<std::shared_ptr<ArcanaType>> st)
   : ArcanaType(TypeKind::MORPH), subtipos(st) {
@@ -314,6 +346,33 @@ std::shared_ptr<CharType> TypeFactory::getChar(int bits) {
 
 }
 
+
+std::shared_ptr<StructType> TypeFactory::getStruct(InfoStruct* info) {
+
+  if (cacheStruct.find(info->nombre) != cacheStruct.end()) {
+    return cacheStruct[info->nombre];
+  }
+
+  auto nueva_instancia = std::make_shared<StructType>(info);
+  cacheStruct[info->nombre] = nueva_instancia;
+  return nueva_instancia;
+
+}
+
+std::shared_ptr<ArrayType> TypeFactory::getArray(std::shared_ptr<ArcanaType> base, int size) {
+
+  auto key = std::make_pair(base, size);
+
+  if (cacheArray.find(key) != cacheArray.end()) {
+    return cacheArray[key];
+  }
+
+  auto nueva_instancia = std::make_shared<ArrayType>(base, size);
+  cacheArray[key] = nueva_instancia;
+  return nueva_instancia;
+
+}
+
 std::shared_ptr<MorphType> TypeFactory::getMorph(std::vector<std::shared_ptr<ArcanaType>> subtipos) {
   std::string firma = "[";
 
@@ -335,16 +394,6 @@ std::shared_ptr<MorphType> TypeFactory::getMorph(std::vector<std::shared_ptr<Arc
   auto nueva_instancia = std::make_shared<MorphType>(subtipos);
   cacheMorph[firma] = nueva_instancia;
   return nueva_instancia;
-}
-
-std::shared_ptr<StructType> TypeFactory::getStruct(InfoStruct* info) {
-
-  if (cacheStruct.find(info->nombre) != cacheStruct.end()) {
-    return cacheStruct[info->nombre];
-  }
-
-  auto nueva_instancia = std::make_shared<StructType>(info);
-  cacheStruct[info->nombre] = nueva_instancia;
-  return nueva_instancia;
 
 }
+

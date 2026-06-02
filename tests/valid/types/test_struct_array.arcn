@@ -1,0 +1,37 @@
+struct stack {
+
+  int base[8];
+  int* value = &base;
+
+  func push(int i) -> void {
+    *value = i;
+    value = value + 1;
+  }
+
+  func pop() -> int {
+    value = value - 1;
+    return *value;
+  }
+
+  func back() -> int {
+    return *(value - 1);
+  }
+
+};
+
+func main() -> int {
+  stack mi_stack;
+
+  mi_stack.push(1);
+  mi_stack.push(2);
+  mi_stack.pop();
+  mi_stack.push(4);
+  mi_stack.push(8);
+
+  int total = mi_stack.pop();
+  total = total + mi_stack.pop();
+  total = total + mi_stack.back();
+
+  return total;
+
+}

@@ -148,9 +148,9 @@ Reproducible Benchmarks:
 
     fast     build: 1.6 - 1.8 seconds
 
-    segfault build: 3.7 - 3.7 seconds
+    segfault build: 4.0 - 4.0 seconds
 
 
-Last updated: 28/5/2026 (dd/mm/yyyy)
+Last updated: 1/6/2026 (dd/mm/yyyy)
 
 """
