@@ -1,4 +1,4 @@
- //... Esto lleva a modificar a la def del arcano, cre //... Esto lleva a modificar a la def del arcano, creoo// Driver.hpp
+// Driver.hpp
 
 #pragma once
 

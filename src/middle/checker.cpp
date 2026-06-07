@@ -147,6 +147,18 @@ std::shared_ptr<ArcanaType> Checker::verificarResta(const Dt& izq, const Dt& der
 
   }
 
+  if (izq.valor->kind == TypeKind::STRUCT) {
+    auto struct_type =  std::static_pointer_cast<StructType>(izq.valor);
+    std::string firma_buscada = struct_type->info->nombre + "_" + generarFirma(dunder::SUB, {der});
+
+    auto it_metodo = struct_type->info->metodos.find(firma_buscada);
+    if (it_metodo != struct_type->info->metodos.end()) {
+      return it_metodo->second.tipo_retorno.valor;
+
+    }
+
+  }
+
   //... Reportar al errHandler
   return typeFactory.getUnknown();
 
@@ -422,18 +434,6 @@ bool Checker::esCasteoValido(const Dt& origen, const Dt& destino) {
 
   //... Relga 3: Punteros
 
-  if (origen.valor->kind == TypeKind::POINTER && destino.valor->kind == TypeKind::POINTER) {
-    auto base_original = origen.valor->getUnderlyingType();
-    auto base_destino = destino.valor->getUnderlyingType();
-
-    if (base_original->kind == TypeKind::ARRAY) {
-      auto tipo_elemento = base_original->getUnderlyingType();
-      if (tipo_elemento->kind == base_destino->kind) {
-        return true;
-      }
-    }
-  }
-
   // No se puede
   return false;
 
@@ -441,14 +441,30 @@ bool Checker::esCasteoValido(const Dt& origen, const Dt& destino) {
 
 void Checker::verificarPrograma() {
 
+  std::cout << "[500, checker.cpp] REGISTRO\n";
+  mode = ModoChecker::REGISTRO;
+
   for (auto& nodo : ast) {
     nodo->accept(this);
   }
 
+  tablas.resetScope();
+
+  std::cout << "[507, checker.cpp] VERIFICACION\n";
   mode = ModoChecker::VERIFICACION;
 
   for (auto& nodo : ast) {
     nodo->accept(this);
   }
+
+  std::cout << "[514, checker.cpp] TEMPLATES\n";
+
+  tablas.promoverScopes(templates.size());
+
+  ast.insert(
+    ast.begin(),
+    std::make_move_iterator(templates.begin()),
+    std::make_move_iterator(templates.end())
+  );
 
 }

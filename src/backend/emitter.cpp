@@ -1,8 +1,8 @@
 // emitter.cpp
 
-#include "Common.hpp"
 #include "Emitter.hpp"
 
+#include "Common.hpp"
 
 /* --- Trait Emitter Handler --- */
 TraitEmitter::TraitEmitter(Emitter& e)
@@ -79,12 +79,12 @@ Emitter::Emitter(ContextoArcanos& ca, GestorTablas& t)
   llvmModulo  = std::make_unique<llvm::Module>("ArcanaModulo", llvmCtx);
   llvmBuilder = std::make_unique<llvm::IRBuilder<>>(llvmCtx);
 
-  tablas.prepareForEmitter();
+  tablas.resetScope();
 
 }
 
 // --- LLVM --- //
-llvm::Type* Emitter::obtenerTipoLLVM(std::shared_ptr<ArcanaType> tipo, bool asPointer) {
+llvm::Type* Emitter::obtenerTipoLLVM(std::shared_ptr<ArcanaType> tipo) {
   if (!tipo) { return nullptr; }
 
   switch (tipo->kind) {
@@ -133,6 +133,7 @@ llvm::Type* Emitter::obtenerTipoLLVM(std::shared_ptr<ArcanaType> tipo, bool asPo
     }
 
     default: {
+      std::cout << "[136, emitter.cpp] NULLPTR: TIPO NO RECONOCIDO: '" << tipo->toString() << "'\n";
       return nullptr;
     }
 
@@ -301,7 +302,7 @@ void Emitter::generarArchivoIR(const std::filesystem::path& nombreArchivo) {
 void Emitter::visitar(ErrorNode* nodo) {}
 
 void Emitter::visitar(ExprLiteral* nodo) { //...
-  std::cout << "[237, emitter.cpp] ExprLiteral\n";
+  std::cout << "[305, emitter.cpp] ExprLiteral\n";
   auto tipo = nodo->tipo_resuelto.valor;
   int bits = tipo->getBitSize();
 
@@ -356,7 +357,7 @@ void Emitter::visitar(ExprLiteral* nodo) { //...
 }
 
 void Emitter::visitar(ExprVariable* nodo) {
-  std::cout << "[291, emitter.cpp] ExprVariable\n";
+  std::cout << "[360, emitter.cpp] ExprVariable\n";
   //std::cout << nodo->nombre << '\n';
 
   InfoVariable* info = tablas.buscarVariable(nodo->nombre);
@@ -435,7 +436,7 @@ void Emitter::visitar(ExprArray* nodo) {
 }
 
 void Emitter::visitar(ExprUnaria* nodo) {
-  std::cout << "[333, emitter.cpp] ExprUnaria\n";
+  std::cout << "[439, emitter.cpp] ExprUnaria\n";
 
   if (nodo->operador == TipoOperador::PTR_REF) {
     llvm::Value* ptr = obtenerPuntero(nodo->operando.get());
@@ -496,8 +497,8 @@ void Emitter::visitar(ExprUnaria* nodo) {
 }
 
 void Emitter::visitar(ExprBinaria* nodo) {
-  std::cout << "[401, emitter.cpp] ExprBinaria\n";
-  std::cout << "[402, emitter.cpp] nodo->overload: '" << nodo->overload << "'\n";
+  std::cout << "[500, emitter.cpp] ExprBinaria\n";
+  std::cout << "[501, emitter.cpp] nodo->overload: '" << nodo->overload << "'\n";
 
   if (!nodo->overload.empty()) {
     llvm::Function* func = llvmModulo->getFunction(nodo->overload);
@@ -734,7 +735,7 @@ void Emitter::visitar(ExprCasteo* nodo) {
 }
 
 void Emitter::visitar(ExprRango* nodo) {
-  std::cout << "[692, emitter.cpp] ExprRango\n";
+  std::cout << "[738, emitter.cpp] ExprRango\n";
 
   if (nodo->inicio && !nodo->fin && !nodo->paso) {
     nodo->inicio->accept(this);
@@ -747,7 +748,7 @@ void Emitter::visitar(ExprRango* nodo) {
 }
 
 void Emitter::visitar(ExprAcceso* nodo) {
-  std::cout << "[674, emitter.cpp] ExprAcceso\n";
+  std::cout << "[751, emitter.cpp] ExprAcceso\n";
   llvm::Value* ptr_elemento = obtenerPuntero(nodo);
 
   if (!ptr_elemento) { return ; }
@@ -759,7 +760,7 @@ void Emitter::visitar(ExprAcceso* nodo) {
 }
 
 void Emitter::visitar(ExprAccesoPunto* nodo) {
-  std::cout << "[623, emitter.cpp] ExprAccesoPunto\n";
+  std::cout << "[763, emitter.cpp] ExprAccesoPunto\n";
   nodo->izquierda->accept(this);
   llvm::Value* struct_agregado = llvmValor;
 
@@ -789,7 +790,7 @@ void Emitter::visitar(ExprAccesoPunto* nodo) {
 }
 
 void Emitter::visitar(ExprFuncCall* nodo) {
-  std::cout << "[653, emitter.cpp] ExprFuncCall\n";
+  std::cout << "[793, emitter.cpp] ExprFuncCall\n";
   auto* var_callee = dynamic_cast<ExprVariable*>(nodo->callee.get());
   if (!var_callee) {
     //...
@@ -816,7 +817,7 @@ void Emitter::visitar(ExprFuncCall* nodo) {
 }
 
 void Emitter::visitar(ExprInitList* nodo) {
-  std::cout << "[680, emitter.cpp] ExprInitList\n";
+  std::cout << "[820, emitter.cpp] ExprInitList\n";
   auto struct_type = std::static_pointer_cast<StructType>(nodo->tipo_resuelto.valor);
   llvm::Type* struct_llvm_type = obtenerTipoLLVM(struct_type);
 
@@ -852,7 +853,7 @@ void Emitter::visitar(ExprInitList* nodo) {
 // --- Sentencias --- //
 
 void Emitter::visitar(Bloque* nodo) {
-  std::cout << "[712, emitter.cpp] Bloque\n";
+  std::cout << "[856, emitter.cpp] Bloque\n";
 
   tablas.entrarScope();
 
@@ -914,7 +915,7 @@ void Emitter::visitar(Bloque* nodo) {
 //}
 
 void Emitter::visitar(SentenciaAsignarVar* nodo) {
-  std::cout << "[872, emitter.cpp] SentenciaAsignarVar\n";
+  std::cout << "[918, emitter.cpp] SentenciaAsignarVar\n";
 
   llvm::AllocaInst* alloca = nullptr;
   InfoVariable* info = tablas.buscarVariable(nodo->nombre);
@@ -1362,6 +1363,9 @@ void Emitter::visitar(SentenciaFuncDecl* nodo) {
 
 void Emitter::visitar(SentenciaStruct* nodo) {
   std::cout << "[1322, emitter.cpp] SentenciaStruct\n";
+
+  tablas.entrarScope();
+
   llvm::StructType* struct_type = llvm::StructType::create(llvmCtx, nodo->name);
   llvmStructs[nodo->name] = struct_type;
 
@@ -1442,6 +1446,8 @@ void Emitter::visitar(SentenciaStruct* nodo) {
   structActual = "";
   llvmStructActual = nullptr;
   llvmThis = prev_this;
+
+  tablas.salirScope();
 
 }
 
@@ -1578,3 +1584,5 @@ void Emitter::visitar(SentenciaMetaDirective* nodo) {
   }
 
 }
+
+void Emitter::visitar(SentenciaTemplate* nodo) {}

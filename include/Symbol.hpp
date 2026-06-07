@@ -2,6 +2,27 @@
 
 #include "Includes.hpp"
 
+#include "Error.hpp"
+
+class ASTVisitor;
+
+class NodoAST {
+public:
+
+  Pos pos;
+
+  virtual ~NodoAST() = default;
+  virtual void imprimir(int nivel = 0) const = 0;
+  virtual void accept(ASTVisitor* visitor) = 0;
+
+};
+
+class Sentencia : public NodoAST {
+public:
+  virtual std::unique_ptr<Sentencia> clonar() const = 0;
+
+};
+
 /* --- Type System --- */
 
 enum class TypeKind { //...
@@ -23,6 +44,9 @@ enum class TypeKind { //...
   MORPH,
 
   STRUCT,
+
+  TEMPLATE_PARAM,
+  TEMPLATE_INSTANCE,
 
   ERROR,
 
@@ -58,12 +82,15 @@ struct Dt {
   Dt() : valor(nullptr) {}
 
   bool operator==(const Dt& otro) const;
+  bool operator<(const Dt& otro) const;
 
   bool esPrimitivo() const;
 
   std::string tipoString() const;
 
 };
+
+struct Scope;
 
 struct InfoVariable {
   Dt tipo;
@@ -78,6 +105,7 @@ struct InfoFuncion {
   std::string nombre;
   Dt tipo_retorno;
   std::vector<std::pair<std::string, InfoVariable>> tipos_parametros;
+
 };
 
 struct InfoStruct {
@@ -90,10 +118,28 @@ struct InfoStruct {
 
 };
 
+struct InfoTemplateParam {
+  std::string nombre;
+
+  std::optional<Dt> default_type;
+
+  bool is_packed = false;
+
+};
+
+struct InfoTemplate {
+  std::string nombre;
+  std::vector<std::pair<std::string, std::variant<InfoTemplateParam, InfoVariable>>> args;
+  std::unique_ptr<Sentencia> ast;
+  Scope* scope_def;
+
+};
+
 struct Scope {
   std::unordered_map<std::string, InfoVariable> variables;
   std::unordered_map<std::string, InfoFuncion > funciones;
   std::unordered_map<std::string, InfoStruct  > structs  ;
+  std::unordered_map<std::string, InfoTemplate> templates;
 
   Scope* padre = nullptr;
   std::vector<std::unique_ptr<Scope>> hijos;
@@ -120,14 +166,21 @@ private:
 
   bool lectura = false;
   std::vector<InfoFuncion*> pilaFuncs;
+  std::vector<std::unordered_map<std::string, InfoTemplateParam>> pilaTempaltes;
 
 public:
   GestorTablas();
 
-  void prepareForEmitter();
+  bool getLectura() const;
+  void switchMode();
 
+  // --- Scopes ---
   void entrarScope();
+  Scope* getScopeActual();
+  void setScopeActual(Scope* scope);
   void salirScope();
+  void resetScope();
+  void promoverScopes(size_t cantidad);
 
   // --- Variables ---
   bool añadirVariable(const std::string& name, InfoVariable info);
@@ -141,8 +194,20 @@ public:
   void pushFunction(InfoFuncion* function);
   void popFunction();
 
+  // --- Structs ---
   bool añadirStruct(const std::string& name, InfoStruct info);
   bool actualizarStruct(const std::string& name, InfoStruct infoActualizada);
   InfoStruct* buscarStruct(const std::string& name);
+
+  // --- Templates ---
+  void entrarScopeTemplate();
+  void salirScopeTemplate();
+
+  bool añadirTemplate(const std::string& name, InfoTemplate);
+  bool updateTemplate(const std::string& name, Scope* scope);
+  InfoTemplate* buscarTemplate(const std::string& name);
+
+  bool añadirTemplateParam(const std::string& name, InfoTemplateParam);
+  InfoTemplateParam* buscarTemplateParam(const std::string& name);
 
 };

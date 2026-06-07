@@ -120,6 +120,19 @@ public:
 
 };
 
+class TemplateParamType : public ArcanaType {
+public:
+  std::string name;
+
+  TemplateParamType(std::string n);
+
+  std::string toString()               const override;
+  int getBitSize()                     const override;
+  bool esIgual(const ArcanaType* otro) const override;
+  bool isNumeric()                     const override;
+
+};
+
 class MorphType : public ArcanaType {
 public:
   int selector_bytes; // Bytes to select the one thing we need
@@ -149,6 +162,20 @@ public:
 
 };
 
+class TemplateInstanceType : public ArcanaType {
+public:
+  std::string                 name      ;
+  std::vector<Dt>             argumentos;
+
+  TemplateInstanceType(std::string n, std::vector<Dt> args);
+
+  std::string toString()               const override;
+  int getBitSize()                     const override;
+  bool esIgual(const ArcanaType* otro) const override;
+  bool isNumeric()                     const override;
+
+};
+
 /* --- Factory --- */
 
 class TypeFactory { //...
@@ -165,18 +192,22 @@ private:
   std::map<std::pair<std::shared_ptr<ArcanaType>, int>, std::shared_ptr<ArrayType     >> cacheArray     ;
   std::map<std::string                                , std::shared_ptr<StructType    >> cacheStruct    ;
   std::map<std::string                                , std::shared_ptr<MorphType     >> cacheMorph     ;
+  std::map<std::string                                , std::shared_ptr<TemplateParamType>> cacheTemplateParam;
+  std::map<std::tuple<std::string, std::vector<Dt>>   , std::shared_ptr<TemplateInstanceType>> cacheTemplateInstance;
 
 public:
-  std::shared_ptr<UnknownType   > getUnknown   ();
-  std::shared_ptr<UnresolvedType> getUnresolved(std::string name);
-  std::shared_ptr<VoidType      > getVoid      ();
-  std::shared_ptr<PointerType   > getPointer   (std::shared_ptr<ArcanaType> base);
-  std::shared_ptr<BooleanType   > getBoolean   ();
-  std::shared_ptr<IntegerType   > getInteger   (int bits, bool is_unsigned);
-  std::shared_ptr<FloatType     > getFloat     (int bits);
-  std::shared_ptr<CharType      > getChar      (int bits);
-  std::shared_ptr<ArrayType     > getArray     (std::shared_ptr<ArcanaType> base, int size);
-  std::shared_ptr<StructType    > getStruct    (InfoStruct* info);
-  std::shared_ptr<MorphType     > getMorph     (std::vector<std::shared_ptr<ArcanaType>> subtipos);
+  std::shared_ptr<UnknownType         > getUnknown         ();
+  std::shared_ptr<UnresolvedType      > getUnresolved      (std::string name);
+  std::shared_ptr<VoidType            > getVoid            ();
+  std::shared_ptr<PointerType         > getPointer         (std::shared_ptr<ArcanaType> base);
+  std::shared_ptr<BooleanType         > getBoolean         ();
+  std::shared_ptr<IntegerType         > getInteger         (int bits, bool is_unsigned);
+  std::shared_ptr<FloatType           > getFloat           (int bits);
+  std::shared_ptr<CharType            > getChar            (int bits);
+  std::shared_ptr<ArrayType           > getArray           (std::shared_ptr<ArcanaType> base, int size);
+  std::shared_ptr<StructType          > getStruct          (InfoStruct* info);
+  std::shared_ptr<TemplateParamType   > getTemplateParam   (std::string name);
+  std::shared_ptr<MorphType           > getMorph           (std::vector<std::shared_ptr<ArcanaType>> subtipos);
+  std::shared_ptr<TemplateInstanceType> getTemplateInstance(std::string name, std::vector<Dt> args);
 
 };

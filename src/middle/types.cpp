@@ -1,8 +1,9 @@
 // types.cpp
 
 #include "Types.hpp"
-#include "Common.hpp"
+
 #include "Includes.hpp"
+#include "Common.hpp"
 
 /* --- Arcana Types --- */
 
@@ -11,7 +12,7 @@ ArcanaType::~ArcanaType() = default;
 // --- UnknownType ---
 UnknownType::UnknownType()
   : ArcanaType(TypeKind::DESCONOCIDO) {}
-std::string UnknownType::toString() const { return "unkown"; }
+std::string UnknownType::toString() const { return "unknown"; }
 
 int UnknownType::getBitSize()       const { return 0       ; }
 
@@ -207,7 +208,7 @@ bool MorphType::esIgual(const ArcanaType* otro) const {
 
 bool MorphType::isNumeric() const { return false; }
 
-// --- ShapeType ---
+// --- StructType ---
 StructType::StructType(InfoStruct* i)
   : ArcanaType(TypeKind::STRUCT), info(i) {}
 
@@ -237,6 +238,52 @@ bool StructType::esIgual(const ArcanaType* otro) const {
 }
 
 bool StructType::isNumeric() const { return false; }
+
+// --- TemplateParamType ---
+TemplateParamType::TemplateParamType(std::string n)
+  : ArcanaType(TypeKind::TEMPLATE_PARAM), name(std::move(n)) {}
+
+std::string TemplateParamType::toString() const {
+  return "<" + name + ">";
+}
+
+int TemplateParamType::getBitSize() const {
+  return 0;
+}
+
+bool TemplateParamType::esIgual(const ArcanaType* otro) const {
+  if (otro->kind != TypeKind::TEMPLATE_PARAM) { return false; }
+
+  auto o = static_cast<const TemplateParamType*>(otro);
+  return (name == o->name);
+
+}
+
+bool TemplateParamType::isNumeric() const {
+  return false;
+}
+
+// --- TemplateInstanceType ---
+TemplateInstanceType::TemplateInstanceType(std::string n, std::vector<Dt> args)
+  : ArcanaType(TypeKind::TEMPLATE_INSTANCE), name(n), argumentos(std::move(args)) {}
+
+std::string TemplateInstanceType::toString() const {
+  std::string s = name + "<";
+  for (size_t i = 0; i <argumentos.size(); ++i) {
+    s += argumentos[i].tipoString();
+    if (i < argumentos.size() - 1) { s += ", "; }
+  }
+  return s + ">";
+
+}
+
+int TemplateInstanceType::getBitSize() const { return 0; }
+
+bool TemplateInstanceType::esIgual(const ArcanaType* otro) const {
+  return false;
+}
+
+bool TemplateInstanceType::isNumeric() const { return false; }
 
 /* --- Factory --- */
 
@@ -373,6 +420,18 @@ std::shared_ptr<ArrayType> TypeFactory::getArray(std::shared_ptr<ArcanaType> bas
 
 }
 
+std::shared_ptr<TemplateParamType> TypeFactory::getTemplateParam(std::string name) {
+
+  if (cacheTemplateParam.find(name) != cacheTemplateParam.end()) {
+    return cacheTemplateParam[name];
+  }
+
+  auto nueva_instancia = std::make_shared<TemplateParamType>(name);
+  cacheTemplateParam[name] = nueva_instancia;
+  return nueva_instancia;
+
+}
+
 std::shared_ptr<MorphType> TypeFactory::getMorph(std::vector<std::shared_ptr<ArcanaType>> subtipos) {
   std::string firma = "[";
 
@@ -397,3 +456,16 @@ std::shared_ptr<MorphType> TypeFactory::getMorph(std::vector<std::shared_ptr<Arc
 
 }
 
+std::shared_ptr<TemplateInstanceType> TypeFactory::getTemplateInstance(std::string name, std::vector<Dt> args) {
+
+  auto key = std::make_tuple(name, args);
+
+  if (cacheTemplateInstance.find(key) != cacheTemplateInstance.end()) {
+    return cacheTemplateInstance[key];
+  }
+
+  auto nueva_instancia = std::make_shared<TemplateInstanceType>(name, args);
+  cacheTemplateInstance[key] = nueva_instancia;
+  return nueva_instancia;
+
+}

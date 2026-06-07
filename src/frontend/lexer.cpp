@@ -1,8 +1,8 @@
 // lexer.cpp
 
-#include "Common.hpp"
-
 #include "Lexer.hpp"
+
+#include "Common.hpp"
 
 /* --- Lexer --- */
 
@@ -536,7 +536,7 @@ std::vector<Token> Lexer::tokenize() {
   }
 
   // EOF Token at the end
-  tokens.push_back( {Tt::FIN_ARCHIVO, "", {cursor, 1} } );
+  tokens.push_back( {Tt::EOF_TT, "", {cursor, 1} } );
  
   return tokens;
 

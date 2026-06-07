@@ -8,36 +8,61 @@
 
 std::string nombreTipo(Tt tipo) {
   switch (tipo) {
-    case Tt::VAR: return "VAR";
-    case Tt::IDENTIFICADOR: return "IDENTIFICADOR";
-    case Tt::NUMERO: return "NUMERO";
+    case Tt::LET  : { return "LET"  ; }
+    case Tt::CONST: { return "CONST"; }
 
-    case Tt::ASIG_BLOQUE: return "ASIG_BLOQUE";
-    case Tt::PUNTO_COMA: return "PUNTO_COMA";
-    case Tt::COMA: return "COMA";
-    case Tt::PUNTO: return "PUNTO";
-    case Tt::DOS_PUNTOS: return "DOS_PUNTOS";
-    case Tt::ASTERISCO: return "ASTERISCO";
-    case Tt::AMPERSAND: return "AMPERSAND";
+    case Tt::VOID_TYPE  : { return "VOID_TYPE"  ; }
+    case Tt::BYTE_TYPE  : { return "BYTE_TYPE"  ; }
+    case Tt::CHAR_TYPE  : { return "CHAR_TYPE"  ; }
+    case Tt::BOOL_TYPE  : { return "BOOL_TYPE"  ; }
+    case Tt::SHORT_TYPE : { return "SHORT_TYPE" ; }
+    case Tt::INT_TYPE   : { return "INT_TYPE"   ; }
+    case Tt::UINT_TYPE  : { return "UINT_TYPE"  ; }
+    case Tt::FLOAT_TYPE : { return "FLOAT_TYPE" ; }
+    case Tt::DOUBLE_TYPE: { return "DOUBLE_TYPE"; }
+    case Tt::STRING_TYPE: { return "STRING_TYPE"; }
+    case Tt::SLICE_TYPE : { return "SLICE_TYPE" ; }
 
-    case Tt::IGUAL_ASIG: return "IGUAL";
-    case Tt::FIN_ARCHIVO: return "EOF";
+    case Tt::ENUM  : { return "ENUM"  ; }
+    case Tt::STRUCT: { return "STRUCT"; }
 
-    case Tt::LLAVE_L: return "LLAVE_L";
-    case Tt::LLAVE_R: return "LLAVE_R";
-    case Tt::PAREN_L: return "PAREN_L";
-    case Tt::PAREN_R: return "PAREN_R";
-    case Tt::CORCH_L: return "CORCH_L";
-    case Tt::CORCH_R: return "CORCH_R";
+    case Tt::VAR: { return "VAR"; }
+    case Tt::IDENTIFICADOR: { return "ID"; }
+    case Tt::NUMERO: { return "NUMERO"; }
 
-    case Tt::ARCANE: return "ARCANE";
-    case Tt::RULES : return "REGLAS";
-    case Tt::KEY   : return "KEY"   ;
-    case Tt::EXPR  : return "EXPR"  ;
-    case Tt::CODE  : return "CODE"  ;
+    case Tt::ASIG_BLOQUE: { return "ASIG_BLOQUE"; }
+    case Tt::PUNTO_COMA: { return "PUNTO_COMA"; }
+    case Tt::COMA: { return "COMA"; }
+    case Tt::PUNTO: { return "PUNTO"; }
+    case Tt::DOS_PUNTOS: { return "DOS_PUNTOS"; }
+    case Tt::ASTERISCO: { return "ASTERISCO"; }
+    case Tt::AMPERSAND: { return "AMPERSAND"; }
 
-    default: return "DESCONOCIDO";
+    case Tt::IGUAL_ASIG: { return "IGUAL_ASIG"; }
+
+    case Tt::LLAVE_L: { return "LLAVE_L"; }
+    case Tt::LLAVE_R: { return "LLAVE_R"; }
+    case Tt::PAREN_L: { return "PAREN_L"; }
+    case Tt::PAREN_R: { return "PAREN_R"; }
+    case Tt::CORCH_L: { return "CORCH_L"; }
+    case Tt::CORCH_R: { return "CORCH_R"; }
+
+    case Tt::ARCANE: { return "ARCANE"; }
+    case Tt::RULES : { return "REGLAS"; }
+    case Tt::KEY   : { return "KEY"   ; }
+    case Tt::EXPR  : { return "EXPR"  ; }
+    case Tt::CODE  : { return "CODE"  ; }
+
+    case Tt::TEMPLATE: { return "TEMPLATE"; }
+    case Tt::TYPE    : { return "TYPE"    ; }
+
+    case Tt::EOF_TT: { return "EOF_TT"; }
+    case Tt::ERROR : { return "ERROR" ; }
+
+    default: { return "DESCONOCIDO"; }
+
   }
+
 }
 
 bool esModificador(Tt tipo) {
@@ -59,179 +84,6 @@ bool esTipo(Tt tipo) {
          tipo == Tt::INT_TYPE    || tipo == Tt::UINT_TYPE   || tipo == Tt::STRING_TYPE ||
          tipo == Tt::FLOAT_TYPE  || tipo == Tt::DOUBLE_TYPE || tipo == Tt::BOOL_TYPE   ||
          tipo == Tt::SLICE_TYPE  || esTipoComp(tipo);
-}
-
-bool Dt::operator==(const Dt& otro) const { //... Comparar this.es_const
-  // Si ambos son nulos, son iguales
-  if (!this->valor && !otro.valor) { return true ; }
-  // Si uno es uno y el otro no, son distintos
-  if (!this->valor || !otro.valor) { return false; }
-
-  return this->valor->esIgual(otro.valor.get());
-}
-
-bool Dt::esPrimitivo() const { //...
-  switch(valor->kind) {
-    case TypeKind::VOID   :
-    case TypeKind::BOOLEAN:
-    case TypeKind::CHAR   :
-    case TypeKind::INTEGER:
-    case TypeKind::FLOAT  :
-    case TypeKind::ARRAY  : {
-      return true;
-    }
-
-    default: {
-      return false;
-    }
-
-  }
-}
-
-std::string Dt::tipoString() const {
-  if (valor == nullptr) { return "???"; }
-  return (es_const? "const": "") + valor->toString();
-}
-
-/* --- Gestor de Tablas Maestro --- */
-
-GestorTablas::GestorTablas() {
-  root = std::make_unique<Scope>(nullptr);
-  scopeActual = root.get();
-
-}
-
-void GestorTablas::prepareForEmitter() {
-  lectura = true;
-  root->resetNavegacion();
-  scopeActual = root.get();
-
-}
-
-void GestorTablas::entrarScope() {
-  std::cout << "[110, common.cpp] entrarScope\n";
-  if (!lectura) {
-    auto nuevo_hijo = std::make_unique<Scope>(scopeActual);
-    Scope* ptr_hijo = nuevo_hijo.get();
-    scopeActual->hijos.push_back(std::move(nuevo_hijo));
-    scopeActual = ptr_hijo;
-
-  } else {
-    if (scopeActual->hijo_actual < scopeActual->hijos.size()) {
-      scopeActual = scopeActual->hijos[scopeActual->hijo_actual++].get();
-    }
-  }
-}
-
-void GestorTablas::salirScope() {
-  std::cout << "[125, common.cpp] salirScope\n";
-  if (scopeActual->padre) {
-    scopeActual = scopeActual->padre;
-
-  } else {
-    std::cerr << "Error: Intento de salir de un scope raíz o nulo.\n";
-
-  }
-}
-
-InfoVariable* GestorTablas::buscarVariable(const std::string& name) {
-  Scope* cursor = scopeActual;
-  while (cursor != nullptr) {
-    auto it = cursor->variables.find(name);
-    if (it != cursor->variables.end()) {
-      return &(it->second);
-    }
-    cursor = cursor->padre;
-  }
-  return nullptr;
-
-}
-
-bool GestorTablas::añadirVariable(const std::string& name, InfoVariable info) {
-
-  if (scopeActual->variables.find(name) != scopeActual->variables.end()) {
-    return false;
-
-  }
-
-  scopeActual->variables[name] = std::move(info);
-  return true;
-
-}
-
-bool GestorTablas::añadirFunction(const std::string& name, InfoFuncion info) {
-  if (scopeActual->funciones.count(name)) {
-    return false;
-
-  }
-
-  scopeActual->funciones[name] = std::move(info);
-  return true;
-
-}
-
-InfoFuncion* GestorTablas::buscarFunction(const std::string& name) {
-  Scope* cursor = scopeActual;
-
-  while (cursor != nullptr) {
-    auto it = cursor->funciones.find(name);
-
-    if (it != cursor->funciones.end()) {
-      return &(it->second);
-
-    }
-
-    cursor = cursor->padre;
-  }
-
-  return nullptr;
-}
-
-InfoFuncion* GestorTablas::getCurrentFunction() {
-
-  if (!pilaFuncs.empty()) {
-    return pilaFuncs.back();
-
-  }
-
-  return nullptr;
-
-}
-
-void GestorTablas::pushFunction(InfoFuncion* function) { pilaFuncs.push_back(function);   }
-
-void GestorTablas::popFunction() {
-  if (!pilaFuncs.empty()) { pilaFuncs.pop_back(); }
-
-}
-
-bool GestorTablas::añadirStruct(const std::string& name, InfoStruct info) {
-  if (root->structs.count(name)) { return false; }
-
-  root->structs[name] = std::move(info);
-  return true;
-
-}
-
-bool GestorTablas::actualizarStruct(const std::string& name, InfoStruct infoActualizada) {
-  InfoStruct* info = buscarStruct(name);
-
-  if (info != nullptr) {
-    *info = std::move(infoActualizada);
-    return true;
-  }
-
-  return false;
-
-}
-
-InfoStruct* GestorTablas::buscarStruct(const std::string& name) {
-
-  auto it = root->structs.find(name);
-  if (it != root->structs.end()) { return &(it->second); }
-
-  return nullptr;
-
 }
 
 /* --- Colores para la terminal --- */

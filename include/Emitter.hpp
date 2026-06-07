@@ -50,7 +50,7 @@ private:
 public:
   Emitter(ContextoArcanos& ca, GestorTablas& t);
 
-  llvm::Type*              obtenerTipoLLVM    (std::shared_ptr<ArcanaType> tipo, bool asPointer = true);
+  llvm::Type*              obtenerTipoLLVM    (std::shared_ptr<ArcanaType> tipo);
   llvm::Value*             obtenerPuntero     (Expresion* nodo);
   llvm::CmpInst::Predicate obtenerPredicadoCmp(TipoOperador op, bool esFloat, bool esSigned);
 
@@ -102,6 +102,8 @@ public:
   void visitar(SentenciaArcano       * nodo) override;
   void visitar(SentenciaLlamadaArcano* nodo) override;
   void visitar(SentenciaMetaDirective* nodo) override;
+
+  void visitar(SentenciaTemplate* nodo) override;
 
 };
 

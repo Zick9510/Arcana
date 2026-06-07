@@ -116,30 +116,30 @@ public:
     cond ? nodo->rama_true->accept(this) : nodo->rama_false->accept(this);
   }
 
-  void visitar(ExprCasteo* nodo) override { nodo->expresion->accept(this); }
-  void visitar(ExprVariable* nodo) override { success = false; }
-  void visitar(ExprRango* nodo) override { success = false; }
-  void visitar(ExprAcceso* nodo) override { success = false; }
-  void visitar(ExprAccesoPunto* nodo) override { success = false; }
-  void visitar(ExprFuncCall* nodo) override { success = false; }
-  void visitar(ExprInitList* nodo) override { success = false; }
-  void visitar(ExprArray* nodo) override { success = false; }
-  void visitar(Bloque* nodo) override { success = false; }
-  void visitar(SentenciaAsignarVar* nodo) override { success = false; }
-  void visitar(SentenciaExpr* nodo) override { success = false; }
+  void visitar(ExprCasteo* nodo)               override { nodo->expresion->accept(this); }
+  void visitar(ExprVariable* nodo)             override { success = false; }
+  void visitar(ExprRango* nodo)                override { success = false; }
+  void visitar(ExprAcceso* nodo)               override { success = false; }
+  void visitar(ExprAccesoPunto* nodo)          override { success = false; }
+  void visitar(ExprFuncCall* nodo)             override { success = false; }
+  void visitar(ExprInitList* nodo)             override { success = false; }
+  void visitar(ExprArray* nodo)                override { success = false; }
+  void visitar(Bloque* nodo)                   override { success = false; }
+  void visitar(SentenciaAsignarVar* nodo)      override { success = false; }
+  void visitar(SentenciaExpr* nodo)            override { success = false; }
   void visitar(SentenciaReasignacionVar* nodo) override { success = false; }
-  void visitar(SentenciaSi* nodo) override { success = false; }
-  void visitar(SentenciaSino* nodo) override { success = false; }
-  void visitar(SentenciaMientras* nodo) override { success = false; }
-  void visitar(SentenciaBreak* nodo) override { success = false; }
-  void visitar(SentenciaContinue* nodo) override { success = false; }
-  void visitar(SentenciaRedo* nodo) override { success = false; }
-  void visitar(SentenciaReturn* nodo) override { success = false; }
-  void visitar(SentenciaFuncDecl* nodo) override { success = false; }
-  void visitar(SentenciaStruct* nodo) override { success = false; }
-  void visitar(SentenciaEscritura* nodo) override { success = false; }
-  void visitar(SentenciaArcano* nodo) override { success = false; }
-  void visitar(SentenciaLlamadaArcano* nodo) override { success = false; }
-  void visitar(SentenciaMetaDirective* nodo) override { success = false; }
-
+  void visitar(SentenciaSi* nodo)              override { success = false; }
+  void visitar(SentenciaSino* nodo)            override { success = false; }
+  void visitar(SentenciaMientras* nodo)        override { success = false; }
+  void visitar(SentenciaBreak* nodo)           override { success = false; }
+  void visitar(SentenciaContinue* nodo)        override { success = false; }
+  void visitar(SentenciaRedo* nodo)            override { success = false; }
+  void visitar(SentenciaReturn* nodo)          override { success = false; }
+  void visitar(SentenciaFuncDecl* nodo)        override { success = false; }
+  void visitar(SentenciaStruct* nodo)          override { success = false; }
+  void visitar(SentenciaEscritura* nodo)       override { success = false; }
+  void visitar(SentenciaArcano* nodo)          override { success = false; }
+  void visitar(SentenciaLlamadaArcano* nodo)   override { success = false; }
+  void visitar(SentenciaMetaDirective* nodo)   override { success = false; }
+  void visitar(SentenciaTemplate* nodo)        override { success = false; }
 };

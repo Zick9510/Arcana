@@ -4,6 +4,7 @@
 
 #include "Includes.hpp"
 
+#include "Symbol.hpp"
 #include "Types.hpp"
 #include "Error.hpp"
 
@@ -69,6 +70,7 @@ enum class Tt {
   BYTE_TYPE, CHAR_TYPE, BOOL_TYPE,
   SHORT_TYPE, INT_TYPE, UINT_TYPE,
   FLOAT_TYPE, DOUBLE_TYPE,
+
   STRING_TYPE,
 
   SLICE_TYPE,
@@ -149,14 +151,17 @@ enum class Tt {
   // Escritura
   ESCRITURA,
 
+  // Templates
+  TEMPLATE, TYPE,
+
   // Otros
-  FIN_ARCHIVO, ERROR
+  EOF_TT, ERROR
 
 };
 
 inline bool isStructural(Tt t) {
   switch (t) {
-    case Tt::FIN_ARCHIVO:
+    case Tt::EOF_TT:
 
     case Tt::PAREN_R:
     case Tt::CORCH_R:
@@ -237,8 +242,7 @@ inline std::shared_ptr<ArcanaType> promoverN(std::shared_ptr<ArcanaType> prim, A
 
 }
 
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-
+//template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 
 // --- Tipo Operador --- //
 enum class TipoOperador {
@@ -444,6 +448,10 @@ inline std::map<std::string, Tt> keywords = {
   {"math", Tt::MATH},
   {"return", Tt::RETURN},
 
+  // Templates
+  {"template", Tt::TEMPLATE},
+  {"type", Tt::TYPE},
+
 };
 
 /* --- Arcanos --- */
@@ -544,6 +552,8 @@ class SentenciaArcano;
 class SentenciaLlamadaArcano;
 class SentenciaMetaDirective;
 
+class SentenciaTemplate;
+
 class ASTVisitor {
 public:
   virtual ~ASTVisitor() = default;
@@ -598,20 +608,11 @@ public:
   virtual void visitar(SentenciaLlamadaArcano* nodo) = 0;
   virtual void visitar(SentenciaMetaDirective* nood) = 0;
 
+  virtual void visitar(SentenciaTemplate* nodo) = 0;
+
 };
 
 /* --- AST --- */
-class NodoAST {
-public:
-
-  Pos pos;
-
-  virtual ~NodoAST() = default;
-  virtual void imprimir(int nivel = 0) const = 0;
-  virtual void accept(ASTVisitor* visitor) = 0;
-
-};
-
 template <typename Base, typename Derived>
 class NodoBase : public Base {
 public:
@@ -634,12 +635,6 @@ public:
   virtual std::unique_ptr<Expresion> clonar() const = 0;
 
   virtual bool isLValue() const { return false; }
-
-};
-
-class Sentencia : public NodoAST {
-public:
-  virtual std::unique_ptr<Sentencia> clonar() const = 0;
 
 };
 
@@ -1758,14 +1753,37 @@ public:
 
 };
 
-/* --- Configuración --- */
+class SentenciaTemplate : public NodoBase<Sentencia, SentenciaTemplate> {
+public:
+
+  std::string name;
+  std::vector<std::pair<std::string, std::variant<InfoTemplateParam, InfoVariable>>> args;
+  std::unique_ptr<Sentencia> statement;
+
+  SentenciaTemplate(std::string n, std::vector<std::pair<std::string, std::variant<InfoTemplateParam, InfoVariable>>> a, std::unique_ptr<Sentencia> s)
+    : name(std::move(n)), args(std::move(a)), statement(std::move(s)) {}
+
+  SentenciaTemplate(const SentenciaTemplate& otra)
+    : name(otra.name), args(otra.args), statement(otra.statement->clonar()) {}
+
+  void imprimir(int nivel = 0) const override {
+    std::string sangria = "";
+    for (int i = 0; i < nivel; ++i) { sangria += "| "; }
+    std::cout << sangria << "Template:\n";
+    statement->imprimir(nivel + 1);
+
+  }
+
+};
+
+/* --- Config--- */
 struct CompilerConfig {
   std::vector<std::string> flags;
 
   std::optional<std::filesystem::path> archivo_entrada;
   std::optional<std::filesystem::path> archivo_salida;
 
-  bool ayuda; // flag '-help' usada
+  bool ayuda;
   bool mute_decorado;
   bool mute_warnings;
   bool warnings_as_errors;

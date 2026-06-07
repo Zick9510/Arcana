@@ -186,6 +186,93 @@ func main() -> int {
 }
 ```
 
+### Structs
+
+You are not limited to Arcana's base types. If you need a tridimensional vector-like behavior, Arcana gives you the tools to achieve that.
+
+Here is an example showing how you could do it:
+
+```arcn
+struct Vec3 {
+  float x;
+  float y;
+  float z;
+
+  func __add__(Vec3 other) -> Vec3 {
+    return Vec3 { x + other.x, y + other.y, z + other.z };
+  }
+
+  func __sub__(Vec3 other) -> Vec3 {
+    return Vec3 { x - other.x, y - other.y, z - other.z };
+  }
+
+  func getTotal() -> float {
+    return x + y + z;
+  }
+
+};
+
+func main() -> int {
+
+  Vec3 v1 = Vec3 { 1.5, 2, z: 3.0 };
+  Vec3 v2;
+  Vec3 v3 = Vec3 { 1, x: 3, z: -2.5 };
+
+  v2.x = 3.5;
+  v2.y = v2.x + 1.5;
+  v2.z = v2.x * v2.y - 2.0;
+
+  return (v1 + v2 - v3).getTotal();
+
+}
+```
+
+
+### Templates
+
+Let's say you are in need of a stack to push and pop values into it, it would be nice to code it one time, and then use it for integers, floats, etc.
+
+The following example shows exactly that
+
+```arcn
+template <type T> struct stack {
+  T data[64];
+  T* value = data;
+
+  func push(T i) -> void {
+    *value = i;
+    value = value + 1;
+  }
+
+  func pop() -> T {
+    value = value - 1;
+    return *value;
+  }
+
+  func back() -> T {
+    return *(value - 1);
+  }
+
+};
+
+func main() -> int {
+  stack<int> s1;
+  stack<float> s2;
+
+  s1.push(2);
+  s2.push(2.71);
+  s1.push(3);
+
+  int total_int = s1.back() + s1.pop() + s1.pop();
+
+  s2.push(3.14);
+  float total_float = s2.pop() + s2.back() + s2.back();
+
+  return total_int + total_float;
+
+}
+```
+
 ---
 
 ## Join the Arcane

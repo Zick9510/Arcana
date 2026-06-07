@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include "Common.hpp"
-
 #include "ConstEval.hpp"
+
+#include "Common.hpp"
 
 class Checker;
 
@@ -21,6 +21,245 @@ public:
 
 };
 
+class TemplateHandler : public ASTVisitor {
+private:
+  std::unordered_map<std::string, Dt> reemplazos;
+  TypeFactory& typeFactory;
+
+  Dt aplicarReemplazo(Dt tipoOriginal) {
+    if (!tipoOriginal.valor) { return tipoOriginal; }
+
+    if (tipoOriginal.valor->kind == TypeKind::TEMPLATE_PARAM) {
+      auto param_type = std::static_pointer_cast<TemplateParamType>(tipoOriginal.valor);
+
+      if (reemplazos.count(param_type->name)) {
+        return reemplazos[param_type->name];
+      }
+
+      return tipoOriginal;
+
+    }
+
+    if (tipoOriginal.valor->kind == TypeKind::TEMPLATE_INSTANCE) {
+      auto instance_type = std::static_pointer_cast<TemplateInstanceType>(tipoOriginal.valor);
+      Dt tipo_base = Dt(tipoOriginal.valor->getUnderlyingType());
+      std::vector<Dt> new_args;
+      bool necesita_reemplazo = false;
+
+      for (const auto& arg : instance_type->argumentos) {
+        Dt arg_reemplazo = aplicarReemplazo(arg);
+        new_args.push_back(arg_reemplazo);
+
+        if (arg_reemplazo.valor != arg.valor) {
+          necesita_reemplazo = true;
+        }
+      }
+
+      if (necesita_reemplazo) {
+        return Dt(typeFactory.getTemplateInstance(instance_type->name, new_args));
+
+      }
+
+      return tipoOriginal;
+    }
+
+    if (tipoOriginal.valor->kind == TypeKind::POINTER) {
+      Dt tipo_base = Dt(tipoOriginal.valor->getUnderlyingType());
+      Dt nueva_base = aplicarReemplazo(tipo_base);
+
+      if (nueva_base.valor != tipo_base.valor) {
+        return Dt(typeFactory.getPointer(nueva_base.valor));
+      }
+
+      return tipoOriginal;
+
+    }
+
+    if (tipoOriginal.valor->kind == TypeKind::ARRAY) {
+      auto array_type = std::static_pointer_cast<ArrayType>(tipoOriginal.valor);
+      Dt tipo_base = Dt(array_type->getUnderlyingType());
+      Dt nueva_base = aplicarReemplazo(tipo_base);
+
+      if (nueva_base.valor != tipo_base.valor) {
+        return Dt(typeFactory.getArray(nueva_base.valor, array_type->size));
+      }
+
+      return tipoOriginal;
+
+    }
+
+    return tipoOriginal;
+
+  }
+
+public:
+  TemplateHandler(std::unordered_map<std::string, Dt> r, TypeFactory& tf)
+    : reemplazos(r), typeFactory(tf) {}
+
+  void visitar(ErrorNode* nodo) override {}
+  void visitar(ExprLiteral* nodo) override {}
+
+  void visitar(ExprVariable* nodo) override {
+    nodo->tipo_resuelto = aplicarReemplazo(nodo->tipo_resuelto);
+
+  }
+
+  void visitar(ExprArray* nodo) override {
+    for (auto& e : nodo->elementos) {
+      e->accept(this);
+    }
+
+    nodo->tipo_resuelto = aplicarReemplazo(nodo->tipo_resuelto);
+
+  }
+
+  void visitar(ExprUnaria* nodo) override {
+    nodo->operando->accept(this);
+    nodo->tipo_resuelto = aplicarReemplazo(nodo->tipo_resuelto);
+
+  }
+
+  void visitar(ExprBinaria* nodo) override {
+    nodo->izquierda->accept(this);
+    nodo->derecha  ->accept(this);
+    nodo->tipo_resuelto = aplicarReemplazo(nodo->tipo_resuelto);
+
+  }
+
+  void visitar(ExprTernaria* nodo) override {
+    nodo->condicion ->accept(this);
+    nodo->rama_true ->accept(this);
+    nodo->rama_false->accept(this);
+
+  }
+
+  void visitar(ExprCasteo* nodo) override {
+    nodo->expresion->accept(this);
+    nodo->tipo_casteo = aplicarReemplazo(nodo->tipo_casteo);
+
+  }
+
+  void visitar(ExprRango* nodo) override {
+    if (nodo->inicio) {
+      nodo->inicio->accept(this);
+    }
+
+    if (nodo->fin) {
+      nodo->fin->accept(this);
+    }
+
+    if (nodo->paso) {
+      nodo->paso->accept(this);
+    }
+
+  }
+
+  void visitar(ExprAcceso* nodo) override {
+    nodo->contenedor->accept(this);
+    nodo->rango->accept(this);
+
+  }
+
+  void visitar(ExprAccesoPunto* nodo) override {
+    nodo->tipo_resuelto = aplicarReemplazo(nodo->tipo_resuelto);
+    nodo->izquierda->accept(this);
+
+  }
+
+  void visitar(ExprFuncCall* nodo) override {
+    nodo->callee->accept(this);
+
+    for (auto& arg : nodo->argumentos) {
+      arg.second->accept(this);
+    }
+
+    nodo->tipo_resuelto = aplicarReemplazo(nodo->tipo_resuelto);
+
+  }
+
+  void visitar(ExprInitList* nodo) override {
+    nodo->tipo_resuelto = aplicarReemplazo(nodo->tipo_resuelto);
+    for (auto& arg : nodo->args) {
+      if (arg.value) { arg.value->accept(this); }
+    }
+  }
+
+  void visitar(Bloque* nodo) override {
+    for (auto& inst : nodo->instrucciones) {
+      inst->accept(this);
+    }
+  }
+
+  void visitar(SentenciaAsignarVar* nodo) override {
+
+    nodo->tipo_explicito.tipo = aplicarReemplazo(nodo->tipo_explicito.tipo);
+
+    if (nodo->valor_inicial) { nodo->valor_inicial->accept(this); }
+    if (nodo->size)          { nodo->size         ->accept(this); }
+
+  }
+
+  void visitar(SentenciaExpr* nodo) override {
+    nodo->expresion->accept(this);
+    nodo->expresion->tipo_resuelto = aplicarReemplazo(nodo->expresion->tipo_resuelto);
+
+  }
+
+  void visitar(SentenciaReasignacionVar* nodo) override {
+    nodo->izquierda->accept(this);
+    nodo->derecha  ->accept(this);
+
+  }
+
+  void visitar(SentenciaSi* nodo) override {}
+  void visitar(SentenciaSino* nodo) override {}
+  void visitar(SentenciaMientras* nodo) override {}
+  void visitar(SentenciaBreak* nodo) override {}
+  void visitar(SentenciaContinue* nodo) override {}
+  void visitar(SentenciaRedo* nodo) override {}
+
+  void visitar(SentenciaReturn* nodo) override {
+    if (!nodo->ret_value) { return ; }
+
+    nodo->ret_type = aplicarReemplazo(nodo->ret_type);
+    nodo->ret_value->accept(this);
+
+  }
+
+  void visitar(SentenciaFuncDecl* nodo) override {
+
+    nodo->ret_type = aplicarReemplazo(nodo->ret_type);
+
+    for (auto& [nombre, info] : nodo->args_type) {
+      info.tipo = aplicarReemplazo(info.tipo);
+    }
+
+    for (auto& inst : nodo->cuerpo_func) {
+      inst->accept(this);
+    }
+
+  }
+
+  void visitar(SentenciaStruct* nodo) override {
+    for (auto& prop : nodo->propiedades) {
+      prop->accept(this);
+    }
+
+    for (auto& metodo : nodo->metodos) {
+      metodo->accept(this);
+    }
+
+  }
+
+
+  void visitar(SentenciaEscritura* nodo) override {}
+  void visitar(SentenciaArcano* nodo) override {}
+  void visitar(SentenciaLlamadaArcano* nodo) override {}
+  void visitar(SentenciaMetaDirective* nodo) override {}
+  void visitar(SentenciaTemplate* nodo) override {}
+
+};
+
 enum class ModoChecker {
   REGISTRO,
   VERIFICACION
@@ -30,6 +269,7 @@ class Checker : public ASTVisitor {
 private:
   GestorTablas& tablas;
   std::vector<std::unique_ptr<Sentencia>>& ast;
+  std::vector<std::unique_ptr<Sentencia>> templates;
   ErrorHandler& errHandler;
   TypeFactory& typeFactory;
   ContextoArcanos& contextoArcanos;
@@ -68,9 +308,86 @@ public:
   // --- Utilidad ---
   inline std::string getDunder(TipoOperador op) { //...
     switch (op) {
-      case TipoOperador::SUMA: { return dunder::ADD; }
+      case TipoOperador::SUMA : { return dunder::ADD; }
+      case TipoOperador::RESTA: { return dunder::SUB; }
       default: { return ""; }
     }
+  }
+
+  Dt instanciarTemplate(std::shared_ptr<TemplateInstanceType> tipoInstancia) {
+    std::string name = tipoInstancia->name;
+    std::cout << "[318, Checker.hpp] name: '" << name << "'\n";
+
+    std::string firma = generarFirma(name, tipoInstancia->argumentos);
+
+    std::cout << "[322, Checker.hpp] firma: '" << firma << "'\n";
+
+    if (InfoStruct* info_struct = tablas.buscarStruct(firma)) {
+      return Dt(typeFactory.getStruct(info_struct));
+    }
+
+    InfoTemplate* info_tmpl = tablas.buscarTemplate(name);
+    if (!info_tmpl) {
+      throw std::runtime_error("Error: Plantilla '" + name + "' no definida");
+    }
+
+    std::cout << "[335, Checker.hpp] mapa_reemplazos:\n\n";
+    std::unordered_map<std::string, Dt> mapa_reemplazos;
+    for (size_t i = 0; i < info_tmpl->args.size(); ++i) {
+      mapa_reemplazos[info_tmpl->args[i].first] = tipoInstancia->argumentos[i];
+      std::cout << "[339, Checker.hpp] info_tmpl->args[i].first: '" << info_tmpl->args[i].first << "'\n";
+      std::cout << "[340, Checker.hpp] tipoInstancia->argumentos[i]: '" << tipoInstancia->argumentos[i].tipoString() << "'\n";
+
+    }
+
+    std::cout << '\n';
+
+    auto ast_clon = info_tmpl->ast->clonar();
+
+    if (auto* struct_ast = dynamic_cast<SentenciaStruct*>(ast_clon.get())) {
+      struct_ast->name = firma;
+    }
+
+    TemplateHandler tmplHandler(mapa_reemplazos, typeFactory);
+    ast_clon->accept(&tmplHandler);
+
+    ModoChecker modo_prev = mode;
+    Scope* scope_prev = tablas.getScopeActual();
+    bool lectura_prev = tablas.getLectura();
+
+    if (info_tmpl->scope_def != nullptr) {
+      tablas.setScopeActual(info_tmpl->scope_def);
+    }
+
+    size_t nav_prev = tablas.getScopeActual()->hijo_actual;
+
+    mode = ModoChecker::REGISTRO;
+    if (tablas.getLectura()) { tablas.switchMode(); }
+
+    ast_clon->accept(this);
+
+    tablas.getScopeActual()->hijo_actual = tablas.getScopeActual()->hijos.size() - 1;
+
+    mode = ModoChecker::VERIFICACION;
+    if (!tablas.getLectura()) { tablas.switchMode(); }
+
+    ast_clon->accept(this);
+
+    tablas.getScopeActual()->hijo_actual = nav_prev;
+    tablas.setScopeActual(scope_prev);
+
+    mode = modo_prev;
+
+    if (tablas.getLectura() != lectura_prev) { tablas.switchMode(); }
+
+    if (InfoStruct* info_struct = tablas.buscarStruct(firma)) {
+      std::cout << "[360, Checker.hpp]\n";
+      templates.push_back(std::move(ast_clon));
+      return Dt(typeFactory.getStruct(info_struct));
+    }
+
+    throw std::runtime_error("Error: No se pudo registrar la instancia de la plantilla '" + firma + "'");
+
   }
 
   bool esCasteoValido(const Dt& tipo_original, const Dt& tipo_destino);
@@ -248,6 +565,7 @@ public:
       nodo->tipo_resuelto = Dt(typeFactory.getUnknown());
 
     }
+
   }
 
   void visitar(ExprVariable* nodo) override {
@@ -292,7 +610,6 @@ public:
 
   }
 
-
   void visitar(ExprArray* nodo) override {
 
     if (nodo->elementos.empty()) {
@@ -315,7 +632,6 @@ public:
     nodo->tipo_resuelto.valor = typeFactory.getArray(tipo_base, nodo->elementos.size());
 
   }
-
 
   void visitar(ExprUnaria* nodo) override { //...
     nodo->operando->accept(this);
@@ -401,6 +717,11 @@ public:
         break;
 
       }
+
+      default: {
+        std::cerr << "Error: Operador unario no implementado\n";
+        exit(1);
+      }
     }
   }
 
@@ -475,6 +796,21 @@ public:
       }
     }
 
+    if (tipo_izq->kind == TypeKind::TEMPLATE_INSTANCE) {
+      std::cout << "[786, Checker.hpp] TypeKind::TEMPLATE_INSTANCE\n";
+      auto instance_type = std::static_pointer_cast<TemplateInstanceType>(tipo_izq);
+      InfoTemplate* info_tmpl = tablas.buscarTemplate(instance_type->name);
+      std::cout << "[789, Checker.hpp] instance_type->name: '" << instance_type->name << "'\n";
+
+      if (info_tmpl) {
+        tipo_izq = typeFactory.getTemplateInstance(instance_type->name, instance_type->argumentos);
+        nodo->izquierda->tipo_resuelto = Dt(tipo_izq);
+        nodo->tipo_resuelto = Dt(typeFactory.getUnresolved(instance_type->name)); //...
+        return ;
+      }
+
+    }
+
     if (tipo_izq->kind != TypeKind::STRUCT) {
       std::cerr << "Error: El lado izquierdo del '.' debe ser un struct\n";
       nodo->tipo_resuelto = Dt(typeFactory.getUnknown());
@@ -520,15 +856,23 @@ public:
   }
 
   void visitar(SentenciaAsignarVar* nodo) override {
+    std::cout << "[829, Checker.hp] SentenciaAsignarVar\n";
+
+    if (auto* tipo_instancia = dynamic_cast<TemplateInstanceType*>(nodo->tipo_explicito.tipo.valor.get())) {
+      std::cout << "[832, Checker.hpp]\n";
+      auto ptr_instancia = std::static_pointer_cast<TemplateInstanceType>(nodo->tipo_explicito.tipo.valor);
+      nodo->tipo_explicito.tipo = instanciarTemplate(ptr_instancia);
+
+    }
 
     if (auto* tipo_pendiente = dynamic_cast<UnresolvedType*>(nodo->tipo_explicito.tipo.valor.get())) {
       std::string nombre_tipo = tipo_pendiente->pending_type;
 
-      std::cout << "[459, Checker.hpp] nombre_tipo: '" << nombre_tipo << "'\n";
-      InfoStruct* info = tablas.buscarStruct(nombre_tipo);
+      std::cout << "[842, Checker.hpp] nombre_tipo: '" << nombre_tipo << "'\n";
+      InfoStruct* info_struct = tablas.buscarStruct(nombre_tipo);
 
-      if (info != nullptr) {
-        nodo->tipo_explicito.tipo = Dt(typeFactory.getStruct(info));
+      if (info_struct != nullptr) {
+        nodo->tipo_explicito.tipo = Dt(typeFactory.getStruct(info_struct));
 
       } else {
         throw std::runtime_error("Error: El tipo '" + nombre_tipo + "' no está definido\n");
@@ -595,14 +939,16 @@ public:
 
   }
 
-  void visitar(ExprFuncCall* nodo) override { //...
-
+  void visitar(ExprFuncCall* nodo) override { //..
+    std::cout << "[916, Checker.hpp] ExprFuncCall\n";
     if (auto* acceso = dynamic_cast<ExprAccesoPunto*>(nodo->callee.get())) {
+      std::cout << "[918, Checker.hpp] Es ExprAccesoPunto\n";
 
       acceso->izquierda->accept(this);
       auto tipo_izq = acceso->izquierda->tipo_resuelto.valor;
 
       if (tipo_izq->kind == TypeKind::STRUCT) {
+        std::cout << "[924, Checker.hpp] y es Struct\n";
         auto struct_type = std::static_pointer_cast<StructType>(tipo_izq);
 
         std::vector<Dt> tipos_args;
@@ -629,7 +975,7 @@ public:
           return ;
 
         } else {
-          std::cerr << "Eerror: El struct '" << struct_type->info->nombre << "' no tiene un método que coincide con la firma '" << firma << "'\n";
+          std::cerr << "Error: El struct '" << struct_type->info->nombre << "' no tiene un método que coincide con la firma '" << firma << "'\n";
           exit(1);
 
         }
@@ -651,7 +997,7 @@ public:
   void visitar(ExprInitList* nodo) override { //...
 
     if (auto* n = dynamic_cast<UnresolvedType*>(nodo->tipo_resuelto.valor.get())) {
-      std::cout << "[555, Checker.hpp] n->pending_type: '" << n->pending_type << "'\n";
+      std::cout << "[973, Checker.hpp] n->pending_type: '" << n->pending_type << "'\n";
       InfoStruct* info = tablas.buscarStruct(n->pending_type);
       if (info != nullptr) {
         nodo->tipo_resuelto = Dt(typeFactory.getStruct(info));
@@ -807,7 +1153,7 @@ public:
       nodo->ret_type.valor = nodo->ret_value->tipo_resuelto.valor;
 
     } else {
-      std::cout << "[763, Checker.hpp] Bad Info"; //...
+      std::cout << "[1128, Checker.hpp] Bad Info"; //...
       exit(1);
 
     }
@@ -840,7 +1186,7 @@ public:
     std::string prefijo = structActual.empty() ? "" : structActual + "_";
     std::string firma = prefijo + generarFirma(nodo->nombre_func, tipos_params);
     nodo->firma_mangled = firma;
-    std::cout << "[786, Checker.hpp] firma: '" << firma << "'\n";
+    std::cout << "[1047, Checker.hpp] firma: '" << firma << "'\n";
 
     if (mode == ModoChecker::REGISTRO) {
       InfoFuncion info_func;
@@ -849,7 +1195,7 @@ public:
       info_func.tipos_parametros = nodo->args_type;
 
       if (!tablas.añadirFunction(firma, info_func)) {
-        std::cout << "[785, Checker.hpp] Error: Función redefinida\n";
+        std::cout << "[1056, Checker.hpp] Error: Función redefinida\n";
         exit(1);
 
       }
@@ -860,6 +1206,8 @@ public:
 
     InfoFuncion* ptr_func = tablas.buscarFunction(firma);
     tablas.pushFunction(ptr_func);
+
+    tablas.switchMode();
     tablas.entrarScope();
 
     for (const auto& [nombre, info] : nodo->args_type) {
@@ -875,11 +1223,15 @@ public:
     }
 
     tablas.salirScope();
+    tablas.switchMode();
+
     tablas.popFunction();
 
   }
 
   void visitar(SentenciaStruct* nodo) override {
+
+    tablas.entrarScope();
 
     std::string nombre_real = nodo->name;
 
@@ -924,6 +1276,7 @@ public:
         if (!es_placeholder) {
           props_expandidas.push_back(std::move(prop));
         }
+
       }
 
       nodo->propiedades = std::move(props_expandidas);
@@ -954,6 +1307,8 @@ public:
         structActual = nombre_real;
 
         for (const auto& m : nodo->metodos) {
+
+          std::cout << "[1295, Checker.hpp] tablas.getScopeActual: '" << tablas.getScopeActual() << "'\n";
           m->accept(this);
 
           if (auto* func_decl = dynamic_cast<SentenciaFuncDecl*>(m.get())) {
@@ -962,36 +1317,19 @@ public:
               info_ptr->metodos[func_decl->firma_mangled] = *func_reg;
             }
           }
+
         }
 
         structActual = "";
+
       }
 
-      //if (!nodo->metodos.empty()) {
-      //  for (const auto& m : nodo->metodos) {
-      //    if (auto* func_decl = dynamic_cast<SentenciaFuncDecl*>(m.get())) {
-      //      InfoFuncion info_func;
-      //      info_func.nombre = func_decl->nombre_func;
-      //      info_func.tipo_retorno = func_decl->ret_type;
-      //      info_func.tipos_parametros = func_decl->args_type;
-      //      std::vector<Dt> tipos_args;
-      //      for (const auto& a : func_decl->args_type) {
-      //        tipos_args.push_back(a.second.tipo);
-      //      }
-      //      //std::string firma = nombre_real + "_" + generarFirma(func_decl->nombre_func, tipos_args);
-      //      //std::cout << "[975, Checker.hpp] firma: '" << firma << "'\n";
-      //      //func_decl->nombre_func = firma;
-      //      //info.metodos[firma] = std::move(info_func);
-      //      //tablas.añadirFunction(firma, info_func);
-      //      info.metodos[func_decl->nombre_func] = std::move(info_func);
-      //    }
-      //  }
-      //}
-      //if (!tablas.añadirStruct(nombre_real, info)) {
-      //  throw std::runtime_error("Error: El struct '" + nombre_real + "' ya está definido\n");
-      //}
-
     } else {
+
+      for (const auto& p : nodo->propiedades) {
+        p->accept(this);
+      }
+
       if (!nodo->metodos.empty()) {
 
         structActual = nombre_real;
@@ -1004,6 +1342,9 @@ public:
 
       }
     }
+
+    tablas.salirScope();
+
   }
 
   void visitar(SentenciaEscritura* nodo) override {
@@ -1122,11 +1463,18 @@ public:
 
         }
 
-
       }
+
       default: { break; }
+
     }
 
+  }
+
+  void visitar(SentenciaTemplate* nodo) override {
+    if (mode == ModoChecker::REGISTRO) {
+      tablas.updateTemplate(nodo->name, tablas.getScopeActual());
+    }
   }
 
 };

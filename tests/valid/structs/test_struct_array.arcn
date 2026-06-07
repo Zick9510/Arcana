@@ -1,7 +1,7 @@
 struct stack {
 
   int base[8];
-  int* value = &base;
+  int* value = base;
 
   func push(int i) -> void {
     *value = i;

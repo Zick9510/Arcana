@@ -76,6 +76,8 @@ public:
 
   std::unique_ptr<Sentencia> parsearStruct();
 
+  std::unique_ptr<Sentencia> parsearTemplate();
+
   Pr obtenerPrecedencia(Tt tipo);
 
   std::unique_ptr<Expresion> parsearPrefijo();

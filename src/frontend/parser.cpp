@@ -55,7 +55,7 @@ bool Parser::isStatement(Token t) {
 
 bool Parser::sync(Tt target) {
 
-  while (peek().tipo != Tt::FIN_ARCHIVO) {
+  while (peek().tipo != Tt::EOF_TT) {
     Token t = peek();
 
     if (t.tipo == target)         { return true ; }
@@ -118,7 +118,10 @@ bool Parser::isType(Token t) {
   }
 
   if (t.tipo == Tt::IDENTIFICADOR) {
-    return (tablas.buscarStruct(t.lexema) != nullptr);
+    if (tablas.buscarStruct       (t.lexema) != nullptr) { return true; }
+    if (tablas.buscarTemplate     (t.lexema) != nullptr) { return true; }
+    if (tablas.buscarTemplateParam(t.lexema) != nullptr) { return true; }
+
   }
 
   return false;
@@ -142,6 +145,7 @@ int extraerBits(std::string lexema, int defaultBits) {
 }
 
 InfoVariable Parser::parsearTipo() {
+  std::cout << "[147, parser.cpp] parsearTipo\n";
   InfoVariable info;
   std::shared_ptr<ArcanaType> tipo_actual = nullptr;
   bool es_unsigned = false;
@@ -166,42 +170,6 @@ InfoVariable Parser::parsearTipo() {
   Token t_base = peek();
 
   switch (t_base.tipo) {
-
-    // --- Tipos Compuestos (ADTs) ---
-
-    //case Tt::CORCH_L: { // Morphs
-    //  get();
-    //  std::vector<std::shared_ptr<ArcanaType>> subtipos;
-    //  while (peek().tipo != Tt::CORCH_R) {
-    //    InfoVariable sub_info = parsearTipo();
-    //    subtipos.push_back(sub_info.tipo.valor);
-    //    if (peek().tipo == Tt::COMA) { get(); }
-    //  }
-    //  get();
-    //  tipo_actual = typeFactory.getMorph(subtipos);
-    //  break;
-    //}
-    //case Tt::LLAVE_L: { // Structs
-    //  get();
-    //  std::vector<CampoStruct> campos;
-    //  while (peek().tipo != Tt::LLAVE_R) {
-    //    CampoStruct campo;
-    //    InfoVariable sub_info = parsearTipo();
-    //    campo.tipo = sub_info.tipo.valor;
-    //    if (peek().tipo == Tt::IDENTIFICADOR) {
-    //      campo.nombre = get().lexema;
-    //    }
-    //    campos.push_back(campo);
-    //    if (peek().tipo == Tt::COMA) { get(); }
-    //  }
-    //  get();
-    //  tipo_actual = typeFactory.getStruct(campos);
-    //  break;
-    //}
-
-    //... What about T1<T2> ?
-
-    // --- Tipos Primitivos ---
 
     case Tt::VOID_TYPE: {
       get();
@@ -255,20 +223,53 @@ InfoVariable Parser::parsearTipo() {
 
     case Tt::IDENTIFICADOR: {
       std::string name = get().lexema;
-      auto* struct_info = tablas.buscarStruct(name);
+      std::cout << "[224, parser.cpp] name: '" << name << "'\n";
+
+      InfoStruct*        struct_info         = tablas.buscarStruct(name);
+      InfoTemplateParam* template_param_info = tablas.buscarTemplateParam(name);
+      InfoTemplate*      template_info       = tablas.buscarTemplate(name);
+
       if (struct_info != nullptr) {
+        std::cout << "[233, parser.cpp] struct_info\n";
         tipo_actual = typeFactory.getStruct(struct_info);
 
-      } else {
-        //get();
+      } else if (template_param_info != nullptr) {
+        std::cout << "[237, parser.cpp] template_param_info\n";
+        tipo_actual = typeFactory.getTemplateParam(name);
 
+      } else if (template_info != nullptr) {
+        std::cout << "[241, parser.cpp] template_info\n";
+        tipo_actual = typeFactory.getUnresolved(name);
+
+      } else {
+        std::cout << "[245, parser.cpp] else\n";
         InfoVariable tipo_pendiente;
         tipo_pendiente.tipo = Dt(typeFactory.getUnresolved(t_base.lexema));
         return tipo_pendiente;
 
       }
 
+      std::cout << "[252, parser.cpp] <>\n";
+
+      if (peek().tipo == Tt::MENOR) {
+        get();
+        std::vector<Dt> template_args;
+
+        while (peek().tipo != Tt::MAYOR && peek().tipo != Tt::EOF_TT) {
+          template_args.push_back(parsearTipo().tipo);
+          if (peek().tipo == Tt::COMA) { get(); }
+
+        }
+
+        check(Tt::MAYOR);
+
+        std::cout << "[266, parser.cpp] getTemplateInstance name: '" << name << "'\n";
+        tipo_actual = typeFactory.getTemplateInstance(name, template_args);
+
+      }
+
       break;
+
     }
 
     default: { //...
@@ -467,6 +468,7 @@ std::pair<std::string, std::string> Parser::partirLexemaNum(std::string lexema) 
 }
 
 std::unique_ptr<Sentencia> Parser::parsearDeclaracionVar() {
+  std::cout << "[459, parser.cpp] parsearDeclaracionVar\n";
 
   InfoVariable tipo = parsearTipo();
 
@@ -497,9 +499,9 @@ std::unique_ptr<Sentencia> Parser::parsearDeclaracionVar() {
 }
 
 std::unique_ptr<Sentencia> Parser::parsearSentenciaExpresion() {
-  std::cout << "[502, parser.cpp]\n";
+  std::cout << "[490, parser.cpp] parsearSentenciaExpresion\n";
   std::unique_ptr<Expresion> izquierda = parsearExpresion(Pr::MINIMA);
-  std::cout << "[504, parser.cpp]\n";
+  std::cout << "[492, parser.cpp]\n";
 
   if (peek().tipo == Tt::IGUAL_ASIG) { // ... = ...;
     get();
@@ -557,7 +559,7 @@ std::unique_ptr<Sentencia> Parser::parsearBloque() {
 
   auto bloque = std::make_unique<Bloque>();
 
-  while (peek().tipo != Tt::LLAVE_R && peek().tipo != Tt::FIN_ARCHIVO) {
+  while (peek().tipo != Tt::LLAVE_R && peek().tipo != Tt::EOF_TT) {
     bloque->agregarSentencia(parsearSentencia());
 
   }
@@ -570,15 +572,17 @@ std::unique_ptr<Sentencia> Parser::parsearBloque() {
 }
 
 std::unique_ptr<Sentencia> Parser::parsearSentencia() {
+  std::cout << "[574, parser.cpp] parsearSentencia\n";
 
-  while (isStructural(peek().tipo) && peek().tipo != Tt::FIN_ARCHIVO && peek().tipo != Tt::PUNTO_COMA) {
+  while (isStructural(peek().tipo) && peek().tipo != Tt::EOF_TT && peek().tipo != Tt::PUNTO_COMA) {
     Token t = get();
     errHandler.report(CE::E_UNEXPECTED_TOKEN, t.pos, t.lexema);
-    std::cout << "[551, parser.cpp]\n";
+    std::cout << "[579, parser.cpp]\n";
 
   }
 
   Tt actual = peek().tipo;
+  std::cout << "[584, parser.cpp] peek().lexema: '" << peek().lexema << "'\n";
 
   if (actual == Tt::IF       ) { return parsearSi           (); }
   if (actual == Tt::ELSE     ) { return parsearSino         (); }
@@ -601,24 +605,31 @@ std::unique_ptr<Sentencia> Parser::parsearSentencia() {
   if (actual == Tt::ARCANE   ) { return parsearArcano       (); }
   if (actual == Tt::PREGUNTA ) { return parsearMetaDirectiva(); }
 
+  if (actual == Tt::TEMPLATE ) { return parsearTemplate     (); }
+
   // Si empieza con un tipo de dato, es una delaración
   if (isType(peek()) || esInfiere(actual)) {
+    std::cout << "[611, parser.cpp]\n";
     return parsearDeclaracionVar();
 
   }
  
   if (actual == Tt::IDENTIFICADOR) {
+    std::cout << "[617, parser.cpp]\n";
     // Arcanos
     if (contextoArcanos.esKeywordArcano(peek().lexema)) {
+      std::cout << "[620, parser.cpp]\n";
       return parsearLlamadaArcano();
     }
 
     // Tipos
     if (peek(1).tipo == Tt::IDENTIFICADOR) {
+      std::cout << "[626, parser.cpp]\n";
       return parsearDeclaracionVar();
     }
   }
  
+  std::cout << "[631, parser.cpp]\n";
   // Por defecto, es una expresión
   return parsearSentenciaExpresion();
 
@@ -715,7 +726,7 @@ std::vector<std::pair<std::string, InfoVariable>> Parser::parsearFuncArgs(Tt tEn
   std::vector<std::pair<std::string, InfoVariable>> args;
   std::set<std::string> nombre_args;
 
-  while (peek().tipo != tEnd && peek().tipo != Tt::FIN_ARCHIVO) {
+  while (peek().tipo != tEnd && peek().tipo != Tt::EOF_TT) {
 
     InfoVariable tipo = parsearTipo();
     Token nombre = check(Tt::IDENTIFICADOR);
@@ -809,7 +820,7 @@ std::unique_ptr<Expresion> Parser::parsearFunctionCall(std::unique_ptr<Expresion
         break; // No hay más comas, no hay más argumentos
 
       }
-    } while (peek().tipo != Tt::PAREN_R && peek().tipo != Tt::FIN_ARCHIVO);
+    } while (peek().tipo != Tt::PAREN_R && peek().tipo != Tt::EOF_TT);
 
   }
 
@@ -834,7 +845,7 @@ std::pair<std::string, ReglaArcano> Parser::parsearReglaArcano() { //...
  
   Token t;
 
-  while (peek().tipo != Tt::CORCH_R && peek().tipo != Tt::FIN_ARCHIVO) {
+  while (peek().tipo != Tt::CORCH_R && peek().tipo != Tt::EOF_TT) {
     t = get();
 
     Token comp = t;
@@ -857,7 +868,7 @@ std::vector<std::pair<std::string, ReglaArcano>> Parser::parsearReglasArcano() {
   std::vector<std::pair<std::string, ReglaArcano>> rules;
   std::pair<std::string, ReglaArcano> par;
 
-  while (peek().tipo != Tt::CORCH_R && peek().tipo != Tt::FIN_ARCHIVO) {
+  while (peek().tipo != Tt::CORCH_R && peek().tipo != Tt::EOF_TT) {
     par = parsearReglaArcano();
     rules.push_back(par);
   }
@@ -884,7 +895,7 @@ std::unordered_map<std::string, std::vector<EnlaceCadena>> Parser::parsearCadena
   check(Tt::CHAINS);
   check(Tt::CORCH_L);
 
-  while (peek().tipo != Tt::CORCH_R && peek().tipo != Tt::FIN_ARCHIVO) {
+  while (peek().tipo != Tt::CORCH_R && peek().tipo != Tt::EOF_TT) {
     check(Tt::ARROBA);
     std::string parent_rule = "@" + check(Tt::IDENTIFICADOR).lexema;
 
@@ -897,7 +908,7 @@ std::unordered_map<std::string, std::vector<EnlaceCadena>> Parser::parsearCadena
 
     std::vector<EnlaceCadena> enlaces;
 
-    while (peek().tipo != Tt::PUNTO_COMA && peek().tipo != Tt::FIN_ARCHIVO) {
+    while (peek().tipo != Tt::PUNTO_COMA && peek().tipo != Tt::EOF_TT) {
       check(Tt::ARROBA);
       std::string target_rule = "@" + check(Tt::IDENTIFICADOR).lexema;
 
@@ -957,13 +968,13 @@ std::vector<ArcaneBranch> Parser::parsearCuerpoArcano(
 
     check(Tt::LLAVE_L); // {
 
-    while (peek().tipo !=  Tt::LLAVE_R && peek().tipo != Tt::FIN_ARCHIVO) {
+    while (peek().tipo !=  Tt::LLAVE_R && peek().tipo != Tt::EOF_TT) {
       ArcaneBranch rama_actual;
       rama_actual.rule_tag = tag_name;
 
       bool es_primer_segmento = true;
 
-      while (peek().tipo != Tt::PUNTO_COMA && peek().tipo != Tt::FIN_ARCHIVO) {
+      while (peek().tipo != Tt::PUNTO_COMA && peek().tipo != Tt::EOF_TT) {
         ArcaneSegment segmento;
         segmento.br_key = check(Tt::IDENTIFICADOR, Pm::RELAXED).lexema;
 
@@ -977,7 +988,7 @@ std::vector<ArcaneBranch> Parser::parsearCuerpoArcano(
         if (peek().tipo == Tt::PAREN_L) { // Expressions parsing
           get();
 
-          while (peek().tipo != Tt::PAREN_R && peek().tipo != Tt::FIN_ARCHIVO) {
+          while (peek().tipo != Tt::PAREN_R && peek().tipo != Tt::EOF_TT) {
             segmento.br_expr.push_back(get().lexema);
 
             if (peek().tipo == Tt::COMA) { get(); }
@@ -1020,7 +1031,7 @@ std::unique_ptr<Sentencia> Parser::parsearArcano() {
   ArcaneDef def;
   def.name = nombre_arcano.lexema;
 
-  while (peek().tipo != Tt::PAREN_R && peek().tipo != Tt::FIN_ARCHIVO) { // Argumentos
+  while (peek().tipo != Tt::PAREN_R && peek().tipo != Tt::EOF_TT) { // Argumentos
     Token nombre_param = check(Tt::IDENTIFICADOR, Pm::RELAXED);
     check(Tt::DOS_PUNTOS);
     Token t_tipo = get();  // key, expr, code
@@ -1081,7 +1092,7 @@ std::unique_ptr<Sentencia> Parser::parsearLlamadaArcano(bool checkSc) {
 
     get();
 
-    while (peek().tipo != Tt::CORCH_R && peek().tipo != Tt::FIN_ARCHIVO) {
+    while (peek().tipo != Tt::CORCH_R && peek().tipo != Tt::EOF_TT) {
 
       local_args.push_back(parsearExpresion(Pr::MINIMA));
 
@@ -1301,7 +1312,7 @@ std::unique_ptr<Sentencia> Parser::parsearMetaDirectiva() {
   check(Tt::PAREN_L);
   std::vector<std::unique_ptr<Expresion>> args;
 
-  while (peek().tipo != Tt::PAREN_R && peek().tipo != Tt::FIN_ARCHIVO) {
+  while (peek().tipo != Tt::PAREN_R && peek().tipo != Tt::EOF_TT) {
     std::unique_ptr<Expresion> arg = parsearExpresion(Pr::MINIMA);
     args.push_back(std::move(arg));
     if (peek().tipo == Tt::COMA) { get(); }
@@ -1334,7 +1345,7 @@ std::unique_ptr<Sentencia> Parser::parsearStruct() {
   InfoStruct info;
   info.nombre = name;
 
-  while (peek().tipo != Tt::LLAVE_R && peek().tipo != Tt::FIN_ARCHIVO) {
+  while (peek().tipo != Tt::LLAVE_R && peek().tipo != Tt::EOF_TT) {
 
     if (isType(peek())) {
       auto nodo_var = parsearDeclaracionVar();
@@ -1402,7 +1413,7 @@ std::unique_ptr<Expresion> Parser::parsearInitList() {
   std::vector<ArgumentoInit> args;
   bool seen_named = false;
 
-  while (peek().tipo != Tt::LLAVE_R && peek().tipo != Tt::FIN_ARCHIVO) {
+  while (peek().tipo != Tt::LLAVE_R && peek().tipo != Tt::EOF_TT) {
     std::optional<std::string> name = std::nullopt;
 
     if (peek().tipo == Tt::IDENTIFICADOR && peek(1).tipo == Tt::DOS_PUNTOS) {
@@ -1429,6 +1440,72 @@ std::unique_ptr<Expresion> Parser::parsearInitList() {
   check(Tt::LLAVE_R);
 
   return std::make_unique<ExprInitList>(std::move(args));
+
+}
+
+std::unique_ptr<Sentencia> Parser::parsearTemplate() {
+  std::cout << "[1448, parser.cpp] parsearTemplate\n";
+  check(Tt::TEMPLATE);
+  check(Tt::MENOR);
+
+  tablas.entrarScopeTemplate();
+
+  std::vector<std::pair<std::string, std::variant<InfoTemplateParam, InfoVariable>>> args;
+
+  while (peek().tipo != Tt::MAYOR && peek().tipo != Tt::EOF_TT) {
+    std::cout << "[1457, parser.cpp] peek().lexema: '" << peek().lexema << "'\n";
+    if (peek().tipo == Tt::TYPE) {
+      get();
+      InfoTemplateParam info_pt;
+
+      info_pt.nombre = check(Tt::IDENTIFICADOR).lexema;
+
+      if (peek().tipo == Tt::IGUAL_ASIG) {
+        get();
+        info_pt.default_type = parsearTipo().tipo;
+
+      }
+
+      args.push_back({ info_pt.nombre, info_pt });
+      tablas.añadirTemplateParam(info_pt.nombre, info_pt);
+
+    } else if (isType(peek())) {
+      InfoVariable type = parsearTipo();
+      args.push_back({ check(Tt::IDENTIFICADOR).lexema, type });
+
+    }
+
+    if (peek().tipo == Tt::COMA) {
+      get();
+    }
+
+  }
+
+  check(Tt::MAYOR);
+
+  auto statement = parsearSentencia();
+  std::string template_name;
+
+  if (auto* struct_node = dynamic_cast<SentenciaStruct*>(statement.get())) {
+    template_name = struct_node->name;
+
+  } else if (auto* func_node = dynamic_cast<SentenciaFuncDecl*>(statement.get())) {
+    template_name = func_node->nombre_func;
+
+  } else {
+    throw std::runtime_error("Error: Templates solo con structs o funciones");
+
+  }
+
+  InfoTemplate info_tmpl;
+  info_tmpl.nombre = template_name;
+  info_tmpl.args   = args;
+  info_tmpl.ast    = statement->clonar();
+
+  tablas.añadirTemplate(template_name, std::move(info_tmpl));
+  tablas.salirScopeTemplate();
+
+  return std::make_unique<SentenciaTemplate>(template_name, std::move(args), std::move(statement));
 
 }
 
@@ -1510,12 +1587,13 @@ Pr Parser::obtenerPrecedencia(Tt tipo) {
     default            :
       return Pr::MINIMA;
   }
+
 }
 
 std::unique_ptr<Expresion> Parser::parsearPrefijo() {
   Token t = peek();
 
-  std::cout << "[1516, parser.cpp]\n";
+  std::cout << "[1561, parser.cpp]\n";
   std::cout << t.lexema << '\n';
   std::cout << nombreTipo(t.tipo) << '\n';
 
@@ -1619,7 +1697,7 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
     case Tt::AMPERSAND  : {op = TipoOperador::PTR_REF   ; break; }
 
     default: {
-        std::cerr << "[1626, parser.cpp]\n";
+        std::cerr << "[1703, parser.cpp]\n";
         std::cerr << "No se esperaba el prefijo '" << t.lexema << "'\n";
         exit(1);
     }
@@ -1632,6 +1710,7 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
 
 // Algoritmo de Pratt
 std::unique_ptr<Expresion> Parser::parsearExpresion(Pr precedenciaMinima) {
+  std::cout << "[1716, parser.cpp] parsearExpresion\n";
 
   // 1. Empezamos con un átomo (número o id)
   std::unique_ptr<Expresion> izquierda = parsearPrefijo();
@@ -1713,10 +1792,9 @@ std::unique_ptr<Expresion> Parser::parsearExpresion(Pr precedenciaMinima) {
 
 std::vector<std::unique_ptr<Sentencia>> Parser::parsearPrograma() {
   std::vector<std::unique_ptr<Sentencia>> programa;
-  while (peek().tipo != Tt::FIN_ARCHIVO) {
+  while (peek().tipo != Tt::EOF_TT) {
     programa.push_back(parsearSentencia());
   }
   return programa;
 
 }
-

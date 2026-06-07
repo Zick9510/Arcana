@@ -3,8 +3,12 @@ struct Vec3 {
   float y;
   float z;
 
-  func __add__(Vec3 otro) -> Vec3 {
-    return Vec3 { x + otro.x, y + otro.y, z + otro.z };
+  func __add__(Vec3 other) -> Vec3 {
+    return Vec3 { x + other.x, y + other.y, z + other.z };
+  }
+
+  func __sub__(Vec3 other) -> Vec3 {
+    return Vec3 { x - other.x, y - other.y, z - other.z };
   }
 
   func getTotal() -> float {
@@ -23,6 +27,6 @@ func main() -> int {
   v2.y = v2.x + 1.5;
   v2.z = v2.x * v2.y - 2.0;
 
-  return ((v1 + v2) + v3).getTotal();
+  return (v1 + v2 - v3).getTotal();
 
 }

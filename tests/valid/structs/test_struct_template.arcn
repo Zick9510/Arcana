@@ -1,0 +1,36 @@
+template <type T> struct stack {
+  T data[64];
+  T* value = data;
+
+  func push(T i) -> void {
+    *value = i;
+    value = value + 1;
+  }
+
+  func pop() -> T {
+    value = value - 1;
+    return *value;
+  }
+
+  func back() -> T {
+    return *(value - 1);
+  }
+
+};
+
+func main() -> int {
+  stack<int> s_int;
+  stack<float> s_float;
+
+  s_int.push(2);
+  s_float.push(2.71);
+  s_int.push(3);
+
+  int t_int = s_int.back() + s_int.pop() + s_int.pop(); // 3 + 3 + 2 = 8;
+
+  s_float.push(3.14);
+  float t_float = s_float.pop() + s_float.back() + s_float.back(); // 3.14 + 2.71 + 2.71;
+
+  return t_int + t_float; // 8 + 3.14 + 2.71 + 2.71 = 16.56;
+
+}

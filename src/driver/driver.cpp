@@ -6,6 +6,7 @@
 #include "Parser.hpp"
 #include "Checker.hpp"
 #include "Emitter.hpp"
+
 #include "Common.hpp"
 #include "Includes.hpp"
 
@@ -33,7 +34,7 @@ bool Driver::compile(const CompilerConfig& config) {
   //... Debug
   std::cout << "\n--- TOKENS --- \n\n";
   for (const auto& t : tokens) {
-    std::cout << "< Token: '" << t.lexema << "' >\n";
+    std::cout << "< Token: '" << t.lexema << "' [" << nombreTipo(t.tipo) << "] >\n";
   }
 
   // 4. Syntactic Analysis (Tokens -> AST)
@@ -73,7 +74,7 @@ bool Driver::compile(const CompilerConfig& config) {
 
   Emitter emitter(contexto_arcanos, tablas);
   for (auto& nodo : ast) {
-    nodo->accept(&emitter);
+    if (nodo) { nodo->accept(&emitter); }
   }
 
   // 7. Escribir el Código (Source -> File)
