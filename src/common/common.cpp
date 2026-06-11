@@ -29,6 +29,7 @@ std::string nombreTipo(Tt tipo) {
     case Tt::VAR: { return "VAR"; }
     case Tt::IDENTIFICADOR: { return "ID"; }
     case Tt::NUMERO: { return "NUMERO"; }
+    case Tt::CHAR: { return "CHAR"; }
 
     case Tt::ASIG_BLOQUE: { return "ASIG_BLOQUE"; }
     case Tt::PUNTO_COMA: { return "PUNTO_COMA"; }

@@ -113,11 +113,11 @@ Token Parser::check(Tt tipoEsperado, Pm parseMode) {
 
 bool Parser::isType(Token t) {
 
-  if (esTipo(t.tipo)) {
+  if (esTipo(t.tipo)) { // Base types
     return true;
   }
 
-  if (t.tipo == Tt::IDENTIFICADOR) {
+  if (t.tipo == Tt::IDENTIFICADOR) { // User defined types
     if (tablas.buscarStruct       (t.lexema) != nullptr) { return true; }
     if (tablas.buscarTemplate     (t.lexema) != nullptr) { return true; }
     if (tablas.buscarTemplateParam(t.lexema) != nullptr) { return true; }
@@ -606,6 +606,8 @@ std::unique_ptr<Sentencia> Parser::parsearSentencia() {
   if (actual == Tt::PREGUNTA ) { return parsearMetaDirectiva(); }
 
   if (actual == Tt::TEMPLATE ) { return parsearTemplate     (); }
+
+  if (actual == Tt::INCLUDE  ) { return parsearInclude      (); }
 
   // Si empieza con un tipo de dato, es una delaración
   if (isType(peek()) || esInfiere(actual)) {
@@ -1509,6 +1511,27 @@ std::unique_ptr<Sentencia> Parser::parsearTemplate() {
 
 }
 
+std::unique_ptr<Sentencia> Parser::parsearInclude() {
+
+  check(Tt::INCLUDE);
+
+  std::string path = "";
+  bool is_system_header = false;
+
+  if (peek().tipo == Tt::MENOR) { // include <...>
+    get();
+    is_system_header = true;
+    path = check(Tt::IDENTIFICADOR).lexema;
+    path += check(Tt::PUNTO).lexema;
+    path += check(Tt::IDENTIFICADOR).lexema;
+    check(Tt::MAYOR);
+
+  } //...
+
+  return std::make_unique<SentenciaInclude>(std::move(path), is_system_header);
+
+}
+
 // Precedencias de las operaciones
 Pr Parser::obtenerPrecedencia(Tt tipo) {
   switch (tipo) {
@@ -1610,6 +1633,14 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
 
   }
 
+  //if (isType(t)) {
+  //  InfoVariable info = parsearTipo();
+  //  check(Tt::LLAVE_L);
+  //  auto nodo_init_list = parsearInitList();
+  //  nodo_init_list->tipo_resuelto = info.tipo;
+  //  return nodo_init_list;
+  //}
+
   get();
 
   // Atom cases
@@ -1635,13 +1666,12 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
 
     case Tt::IDENTIFICADOR: {
 
-      if (peek().tipo == Tt::LLAVE_L) {
+      if (peek().tipo == Tt::LLAVE_L) { //... This dont belong here
         Dt tipo_struct = Dt(typeFactory.getUnresolved(t.lexema));
         get();
 
         auto nodo_init_list = parsearInitList();
         nodo_init_list->tipo_resuelto = tipo_struct;
-
         return nodo_init_list;
 
       }

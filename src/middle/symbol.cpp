@@ -137,17 +137,19 @@ bool GestorTablas::añadirVariable(const std::string& name, InfoVariable info) {
 bool GestorTablas::añadirFunction(const std::string& name, InfoFuncion info) {
   std::cout << "[116, symbol.cpp] Añadiendo: '" << name << "' en: " << scopeActual << '\n';
   if (scopeActual->funciones.count(name)) {
+    std::cout << "[140, symbol.cpp] false\n";
     return false;
 
   }
 
   scopeActual->funciones[name] = std::move(info);
+  std::cout << "[146, symbol.cpp] true\n";
   return true;
 
 }
 
 InfoFuncion* GestorTablas::buscarFunction(const std::string& name) {
-  std::cout << "[128, symbol.cpp] Buscando: '" << name << "' en: " << scopeActual << '\n';
+  std::cout << "[152, symbol.cpp] Buscando: '" << name << "' en: " << scopeActual << '\n';
   Scope* cursor = scopeActual;
 
   while (cursor != nullptr) {
@@ -159,21 +161,25 @@ InfoFuncion* GestorTablas::buscarFunction(const std::string& name) {
     }
 
     cursor = cursor->padre;
+    std::cout << cursor << '\n';
+
   }
 
+  std::cout << '\'' << name << "' no encontrada\n";
   return nullptr;
+
 }
 
 InfoFuncion* GestorTablas::getCurrentFunction() {
-  std::cout << "[146, symbol.cpp] getCurrentFunction\n";
+  std::cout << "[170, symbol.cpp] getCurrentFunction\n";
 
   if (!pilaFuncs.empty()) {
-    std::cout << "[149, symbol.cpp] pilaFuncs.back()\n";
+    std::cout << "[173, symbol.cpp] pilaFuncs.back()\n";
     return pilaFuncs.back();
 
   }
 
-  std::cout << "[154, symbol.cpp] pilaFuncs empty\n";
+  std::cout << "[178, symbol.cpp] pilaFuncs empty\n";
 
   return nullptr;
 

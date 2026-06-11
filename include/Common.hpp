@@ -154,6 +154,9 @@ enum class Tt {
   // Templates
   TEMPLATE, TYPE,
 
+  // Includes
+  INCLUDE,
+
   // Otros
   EOF_TT, ERROR
 
@@ -442,6 +445,9 @@ inline std::map<std::string, Tt> keywords = {
   {"pass"    , Tt::PASS    },
   {"redo"    , Tt::REDO    },
 
+  // Includes
+  {"include", Tt::INCLUDE},
+
   // Functions
   {"func", Tt::FUNC},
   {"pure", Tt::PURE},
@@ -554,6 +560,8 @@ class SentenciaMetaDirective;
 
 class SentenciaTemplate;
 
+class SentenciaInclude;
+
 class ASTVisitor {
 public:
   virtual ~ASTVisitor() = default;
@@ -609,6 +617,8 @@ public:
   virtual void visitar(SentenciaMetaDirective* nood) = 0;
 
   virtual void visitar(SentenciaTemplate* nodo) = 0;
+
+  virtual void visitar(SentenciaInclude* nodo) = 0;
 
 };
 
@@ -1776,6 +1786,27 @@ public:
 
 };
 
+class SentenciaInclude : public NodoBase<Sentencia, SentenciaInclude> {
+public:
+
+  std::string path;
+  bool is_system_header;
+
+  SentenciaInclude(std::string p, bool s)
+    : path(std::move(p)), is_system_header(s) {}
+
+  SentenciaInclude(const SentenciaInclude& otra)
+    : path(otra.path), is_system_header(otra.is_system_header) {}
+
+  void imprimir(int nivel = 0) const override {
+    std::string sangria = "";
+    for (int i = 0; i < nivel; ++i) { sangria += "| "; }
+    std::cout << sangria << "Include: " << path << '\n';
+
+  }
+
+};
+
 /* --- Config--- */
 struct CompilerConfig {
   std::vector<std::string> flags;
@@ -1789,7 +1820,6 @@ struct CompilerConfig {
   bool warnings_as_errors;
 
 };
-
 
 /* --- Buffer --- */
 struct ResolvedPos {
@@ -1833,19 +1863,6 @@ struct SourceBuffer {
     return std::string_view(content.data() + start, end - start);
   }
 
-};
-
-/* --- Symbol Table Manager --- */
-
-struct FirmaMetodo {
-  Dt tipo_retorno;
-  std::vector<Dt> tipos_param;
-};
-
-struct Clase {
-  std::string nombre;
-  std::unordered_map<std::string, FirmaMetodo> metodos;
-  std::unordered_map<std::string, Dt> campos;
 };
 
 /* --- Extra --- */

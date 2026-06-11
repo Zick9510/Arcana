@@ -105,5 +105,7 @@ public:
 
   void visitar(SentenciaTemplate* nodo) override;
 
+  void visitar(SentenciaInclude* nodo) override;
+
 };
 

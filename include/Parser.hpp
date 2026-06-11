@@ -78,6 +78,8 @@ public:
 
   std::unique_ptr<Sentencia> parsearTemplate();
 
+  std::unique_ptr<Sentencia> parsearInclude();
+
   Pr obtenerPrecedencia(Tt tipo);
 
   std::unique_ptr<Expresion> parsearPrefijo();

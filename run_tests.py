@@ -1,6 +1,8 @@
+import sys
 import os
 import subprocess
 import time
+import shutil
 
 class Color:
     GREEN  = '\033[92m'
@@ -127,8 +129,14 @@ def runTests():
     print(f"{Color.BOLD  }{Color.CYAN}  TOTAL TIME: {end_time:.4f}s{Color.END}")
     print("=" * 30)
 
-if (__name__ == '__main__'):
+def main():
     runTests()
+
+    if (not "--keep-build" in sys.argv):
+        shutil.rmtree(OUTPUT_TESTS_DIR)
+
+if (__name__ == '__main__'):
+    main()
 
 """
 Benchmark Environment

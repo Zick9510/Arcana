@@ -263,11 +263,11 @@ bool TemplateParamType::isNumeric() const {
   return false;
 }
 
-// --- TemplateInstanceType ---
-TemplateInstanceType::TemplateInstanceType(std::string n, std::vector<Dt> args)
+// --- TemplateInstanceStructType ---
+TemplateInstanceStructType::TemplateInstanceStructType(std::string n, std::vector<Dt> args)
   : ArcanaType(TypeKind::TEMPLATE_INSTANCE), name(n), argumentos(std::move(args)) {}
 
-std::string TemplateInstanceType::toString() const {
+std::string TemplateInstanceStructType::toString() const {
   std::string s = name + "<";
   for (size_t i = 0; i <argumentos.size(); ++i) {
     s += argumentos[i].tipoString();
@@ -277,13 +277,13 @@ std::string TemplateInstanceType::toString() const {
 
 }
 
-int TemplateInstanceType::getBitSize() const { return 0; }
+int TemplateInstanceStructType::getBitSize() const { return 0; }
 
-bool TemplateInstanceType::esIgual(const ArcanaType* otro) const {
+bool TemplateInstanceStructType::esIgual(const ArcanaType* otro) const {
   return false;
 }
 
-bool TemplateInstanceType::isNumeric() const { return false; }
+bool TemplateInstanceStructType::isNumeric() const { return false; }
 
 /* --- Factory --- */
 
@@ -456,7 +456,7 @@ std::shared_ptr<MorphType> TypeFactory::getMorph(std::vector<std::shared_ptr<Arc
 
 }
 
-std::shared_ptr<TemplateInstanceType> TypeFactory::getTemplateInstance(std::string name, std::vector<Dt> args) {
+std::shared_ptr<TemplateInstanceStructType> TypeFactory::getTemplateInstance(std::string name, std::vector<Dt> args) {
 
   auto key = std::make_tuple(name, args);
 
@@ -464,7 +464,7 @@ std::shared_ptr<TemplateInstanceType> TypeFactory::getTemplateInstance(std::stri
     return cacheTemplateInstance[key];
   }
 
-  auto nueva_instancia = std::make_shared<TemplateInstanceType>(name, args);
+  auto nueva_instancia = std::make_shared<TemplateInstanceStructType>(name, args);
   cacheTemplateInstance[key] = nueva_instancia;
   return nueva_instancia;
 

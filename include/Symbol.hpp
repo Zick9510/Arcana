@@ -47,6 +47,7 @@ enum class TypeKind { //...
 
   TEMPLATE_PARAM,
   TEMPLATE_INSTANCE,
+  TEMPLATE_INSTANCE_STRUCT,
 
   ERROR,
 

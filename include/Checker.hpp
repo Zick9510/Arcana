@@ -41,7 +41,7 @@ private:
     }
 
     if (tipoOriginal.valor->kind == TypeKind::TEMPLATE_INSTANCE) {
-      auto instance_type = std::static_pointer_cast<TemplateInstanceType>(tipoOriginal.valor);
+      auto instance_type = std::static_pointer_cast<TemplateInstanceStructType>(tipoOriginal.valor);
       Dt tipo_base = Dt(tipoOriginal.valor->getUnderlyingType());
       std::vector<Dt> new_args;
       bool necesita_reemplazo = false;
@@ -251,12 +251,12 @@ public:
 
   }
 
-
   void visitar(SentenciaEscritura* nodo) override {}
   void visitar(SentenciaArcano* nodo) override {}
   void visitar(SentenciaLlamadaArcano* nodo) override {}
   void visitar(SentenciaMetaDirective* nodo) override {}
   void visitar(SentenciaTemplate* nodo) override {}
+  void visitar(SentenciaInclude* nodo) override {}
 
 };
 
@@ -314,7 +314,203 @@ public:
     }
   }
 
-  Dt instanciarTemplate(std::shared_ptr<TemplateInstanceType> tipoInstancia) {
+  inline Dt getClangType(CXType tipoClang) {
+
+    bool es_const = clang_isConstQualifiedType(tipoClang);
+
+    std::shared_ptr<ArcanaType> tipo = nullptr;
+
+    switch (tipoClang.kind) {
+
+      case CXType_Void: {
+        tipo = typeFactory.getVoid();
+        break;
+      }
+
+      case CXType_Bool: {
+        tipo = typeFactory.getBoolean();
+        break;
+      }
+
+      // Char
+      case CXType_Char_U:
+      case CXType_UChar :
+      case CXType_Char_S:
+      case CXType_SChar : { tipo = typeFactory.getChar(8); break; }
+
+      // Signed Integers
+      case CXType_Short   : { tipo = typeFactory.getInteger(16 , false); break; }
+      case CXType_Int     : { tipo = typeFactory.getInteger(32 , false); break; }
+      case CXType_Long    :
+      case CXType_LongLong: { tipo = typeFactory.getInteger(64 , false); break; }
+      case CXType_Int128  : { tipo = typeFactory.getInteger(128, false); break; }
+
+      // Unsgined Integers
+      case CXType_UShort   : { tipo = typeFactory.getInteger(16, true); break; }
+      case CXType_UInt     : { tipo = typeFactory.getInteger(32, true); break; }
+      case CXType_ULong    :
+      case CXType_ULongLong: { tipo = typeFactory.getInteger(64, true); break; }
+      case CXType_UInt128  : { tipo = typeFactory.getInteger(128, true); break; }
+
+      // Floats
+      case CXType_Float16 :
+      case CXType_BFloat16:
+      case CXType_Half    : { tipo = typeFactory.getFloat( 16); break; }
+      case CXType_Float   : { tipo = typeFactory.getFloat( 32); break; }
+      case CXType_Double  : { tipo = typeFactory.getFloat( 64); break; }
+      case CXType_Float128: { tipo = typeFactory.getFloat(128); break; }
+
+      // Pointers
+      case CXType_Pointer: {
+        CXType apuntado = clang_getPointeeType(tipoClang);
+        Dt dt_apuntado = getClangType(apuntado);
+        tipo = typeFactory.getPointer(dt_apuntado.valor);
+        break;
+      }
+
+      // Constant Arrays
+      case CXType_ConstantArray: {
+        CXType elem = clang_getArrayElementType(tipoClang);
+        long long size = clang_getArraySize(tipoClang);
+        Dt dt_elem = getClangType(elem);
+        tipo = typeFactory.getArray(dt_elem.valor, static_cast<int>(size));
+        break;
+      }
+
+      // Incomplete Arrays
+      case CXType_IncompleteArray: {
+        CXType elem = clang_getArrayElementType(tipoClang);
+        Dt dt_elem = getClangType(elem);
+        tipo = typeFactory.getArray(dt_elem.valor, -1);
+        break;
+      }
+
+      // Typedefs & Structs
+      case CXType_Typedef   :
+      case CXType_Elaborated: {
+        CXType real = clang_getCanonicalType(tipoClang);
+        return getClangType(real);
+      }
+
+      case CXType_Record: {
+        CXCursor decl_cursor = clang_getTypeDeclaration(tipoClang);
+        CXString cx_name = clang_getCursorSpelling(decl_cursor);
+        std::string name = clang_getCString(cx_name);
+        clang_disposeString(cx_name);
+
+        if (name.empty()) { name = "anon"; }
+        tipo = typeFactory.getUnresolved(name);
+        break;
+      }
+
+      // Enums
+      case CXType_Enum: {
+        tipo = typeFactory.getInteger(32, false);
+        break;
+      }
+
+      // Unknown
+      default: {
+        tipo = typeFactory.getUnknown();
+        break;
+      }
+
+    }
+
+    Dt result(tipo);
+    result.es_const = es_const;
+    return result;
+
+  }
+
+  static CXChildVisitResult visitarClang(CXCursor cursor, CXCursor parent, CXClientData client) {
+
+    Checker* checker = static_cast<Checker*>(client); // "this", but with extra steps
+
+    CXCursorKind tipo_nodo = clang_getCursorKind(cursor);
+
+    if (tipo_nodo == CXCursor_FunctionDecl) {
+      CXString cx_name = clang_getCursorSpelling(cursor);
+      std::string nombre_func = clang_getCString(cx_name);
+      clang_disposeString(cx_name);
+
+      if (nombre_func.empty()) { return CXChildVisit_Continue; }
+
+      InfoFuncion info_func;
+      info_func.nombre = nombre_func;
+      CXType cx_ret_type = clang_getCursorResultType(cursor);
+      info_func.tipo_retorno = checker->getClangType(cx_ret_type);
+
+      int num_args = clang_Cursor_getNumArguments(cursor);
+      for (int i = 0; i < num_args; ++i) {
+        CXCursor arg_cursor = clang_Cursor_getArgument(cursor, i);
+
+        CXString cx_arg_name = clang_getCursorSpelling(arg_cursor);
+        std::string arg_name = clang_getCString(cx_arg_name);
+        clang_disposeString(cx_arg_name);
+
+        if (arg_name.empty()) { arg_name = "arg" + std::to_string(i); }
+
+        CXType arg_type = clang_getCursorType(arg_cursor);
+        InfoVariable info_var;
+        info_var.tipo = checker->getClangType(arg_type);
+        info_var.es_const = clang_isConstQualifiedType(arg_type);
+
+        info_func.tipos_parametros.push_back({arg_name, info_var});
+
+      }
+
+      checker->tablas.añadirFunction(nombre_func, info_func);
+
+    }
+
+    return CXChildVisit_Continue;
+
+  }
+
+  void loadSymbolsLibclang(const std::string& path, bool isSystemHeader) {
+    CXIndex index = clang_createIndex(0, 0);
+
+    std::string code;
+    if   (isSystemHeader) { code = "#include <"  + path +  ">\n"; }
+    else                  { code = "#include \"" + path + "\"\n"; }
+
+    CXUnsavedFile virtual_file;
+    virtual_file.Filename =  "virtual_file.c";
+    virtual_file.Contents = code.c_str();
+    virtual_file.Length   = code.length();
+
+    const char* args_clang[] = {
+      "-x", "c",
+      "-fsyntax-only"
+    };
+
+    int num_args = sizeof(args_clang) / sizeof(args_clang[0]);
+
+    CXTranslationUnit unit = clang_parseTranslationUnit(
+      index,
+      "virtual_file.c",
+      args_clang,
+      num_args,
+      &virtual_file,
+      1,
+      CXTranslationUnit_SkipFunctionBodies
+    );
+
+    if (unit == nullptr) {
+      clang_disposeIndex(index);
+      return ;
+    }
+
+    CXCursor cursor = clang_getTranslationUnitCursor(unit);
+    clang_visitChildren(cursor, Checker::visitarClang, this);
+
+    clang_disposeTranslationUnit(unit);
+    clang_disposeIndex(index);
+
+  }
+
+  Dt instanciarTemplate(std::shared_ptr<TemplateInstanceStructType> tipoInstancia) {
     std::string name = tipoInstancia->name;
     std::cout << "[318, Checker.hpp] name: '" << name << "'\n";
 
@@ -569,15 +765,15 @@ public:
   }
 
   void visitar(ExprVariable* nodo) override {
-    std::cout << "[Checker.hpp 243] ExprVariable\n";
+    std::cout << "[768, Checker.hpp] ExprVariable\n";
 
     if (bloquesArcanoActivos.empty()) {
-      std::cout << "[Checker.hpp 246] bloquesArcanoActivos vacío\n";
+      std::cout << "[771, Checker.hpp] bloquesArcanoActivos vacío\n";
 
     } else {
-      std::cout << "[Checker.hpp 249] bloquesArcanoActivos:\n";
+      std::cout << "[774, Checker.hpp] bloquesArcanoActivos:\n";
       for (const auto& [key, val] : bloquesArcanoActivos) {
-        std::cout << "[Checker.hpp 251] key: '" << key << "'\n";
+        std::cout << "[776, Checker.hpp] key: '" << key << "'\n";
 
       }
       std::cout << '\n';
@@ -798,7 +994,7 @@ public:
 
     if (tipo_izq->kind == TypeKind::TEMPLATE_INSTANCE) {
       std::cout << "[786, Checker.hpp] TypeKind::TEMPLATE_INSTANCE\n";
-      auto instance_type = std::static_pointer_cast<TemplateInstanceType>(tipo_izq);
+      auto instance_type = std::static_pointer_cast<TemplateInstanceStructType>(tipo_izq);
       InfoTemplate* info_tmpl = tablas.buscarTemplate(instance_type->name);
       std::cout << "[789, Checker.hpp] instance_type->name: '" << instance_type->name << "'\n";
 
@@ -858,9 +1054,9 @@ public:
   void visitar(SentenciaAsignarVar* nodo) override {
     std::cout << "[829, Checker.hp] SentenciaAsignarVar\n";
 
-    if (auto* tipo_instancia = dynamic_cast<TemplateInstanceType*>(nodo->tipo_explicito.tipo.valor.get())) {
+    if (auto* tipo_instancia = dynamic_cast<TemplateInstanceStructType*>(nodo->tipo_explicito.tipo.valor.get())) {
       std::cout << "[832, Checker.hpp]\n";
-      auto ptr_instancia = std::static_pointer_cast<TemplateInstanceType>(nodo->tipo_explicito.tipo.valor);
+      auto ptr_instancia = std::static_pointer_cast<TemplateInstanceStructType>(nodo->tipo_explicito.tipo.valor);
       nodo->tipo_explicito.tipo = instanciarTemplate(ptr_instancia);
 
     }
@@ -940,9 +1136,25 @@ public:
   }
 
   void visitar(ExprFuncCall* nodo) override { //..
-    std::cout << "[916, Checker.hpp] ExprFuncCall\n";
-    if (auto* acceso = dynamic_cast<ExprAccesoPunto*>(nodo->callee.get())) {
-      std::cout << "[918, Checker.hpp] Es ExprAccesoPunto\n";
+    std::cout << "[1139, Checker.hpp] ExprFuncCall\n";
+
+    bool func_resuleta = false;
+
+    if (auto* var_callee = dynamic_cast<ExprVariable*>(nodo->callee.get())) {
+      std::cout << "[1144, Checker.hpp]\n";
+      if (InfoFuncion* info = tablas.buscarFunction(var_callee->nombre)) {
+      std::cout << "[1146, Checker.hpp]\n";
+        var_callee->tipo_resuelto.valor = typeFactory.getUnknown();
+        nodo->tipo_resuelto = info->tipo_retorno;
+        func_resuleta = true;
+
+      } else {
+        nodo->callee->accept(this);
+
+      }
+
+    } else if (auto* acceso = dynamic_cast<ExprAccesoPunto*>(nodo->callee.get())) {
+      std::cout << "[1155, Checker.hpp] Es ExprAccesoPunto\n";
 
       acceso->izquierda->accept(this);
       auto tipo_izq = acceso->izquierda->tipo_resuelto.valor;
@@ -982,16 +1194,20 @@ public:
 
       }
 
-    }
+      nodo->callee->accept(this);
 
-    nodo->callee->accept(this);
+    } else {
+      nodo->callee->accept(this);
+
+    }
 
     for (const auto& n : nodo->argumentos) {
       n.second->accept(this);
     }
 
-    nodo->tipo_resuelto.valor = typeFactory.getInteger(32, false); //... Blindly assume it returns i32
-
+    if (!func_resuleta) {
+      nodo->tipo_resuelto.valor = typeFactory.getInteger(32, false); //... Blindly assume it returns i32
+    }
   }
 
   void visitar(ExprInitList* nodo) override { //...
@@ -1474,6 +1690,17 @@ public:
   void visitar(SentenciaTemplate* nodo) override {
     if (mode == ModoChecker::REGISTRO) {
       tablas.updateTemplate(nodo->name, tablas.getScopeActual());
+    }
+  }
+
+  void visitar(SentenciaInclude* nodo) override {
+    if (mode == ModoChecker::REGISTRO) {
+      bool es_c_header = nodo->is_system_header || nodo->path.ends_with(".h");
+
+      if (es_c_header) {
+        loadSymbolsLibclang(nodo->path, nodo->is_system_header);
+
+      }
     }
   }
 

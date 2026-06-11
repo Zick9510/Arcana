@@ -15,7 +15,7 @@ bool Driver::compile(const CompilerConfig& config) {
   std::filesystem::path file_path = config.archivo_entrada.value();
 
   // 1. Read source file
-  auto source = read_source_file(file_path);
+  auto source = readSourceFile(file_path);
   if (!source) {
     std::cerr << "Error: No se pudo abrir el archivo " << file_path << '\n';
     return false;
@@ -69,7 +69,7 @@ bool Driver::compile(const CompilerConfig& config) {
     return false;
   }
 
-  // 6. Code Generation (AST Check -> Source)
+  // 6. Code Generation (AST Check -> LLVM)
   std::cout << "--- EMITTER ---\n";
 
   Emitter emitter(contexto_arcanos, tablas);
@@ -77,7 +77,7 @@ bool Driver::compile(const CompilerConfig& config) {
     if (nodo) { nodo->accept(&emitter); }
   }
 
-  // 7. Escribir el Código (Source -> File)
+  // 7. Escribir el Código
   auto output_name = config.archivo_salida.transform([](std::filesystem::path p) {
     return p += ".ll";
   });
@@ -88,7 +88,7 @@ bool Driver::compile(const CompilerConfig& config) {
 
 }
 
-std::optional<std::string> Driver::read_source_file(const std::filesystem::path& path) const {
+std::optional<std::string> Driver::readSourceFile(const std::filesystem::path& path) const {
 
   // 1. Verificaciones de Seguridad
   std::error_code ec;

@@ -162,12 +162,12 @@ public:
 
 };
 
-class TemplateInstanceType : public ArcanaType {
+class TemplateInstanceStructType : public ArcanaType {
 public:
-  std::string                 name      ;
-  std::vector<Dt>             argumentos;
+  std::string     name      ;
+  std::vector<Dt> argumentos;
 
-  TemplateInstanceType(std::string n, std::vector<Dt> args);
+  TemplateInstanceStructType(std::string n, std::vector<Dt> args);
 
   std::string toString()               const override;
   int getBitSize()                     const override;
@@ -177,7 +177,6 @@ public:
 };
 
 /* --- Factory --- */
-
 class TypeFactory { //...
 private:
   std::shared_ptr<UnknownType> cacheUnknown;
@@ -193,7 +192,7 @@ private:
   std::map<std::string                                , std::shared_ptr<StructType    >> cacheStruct    ;
   std::map<std::string                                , std::shared_ptr<MorphType     >> cacheMorph     ;
   std::map<std::string                                , std::shared_ptr<TemplateParamType>> cacheTemplateParam;
-  std::map<std::tuple<std::string, std::vector<Dt>>   , std::shared_ptr<TemplateInstanceType>> cacheTemplateInstance;
+  std::map<std::tuple<std::string, std::vector<Dt>>   , std::shared_ptr<TemplateInstanceStructType>> cacheTemplateInstance;
 
 public:
   std::shared_ptr<UnknownType         > getUnknown         ();
@@ -208,6 +207,6 @@ public:
   std::shared_ptr<StructType          > getStruct          (InfoStruct* info);
   std::shared_ptr<TemplateParamType   > getTemplateParam   (std::string name);
   std::shared_ptr<MorphType           > getMorph           (std::vector<std::shared_ptr<ArcanaType>> subtipos);
-  std::shared_ptr<TemplateInstanceType> getTemplateInstance(std::string name, std::vector<Dt> args);
+  std::shared_ptr<TemplateInstanceStructType> getTemplateInstance(std::string name, std::vector<Dt> args);
 
 };

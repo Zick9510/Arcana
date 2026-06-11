@@ -231,11 +231,16 @@ void Lexer::leerStringChar() { //...
   if (delimitador == '\'') {
     if (contenido.size() > 1) {
       //... Error: Multibyte char
+
     } else {
+      std::cout << "[235, lexer.cpp] contenido: '" << contenido << "'\n";
       tokens.push_back( {Tt::CHAR, contenido, {cursor, 1} } );
+
     }
+
   } else {
     tokens.push_back( {Tt::STRING, contenido, {cursor, contenido.size()} } );
+
   }
 }
 

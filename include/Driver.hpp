@@ -14,5 +14,5 @@ public:
   bool compile(const CompilerConfig& config);
 
 private:
-  std::optional<std::string> read_source_file(const std::filesystem::path& path) const;
+  std::optional<std::string> readSourceFile(const std::filesystem::path& path) const;
 };

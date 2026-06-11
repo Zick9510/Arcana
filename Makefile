@@ -3,7 +3,7 @@
 # ==========================================
 CXX       := ccache g++
 CXXFLAGS  := -MMD -MP
-LDFLAGS   :=
+LDFLAGS   := -lclang
 LTO_FLAGS := -flto -fno-fat-lto-objects
 
 # ==========================================

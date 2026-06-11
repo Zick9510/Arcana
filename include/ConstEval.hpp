@@ -142,4 +142,6 @@ public:
   void visitar(SentenciaLlamadaArcano* nodo)   override { success = false; }
   void visitar(SentenciaMetaDirective* nodo)   override { success = false; }
   void visitar(SentenciaTemplate* nodo)        override { success = false; }
+  void visitar(SentenciaInclude* nodo)         override { success = false; }
+
 };

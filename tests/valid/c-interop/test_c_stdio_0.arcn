@@ -1,0 +1,28 @@
+include <stdio.h>
+
+func main() -> int {
+  putchar('H');
+  putchar('o');
+  putchar('w');
+  putchar('d');
+  putchar('y');
+
+  putchar(' ');
+
+  putchar('W');
+  putchar('o');
+  putchar('r');
+  putchar('l');
+  putchar('d');
+  putchar('?');
+
+  putchar(' ');
+
+  putchar(':');
+  putchar('D');
+
+  putchar('\n');
+
+  return 0;
+
+}

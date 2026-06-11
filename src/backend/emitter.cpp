@@ -792,6 +792,7 @@ void Emitter::visitar(ExprAccesoPunto* nodo) {
 void Emitter::visitar(ExprFuncCall* nodo) {
   std::cout << "[793, emitter.cpp] ExprFuncCall\n";
   auto* var_callee = dynamic_cast<ExprVariable*>(nodo->callee.get());
+
   if (!var_callee) {
     //...
     return ;
@@ -799,9 +800,31 @@ void Emitter::visitar(ExprFuncCall* nodo) {
 
   llvm::Function* callee_f = llvmModulo->getFunction(var_callee->nombre);
 
-  if (!callee_f) { // Trust me, there is no way the code ends up here.
-    std::cerr << "Error: Función " << var_callee->nombre << "no encontrada.\n";
-    return ;
+  if (!callee_f) {
+    InfoFuncion* info = tablas.buscarFunction(var_callee->nombre);
+
+    if (info) {
+      std::vector<llvm::Type*> args_types;
+      for (const auto& param : info->tipos_parametros) {
+        args_types.push_back(obtenerTipoLLVM(param.second.tipo.valor));
+      }
+
+      llvm::Type* ret_type = obtenerTipoLLVM(info->tipo_retorno.valor);
+
+      llvm::FunctionType* ft = llvm::FunctionType::get(ret_type, args_types, false);
+
+      callee_f = llvm::Function::Create(
+        ft,
+        llvm::Function::ExternalLinkage,
+        var_callee->nombre,
+        llvmModulo.get()
+      );
+
+    } else { // Trust me, there is no way the code ends up here
+      std::cerr << "Error: Función '" << var_callee->nombre << "' no encontrada.\n"; // It ended up here. Twice
+      return ;
+
+    }
 
   }
 
@@ -1586,3 +1609,5 @@ void Emitter::visitar(SentenciaMetaDirective* nodo) {
 }
 
 void Emitter::visitar(SentenciaTemplate* nodo) {}
+
+void Emitter::visitar(SentenciaInclude* nodo) {}
