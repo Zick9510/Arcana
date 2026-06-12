@@ -119,7 +119,7 @@ enum class Tt {
   BITWISE_L, BITWISE_R,
 
   // Funciones
-  FUNC, PURE, MATH, RETURN, CEDER, FLECHA,
+  FUNC, PURE, RETURN, CEDER, FLECHA,
 
   // Asignación
   IGUAL_ASIG,
@@ -394,15 +394,14 @@ inline std::map<std::string, Tt> keywords = {
   {"char" , Tt::CHAR_TYPE}, // char
   {"runa", Tt::CHAR_TYPE}, // char
 
-  {"string", Tt::STRING_TYPE},
+  {"string", Tt::STRING_TYPE}, // string
 
   {"slice", Tt::SLICE_TYPE},  // Slice
 
-  {"enum", Tt::ENUM}, // Enums
-  {"struct", Tt::STRUCT},
+  {"enum"  , Tt::ENUM  }, // Enums
+  {"struct", Tt::STRUCT}, // Structs
 
   // Modificadores de Tipos
-
   {"unsigned", Tt::UNSIGNED},
   {"const", Tt::CONST},
   {"exo", Tt::LONG},
@@ -451,7 +450,6 @@ inline std::map<std::string, Tt> keywords = {
   // Functions
   {"func", Tt::FUNC},
   {"pure", Tt::PURE},
-  {"math", Tt::MATH},
   {"return", Tt::RETURN},
 
   // Templates
@@ -864,6 +862,20 @@ struct RuleData {
 
 using LiteralData = std::variant<NumberData, BooleanData, CharData, StringData, RuleData>;
 
+inline void imprimirEsc(const std::string& str) {
+  for (char c : str) {
+    switch (c) {
+      case '\n': { std::cout << "\\n" ; break; }
+      case '\t': { std::cout << "\\t" ; break; }
+      case '\r': { std::cout << "\\r" ; break; }
+      case '\\': { std::cout << "\\\\"; break; }
+      case '"' : { std::cout << "\\\""; break; }
+      default  : { std::cout << c     ; break; }
+
+    }
+  }
+}
+
 class ExprLiteral : public NodoBase<Expresion, ExprLiteral> {
 public:
   LiteralData datos;
@@ -879,10 +891,11 @@ public:
     std::visit([](const auto& arg) {
       using T = std::decay_t<decltype(arg)>;
 
-      if      constexpr (std::is_same_v<T, NumberData >) { std::cout <<         arg.valor <<         arg.sufijo; }
-      else if constexpr (std::is_same_v<T, CharData   >) { std::cout << '\'' << arg.letra << '\'' << arg.sufijo; }
-      else if constexpr (std::is_same_v<T, RuleData   >) { std::cout << '@'  << arg.rule                       ; }
-      else if constexpr (std::is_same_v<T, BooleanData>) { std::cout <<         arg.valor                      ; }
+      if      constexpr (std::is_same_v<T, NumberData >) { std::cout <<         arg.valor <<         arg.sufijo               ; }
+      else if constexpr (std::is_same_v<T, CharData   >) { std::cout << '\'' << arg.letra << '\'' << arg.sufijo               ; }
+      else if constexpr (std::is_same_v<T, RuleData   >) { std::cout << '@'  << arg.rule                                      ; }
+      else if constexpr (std::is_same_v<T, BooleanData>) { std::cout <<         arg.valor                                     ; }
+      else if constexpr (std::is_same_v<T, StringData >) { std::cout << '"'; imprimirEsc(arg.contenido); std::cout << '"'; }
 
     }, datos);
 
@@ -1185,7 +1198,7 @@ public:
 
     std::cout << sangria << "| +- Args:\n";
     for (const auto& [arg_name, arg_value] : argumentos) {
-      arg_value->imprimir(nivel + 1);
+      arg_value->imprimir(nivel + 2);
     }
   }
 

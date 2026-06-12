@@ -27,6 +27,7 @@ bool Dt::esPrimitivo() const { //...
     case TypeKind::CHAR   :
     case TypeKind::INTEGER:
     case TypeKind::FLOAT  :
+    case TypeKind::STRING :
     case TypeKind::ARRAY  : {
       return true;
     }

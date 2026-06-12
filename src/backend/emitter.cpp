@@ -4,6 +4,8 @@
 
 #include "Common.hpp"
 
+#include "string_data.h"
+
 /* --- Trait Emitter Handler --- */
 TraitEmitter::TraitEmitter(Emitter& e)
   : emitter(e) {}
@@ -81,6 +83,27 @@ Emitter::Emitter(ContextoArcanos& ca, GestorTablas& t)
 
   tablas.resetScope();
 
+  // --- Runtime ---
+
+  llvm::StringRef bc_data(reinterpret_cast<const char*>(string_bc), string_bc_len);
+  std::unique_ptr<llvm::MemoryBuffer> buffer = llvm::MemoryBuffer::getMemBuffer(bc_data);
+
+  llvm::SMDiagnostic error;
+
+  std::unique_ptr<llvm::Module> runtime = llvm::parseIR(buffer->getMemBufferRef(), error, llvmCtx);
+
+  if (!runtime) {
+    error.print("Emitter", llvm::errs());
+    exit(1);
+  }
+
+  bool link_error = llvm::Linker::linkModules(*llvmModulo, std::move(runtime));
+  if (link_error) {
+    std::cerr << "Error al funsionar el rutime\n";
+    exit(1);
+  }
+
+
 }
 
 // --- LLVM --- //
@@ -130,6 +153,13 @@ llvm::Type* Emitter::obtenerTipoLLVM(std::shared_ptr<ArcanaType> tipo) {
 
     case TypeKind::STRUCT: {
       return llvmStructs[tipo->toString()];
+    }
+
+    case TypeKind::STRING: {
+      llvm::Type* i8_ptr = llvm::PointerType::getUnqual(llvmCtx);
+      llvm::Type* i64_ty = llvm::Type::getInt64Ty(llvmCtx);
+
+      return llvm::StructType::get(llvmCtx, { i8_ptr, i64_ty, i64_ty} );
     }
 
     default: {
@@ -193,16 +223,6 @@ llvm::Value* Emitter::obtenerPuntero(Expresion* nodo) {
 
   }
 
-  //if (auto* acceso = dynamic_cast<ExprAcceso*>(nodo)) {
-  //  acceso->contenedor->accept(this);
-  //  llvm::Value* ptr_array = llvmValor;
-  //  acceso->rango->accept(this);
-  //  llvm::Value* index_val = llvmValor;
-  //  auto tipo_base = acceso->contenedor->tipo_resuelto.valor->getUnderlyingType();
-  //  llvm::Type* tipo_base_llvm = obtenerTipoLLVM(tipo_base);
-  //  return llvmBuilder->CreateGEP(tipo_base_llvm, ptr_array, index_val, "");
-  //}
-
   if (auto* acceso = dynamic_cast<ExprAcceso*>(nodo)) {
     llvm::Value* ptr_base = obtenerPuntero(acceso->contenedor.get());
     if (!ptr_base) { return nullptr; }
@@ -229,6 +249,16 @@ llvm::Value* Emitter::obtenerPuntero(Expresion* nodo) {
         return llvmBuilder->CreateInBoundsGEP(tipo_base_llvm, ptr_base, index_val, "");
 
       }
+    }
+
+    if (tipo_contenedor->kind == TypeKind::STRING) {
+      llvm::Type* str_ty = obtenerTipoLLVM(tipo_contenedor);
+      llvm::Value* gep = llvmBuilder->CreateStructGEP(str_ty, ptr_base, 0, "");
+
+      llvm::Value* data = llvmBuilder->CreateLoad(llvm::PointerType::getUnqual(llvmCtx), gep, "");
+
+      return llvmBuilder->CreateInBoundsGEP(llvm::Type::getInt8Ty(llvmCtx), data, index_val, "");
+
     }
   }
 
@@ -346,6 +376,24 @@ void Emitter::visitar(ExprLiteral* nodo) { //...
       }
 
       llvmValor = llvm::ConstantInt::get(llvmCtx, valor_char);
+      break;
+    }
+
+    case TypeKind::STRING: {
+      auto& data = std::get<StringData>(nodo->datos);
+
+      llvm::Value* str = llvmBuilder->CreateGlobalString(data.contenido, "");
+
+      llvm::Type* str_ty = obtenerTipoLLVM(tipo);
+      llvm::Value* str_struct = llvm::UndefValue::get(str_ty);
+
+      llvm::Value* len_val = llvm::ConstantInt::get(llvm::Type::getInt64Ty(llvmCtx), data.contenido.length());
+
+      str_struct = llvmBuilder->CreateInsertValue(str_struct, str, 0);
+      str_struct = llvmBuilder->CreateInsertValue(str_struct, len_val, 1);
+      str_struct = llvmBuilder->CreateInsertValue(str_struct, len_val, 2);
+
+      llvmValor = str_struct;
       break;
     }
 
@@ -543,9 +591,29 @@ void Emitter::visitar(ExprBinaria* nodo) {
 
   switch (nodo->operador) { //...
     case TipoOperador::SUMA: {
-      std::cout << "[465, emitter.cpp]\n";
+      std::cout << "[604, emitter.cpp]\n";
 
-      if (nodo->tipo_resuelto.valor->kind == TypeKind::POINTER) {
+      if (nodo->tipo_resuelto.valor->kind == TypeKind::STRING) {
+        std::cout << "[607, emitter.cpp] String\n";
+        llvm::Type* str_ty = obtenerTipoLLVM(nodo->tipo_resuelto.valor);
+
+        llvm::AllocaInst* ptr_out = llvmBuilder->CreateAlloca(str_ty, nullptr, "");
+        llvm::AllocaInst* ptr_a   = llvmBuilder->CreateAlloca(str_ty, nullptr, "");
+        llvm::AllocaInst* ptr_b   = llvmBuilder->CreateAlloca(str_ty, nullptr, "");
+
+        llvmBuilder->CreateStore(left, ptr_a);
+        llvmBuilder->CreateStore(right, ptr_b);
+
+        llvm::Function* func_concat = llvmModulo->getFunction("str_concat");
+        if (!func_concat) {
+          std::cerr << "Error: No se encunetra 'str_concat'\n";
+          return ;
+        }
+
+        llvmBuilder->CreateCall(func_concat, {ptr_out, ptr_a, ptr_b} );
+        llvmValor = llvmBuilder->CreateLoad(str_ty, ptr_out, "");
+
+      } else if (nodo->tipo_resuelto.valor->kind == TypeKind::POINTER) {
         llvm::Value* ptr_val = left->getType()->isPointerTy() ? left : right;
         llvm::Value* val     = left->getType()->isPointerTy() ? right : left;
 
@@ -583,8 +651,39 @@ void Emitter::visitar(ExprBinaria* nodo) {
 
     case TipoOperador::MULT: {
       std::cout << "[462, emitter.cpp]\n";
-      llvmValor = es_float ? llvmBuilder->CreateFMul(left, right, "")
-                           : llvmBuilder->CreateMul(left, right, "");
+
+      if (nodo->izquierda->tipo_resuelto.valor->kind == TypeKind::STRING  &&
+          nodo->derecha  ->tipo_resuelto.valor->kind == TypeKind::INTEGER ||
+          nodo->izquierda->tipo_resuelto.valor->kind == TypeKind::INTEGER &&
+          nodo->derecha  ->tipo_resuelto.valor->kind == TypeKind::STRING) {
+
+        llvm::Type* str_ty = nullptr;
+
+        if (nodo->derecha->tipo_resuelto.valor->kind == TypeKind::STRING) {
+          str_ty = obtenerTipoLLVM(nodo->derecha  ->tipo_resuelto.valor);
+        } else {
+          str_ty = obtenerTipoLLVM(nodo->izquierda->tipo_resuelto.valor);
+
+        }
+
+        llvm::AllocaInst* ptr_out = llvmBuilder->CreateAlloca(str_ty, nullptr, "");
+        llvm::AllocaInst* ptr_a   = llvmBuilder->CreateAlloca(str_ty, nullptr, "");
+        llvmBuilder->CreateStore(left, ptr_a);
+        llvm::Value* b = llvmBuilder->CreateIntCast(right, llvm::Type::getInt64Ty(llvmCtx), true, "");
+
+        llvm::Function* func_repeat = llvmModulo->getFunction("str_repeat");
+        if (!func_repeat) {
+          std::cerr << "Error: No se encontró 'str_repeat'\n";
+          return ;
+        }
+
+        llvmBuilder->CreateCall(func_repeat, {ptr_out, ptr_a, b});
+        llvmValor = llvmBuilder->CreateLoad(str_ty, ptr_out, "");
+
+      } else {
+        llvmValor = es_float ? llvmBuilder->CreateFMul(left, right, "")
+                             : llvmBuilder->CreateMul(left, right, "");
+      }
       break;
     }
 
@@ -799,39 +898,46 @@ void Emitter::visitar(ExprFuncCall* nodo) {
   }
 
   llvm::Function* callee_f = llvmModulo->getFunction(var_callee->nombre);
+  InfoFuncion* info = tablas.buscarFunction(var_callee->nombre);
+
+  if (!info) { // Trust me, there is no way the code ends up here
+    std::cerr << "Error: Función '" << var_callee->nombre << "' no encontrada.\n"; // It ended up here. Twice
+    return ;
+  }
+
+  bool is_external = info->is_external;
 
   if (!callee_f) {
-    InfoFuncion* info = tablas.buscarFunction(var_callee->nombre);
+    std::vector<llvm::Type*> args_types;
 
-    if (info) {
-      std::vector<llvm::Type*> args_types;
-      for (const auto& param : info->tipos_parametros) {
-        args_types.push_back(obtenerTipoLLVM(param.second.tipo.valor));
-      }
-
-      llvm::Type* ret_type = obtenerTipoLLVM(info->tipo_retorno.valor);
-
-      llvm::FunctionType* ft = llvm::FunctionType::get(ret_type, args_types, false);
-
-      callee_f = llvm::Function::Create(
-        ft,
-        llvm::Function::ExternalLinkage,
-        var_callee->nombre,
-        llvmModulo.get()
-      );
-
-    } else { // Trust me, there is no way the code ends up here
-      std::cerr << "Error: Función '" << var_callee->nombre << "' no encontrada.\n"; // It ended up here. Twice
-      return ;
-
+    for (const auto& param : info->tipos_parametros) {
+      args_types.push_back(obtenerTipoLLVM(param.second.tipo.valor));
     }
+
+    llvm::Type* ret_type = obtenerTipoLLVM(info->tipo_retorno.valor);
+
+    llvm::FunctionType* ft = llvm::FunctionType::get(ret_type, args_types, false);
+
+    callee_f = llvm::Function::Create(
+      ft,
+      llvm::Function::ExternalLinkage,
+      var_callee->nombre,
+      llvmModulo.get()
+    );
 
   }
 
   std::vector<llvm::Value*> args_v;
   for (auto& arg : nodo->argumentos) {
     arg.second->accept(this);
-    args_v.push_back(llvmValor);
+
+    llvm::Value* val = llvmValor;
+
+    if (is_external && arg.second->tipo_resuelto.valor->kind == TypeKind::STRING) {
+      val = llvmBuilder->CreateExtractValue(val, {0}, "");
+    }
+
+    args_v.push_back(val);
 
   }
 

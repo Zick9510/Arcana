@@ -130,6 +130,12 @@ def runTests():
     print("=" * 30)
 
 def main():
+    if (not os.path.exists(COMPILER_PATH)):
+        print(f"{Color.BOLD}{Color.RED}Error: Arcana Compiler not found{Color.END}")
+        print(f"{Color.YELLOW}Please compile with {Color.END}{Color.BOLD}{Color.MAG}'make'{Color.END}\n")
+
+        return
+
     runTests()
 
     if (not "--keep-build" in sys.argv):

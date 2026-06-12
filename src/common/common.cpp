@@ -5,7 +5,6 @@
 #include "Includes.hpp"
 
 /* --- Manejo de Tipos --- */
-
 std::string nombreTipo(Tt tipo) {
   switch (tipo) {
     case Tt::LET  : { return "LET"  ; }
@@ -30,6 +29,7 @@ std::string nombreTipo(Tt tipo) {
     case Tt::IDENTIFICADOR: { return "ID"; }
     case Tt::NUMERO: { return "NUMERO"; }
     case Tt::CHAR: { return "CHAR"; }
+    case Tt::STRING: { return "STRING"; }
 
     case Tt::ASIG_BLOQUE: { return "ASIG_BLOQUE"; }
     case Tt::PUNTO_COMA: { return "PUNTO_COMA"; }
@@ -88,7 +88,6 @@ bool esTipo(Tt tipo) {
 }
 
 /* --- Colores para la terminal --- */
-
 inline const std::string COLOR_RESET   = "\033[0m"   ;
 inline const std::string COLOR_RED     = "\033[1;31m";
 inline const std::string COLOR_GREEN   = "\033[1;32m";

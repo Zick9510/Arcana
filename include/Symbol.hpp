@@ -106,6 +106,7 @@ struct InfoFuncion {
   std::string nombre;
   Dt tipo_retorno;
   std::vector<std::pair<std::string, InfoVariable>> tipos_parametros;
+  bool is_external = true;
 
 };
 

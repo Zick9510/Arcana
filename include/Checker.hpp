@@ -310,7 +310,8 @@ public:
     switch (op) {
       case TipoOperador::SUMA : { return dunder::ADD; }
       case TipoOperador::RESTA: { return dunder::SUB; }
-      default: { return ""; }
+
+      default                 : { return          ""; }
     }
   }
 
@@ -690,8 +691,12 @@ public:
 
       },
 
-      [&](StringData& d) {},
+      [&](StringData& d) {
+        nodo->tipo_resuelto = Dt(typeFactory.getString());
+      },
+
       [&](RuleData& d) {}
+
     }, nodo->datos);
 
   }
@@ -954,18 +959,31 @@ public:
     auto tipo_contenedor = nodo->contenedor->tipo_resuelto.valor;
     auto tipo_rango = nodo->rango->tipo_resuelto.valor;
 
-    if (tipo_contenedor->kind != TypeKind::ARRAY) {
+    if (tipo_contenedor->kind != TypeKind::ARRAY && tipo_contenedor->kind != TypeKind::STRING) {
       std::cerr << "Error: El objeto no es indexable\n";
       return ;
     }
 
-    auto tipo_base = tipo_contenedor->getUnderlyingType();
+    if (tipo_contenedor->kind == TypeKind::ARRAY) {
+      auto tipo_base = tipo_contenedor->getUnderlyingType();
 
-    if (tipo_rango->kind == TypeKind::INTEGER) {
-      nodo->tipo_resuelto.valor = tipo_base;
+      if (tipo_rango->kind == TypeKind::INTEGER) {
+        nodo->tipo_resuelto.valor = tipo_base;
 
-    } else if (tipo_rango->kind == TypeKind::RANGE) {
-      nodo->tipo_resuelto.valor = tipo_contenedor;
+      } else if (tipo_rango->kind == TypeKind::RANGE) {
+        nodo->tipo_resuelto.valor = tipo_contenedor;
+
+      }
+
+    } else if (tipo_contenedor->kind == TypeKind::STRING) {
+
+      if (tipo_rango->kind == TypeKind::INTEGER) {
+        nodo->tipo_resuelto.valor = typeFactory.getChar(8);
+
+      } else if (tipo_rango->kind == TypeKind::RANGE) {
+        nodo->tipo_resuelto.valor = tipo_contenedor;
+
+      }
 
     }
 

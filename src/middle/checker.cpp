@@ -95,7 +95,10 @@ std::shared_ptr<ArcanaType> Checker::verificarSuma(const Dt& izq, const Dt& der)
       return promoverTipos(izq.valor, der.valor);
     }
 
-    //... Regla 2: Concatenación de strings
+    // Regla 2: Concatenación de strings
+    if (p_izq == TypeKind::STRING && p_der == TypeKind::STRING) {
+      return der.valor;
+    }
 
     //... Regla 3: Concatenación de arrays (Maps, sets, etc.)
  
@@ -176,6 +179,13 @@ std::shared_ptr<ArcanaType> Checker::verificarMult(const Dt& izq, const Dt& der)
     }
 
     // Regla 2: Multiplicar una string con un entero
+    if (p_izq == TypeKind::STRING  && p_der == TypeKind::INTEGER ||
+        p_izq == TypeKind::INTEGER && p_der == TypeKind::STRING  ) {
+
+      return p_der == TypeKind::STRING ? der.valor : izq.valor;
+
+    }
+
     // Regla 3: Multipliar un array con un entero ([x] * 3 == [x] + [x] + [x] == [x, x, x])
     //...
 

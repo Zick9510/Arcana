@@ -1,0 +1,25 @@
+include <stdio.h>
+
+func main() -> char {
+
+  string a;
+  string b = "abc";
+  a = "def" * 2 + b + b * 3;
+
+  a[8] = 'z';
+
+  int i = 0;
+
+  printf("%i\n\n", 9510);
+
+  while (i < 18) {
+    printf("%i: ", i);
+    putchar(a[i]);
+    printf("\n");
+    i = i + 1;
+
+  }
+
+  return a[8] - 'a';
+
+}

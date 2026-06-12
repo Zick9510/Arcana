@@ -27,7 +27,13 @@
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Verifier.h>
 
+#include <llvm/IRReader/IRReader.h>
+
+#include <llvm/Linker/Linker.h>
+
 #include <llvm/Support/FileSystem.h>
+#include <llvm/Support/MemoryBuffer.h>
+#include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/raw_ostream.h>
 
 // --- LIBCLANG --- //

@@ -120,11 +120,24 @@ public:
 
 };
 
-class TemplateParamType : public ArcanaType {
+class StringType : public ArcanaType {
 public:
-  std::string name;
 
-  TemplateParamType(std::string n);
+  StringType();
+
+  std::string toString()               const override;
+  int getBitSize()                     const override;
+  bool esIgual(const ArcanaType* otro) const override;
+  bool isNumeric()                     const override;
+
+};
+
+class StructType : public ArcanaType {
+public:
+  std::string nombre;
+  InfoStruct*  info ;
+
+  StructType(InfoStruct* i);
 
   std::string toString()               const override;
   int getBitSize()                     const override;
@@ -148,12 +161,11 @@ public:
 
 };
 
-class StructType : public ArcanaType {
+class TemplateParamType : public ArcanaType {
 public:
-  std::string nombre;
-  InfoStruct*  info ;
+  std::string name;
 
-  StructType(InfoStruct* i);
+  TemplateParamType(std::string n);
 
   std::string toString()               const override;
   int getBitSize()                     const override;
@@ -180,8 +192,9 @@ public:
 class TypeFactory { //...
 private:
   std::shared_ptr<UnknownType> cacheUnknown;
-  std::shared_ptr<VoidType   > cacheVoid;
+  std::shared_ptr<VoidType   > cacheVoid   ;
   std::shared_ptr<BooleanType> cacheBoolean;
+  std::shared_ptr<StringType > cacheString ;
 
   std::map<std::string                                , std::shared_ptr<UnresolvedType>> cacheUnresolved;
   std::map<std::shared_ptr<ArcanaType>                , std::shared_ptr<PointerType   >> cachePointer   ;
@@ -191,7 +204,8 @@ private:
   std::map<std::pair<std::shared_ptr<ArcanaType>, int>, std::shared_ptr<ArrayType     >> cacheArray     ;
   std::map<std::string                                , std::shared_ptr<StructType    >> cacheStruct    ;
   std::map<std::string                                , std::shared_ptr<MorphType     >> cacheMorph     ;
-  std::map<std::string                                , std::shared_ptr<TemplateParamType>> cacheTemplateParam;
+
+  std::map<std::string                                , std::shared_ptr<TemplateParamType         >> cacheTemplateParam   ;
   std::map<std::tuple<std::string, std::vector<Dt>>   , std::shared_ptr<TemplateInstanceStructType>> cacheTemplateInstance;
 
 public:
@@ -205,6 +219,7 @@ public:
   std::shared_ptr<CharType            > getChar            (int bits);
   std::shared_ptr<ArrayType           > getArray           (std::shared_ptr<ArcanaType> base, int size);
   std::shared_ptr<StructType          > getStruct          (InfoStruct* info);
+  std::shared_ptr<StringType          > getString          ();
   std::shared_ptr<TemplateParamType   > getTemplateParam   (std::string name);
   std::shared_ptr<MorphType           > getMorph           (std::vector<std::shared_ptr<ArcanaType>> subtipos);
   std::shared_ptr<TemplateInstanceStructType> getTemplateInstance(std::string name, std::vector<Dt> args);

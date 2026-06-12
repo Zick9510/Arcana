@@ -187,6 +187,7 @@ void Lexer::leerStringChar() { //...
   char delimitador = buffer->content[cursor - 1];
   std::string contenido = "";
   size_t inicio_linea = linea;
+  size_t inicio_token = cursor - 1;
 
   while (!esFin() && actual() != delimitador) { //... Add multiline string support
     char c = get();
@@ -205,7 +206,27 @@ void Lexer::leerStringChar() { //...
         case '\'': { contenido += '\''; break; }
         case '\"': { contenido += '\"'; break; }
 
-        //... Add Hex support
+        case 'x': {
+          std::string hex_str = "";
+
+          for (int i = 0; i < 2; ++i) { // Two hex chars tops
+            if (!esFin() && std::isxdigit(actual())) {
+              hex_str += get();
+
+            } else {
+              std::cerr << "Error: Secuencia de escape hex incompleta\n";
+
+            }
+
+          }
+
+          if (hex_str.length() == 2) {
+            contenido += static_cast<char>(std::stoi(hex_str, nullptr, 16));
+          }
+
+          break;
+
+        }
 
         default: {
           //... Error: Secuencia de escape no conocida
@@ -217,12 +238,15 @@ void Lexer::leerStringChar() { //...
     }
 
     if (c == '\n') {
-      //... Error: Salto de línea inesperado en literal
+      linea++;
+      std::cerr << "Error: Salto de línea inesperado en literal\n";
+      break;
     }
   }
 
-  if (esFin()) {
-    //... Error: No se cerró la string/char
+  if (esFin() && (cursor == 0 || buffer->content[cursor - 1] != delimitador)) {
+    std::cerr << "Error: Literal no cerrado\n";
+
   } else {
     get();
 
@@ -230,7 +254,7 @@ void Lexer::leerStringChar() { //...
 
   if (delimitador == '\'') {
     if (contenido.size() > 1) {
-      //... Error: Multibyte char
+      std::cerr << "Error: Literal de caracter con múltiples bytes\n";
 
     } else {
       std::cout << "[235, lexer.cpp] contenido: '" << contenido << "'\n";

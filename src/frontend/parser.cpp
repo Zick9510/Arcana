@@ -272,6 +272,12 @@ InfoVariable Parser::parsearTipo() {
 
     }
 
+    case Tt::STRING_TYPE: {
+      get();
+      tipo_actual = typeFactory.getString(); //...
+      break;
+    }
+
     default: { //...
       std::cout << "[271, parser.cpp] Type not implemented: " << peek().lexema << '\n';
       exit(1);
@@ -1369,6 +1375,7 @@ std::unique_ptr<Sentencia> Parser::parsearStruct() {
       info_func.nombre = nodo_decl->nombre_func;
       info_func.tipo_retorno = nodo_decl->ret_type;
       info_func.tipos_parametros = nodo_decl->args_type;
+      info_func.is_external = false;
 
       std::vector<Dt> tipos_args;
       for (const auto& a : nodo_decl->args_type) {
@@ -1521,9 +1528,9 @@ std::unique_ptr<Sentencia> Parser::parsearInclude() {
   if (peek().tipo == Tt::MENOR) { // include <...>
     get();
     is_system_header = true;
-    path = check(Tt::IDENTIFICADOR).lexema;
+    path = check(Tt::IDENTIFICADOR, Pm::RELAXED).lexema;
     path += check(Tt::PUNTO).lexema;
-    path += check(Tt::IDENTIFICADOR).lexema;
+    path += check(Tt::IDENTIFICADOR, Pm::RELAXED).lexema;
     check(Tt::MAYOR);
 
   } //...
@@ -1662,6 +1669,10 @@ std::unique_ptr<Expresion> Parser::parsearPrefijo() {
     case Tt::ARROBA: {
       Token t = check(Tt::IDENTIFICADOR);
       return std::make_unique<ExprLiteral>(RuleData{"@" + t.lexema});
+    }
+
+    case Tt::STRING: {
+      return std::make_unique<ExprLiteral>(StringData{t.lexema});
     }
 
     case Tt::IDENTIFICADOR: {

@@ -1,0 +1,20 @@
+include <stdio.h>
+
+struct Text {
+  string msg1;
+  string msg2;
+  string msg3;
+
+};
+
+func main() -> int {
+
+  Text t = Text { "123", "456", "789" };
+
+  printf(t.msg1);
+  printf(t.msg2);
+  printf(t.msg3);
+
+  return 0;
+
+}

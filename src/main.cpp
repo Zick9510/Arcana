@@ -9,6 +9,7 @@
 /*
  * Style Guide:
  *
+ * Folders: snake_case/
  * Source : camelCase.cpp
  * Headers: PascalCase.hpp
  *
