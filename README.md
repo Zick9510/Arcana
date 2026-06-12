@@ -10,7 +10,7 @@ In Arcana, syntax is not a law-it is a malleable tool.
 
 ---
 
-## Project Status: Early Alpha (Experimental) [v0.0.4]
+## Project Status: Early Alpha (Experimental) [v0.0.5]
 
 Arcana is currently in a heavy development phase. It is a proof-of-concept for language-oriented programming and is **not suitable for production use yet**.
 

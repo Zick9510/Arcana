@@ -108,7 +108,7 @@ def runTests():
     print(f"{Color.BOLD}{Color.MAG}--- PROCESSING VALID TESTS ---{Color.END}\n")
     processDirectory(VALID_TESTS_DIR, expectFail=False)
 
-    print(f"{Color.BOLD}{Color.MAG}---PROCESSING INVALID TESTS ---{Color.END}\n")
+    print(f"{Color.BOLD}{Color.MAG}--- PROCESSING INVALID TESTS ---{Color.END}\n")
     processDirectory(INVALID_TESTS_DIR, expectFail=True)
 
     end_time = time.perf_counter() - start_time

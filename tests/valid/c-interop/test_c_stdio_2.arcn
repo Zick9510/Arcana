@@ -1,0 +1,10 @@
+include <stdio.h>
+
+func main() -> int {
+  char s[4] = ['H', 'i', '\n', '\0'];
+
+  printf(s);
+
+  return 0;
+
+}

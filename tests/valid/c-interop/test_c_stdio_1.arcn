@@ -1,0 +1,15 @@
+include <stdio.h>
+
+func main() -> int {
+
+  char a = getchar();
+
+  a = a + 1;
+
+  putchar(a);
+
+  putchar('\n');
+
+  return 0;
+
+}
