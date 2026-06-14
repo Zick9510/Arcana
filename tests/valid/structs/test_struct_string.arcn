@@ -8,7 +8,6 @@ struct Text {
 };
 
 func main() -> int {
-
   Text t = Text { "123", "456", "789" };
 
   printf(t.msg1);

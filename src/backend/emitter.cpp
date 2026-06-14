@@ -103,7 +103,6 @@ Emitter::Emitter(ContextoArcanos& ca, GestorTablas& t)
     exit(1);
   }
 
-
 }
 
 // --- LLVM --- //
@@ -232,23 +231,44 @@ llvm::Value* Emitter::obtenerPuntero(Expresion* nodo) {
 
     auto tipo_contenedor = acceso->contenedor->tipo_resuelto.valor;
 
+    if (tipo_contenedor->kind == TypeKind::POINTER ||
+        tipo_contenedor->kind == TypeKind::ARRAY   && std::static_pointer_cast<ArrayType>(tipo_contenedor)-> size == -1) {
+
+      acceso->contenedor->accept(this);
+      llvm::Value* ptr_val = llvmValor;
+
+      auto tipo_base = tipo_contenedor->getUnderlyingType();
+      llvm::Type* tipo_base_llvm = obtenerTipoLLVM(tipo_base);
+
+      return llvmBuilder->CreateInBoundsGEP(tipo_base_llvm, ptr_val, index_val, "");
+
+    }
+
+    //if (tipo_contenedor->kind == TypeKind::ARRAY) {
+    //  auto array_type = std::static_pointer_cast<ArrayType>(tipo_contenedor);
+    //  if (array_type->size != -1) {
+    //    llvm::Type* tipo_array_llvm = obtenerTipoLLVM(array_type);
+    //    llvm::Value* cero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvmCtx), 0);
+    //    std::vector<llvm::Value*> indices = { cero, index_val };
+    //    return llvmBuilder->CreateInBoundsGEP(tipo_array_llvm, ptr_base, indices, "");
+    //  } else {
+    //    llvm::Type* tipo_base_llvm = obtenerTipoLLVM(array_type->getUnderlyingType());
+    //    return llvmBuilder->CreateInBoundsGEP(tipo_base_llvm, ptr_base, index_val, "");
+    //  }
+    //}
+
     if (tipo_contenedor->kind == TypeKind::ARRAY) {
+      llvm::Value* ptr_base = obtenerPuntero(acceso->contenedor.get());
+      if (!ptr_base) { return nullptr; }
+
       auto array_type = std::static_pointer_cast<ArrayType>(tipo_contenedor);
+      llvm::Type* tipo_array_llvm = obtenerTipoLLVM(array_type);
 
-      if (array_type->size != -1) {
-        llvm::Type* tipo_array_llvm = obtenerTipoLLVM(array_type);
+      llvm::Value* cero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvmCtx), 0);
+      std::vector<llvm::Value*> indices = { cero, index_val };
 
-        llvm::Value* cero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvmCtx), 0);
-        std::vector<llvm::Value*> indices = { cero, index_val };
+      return llvmBuilder->CreateInBoundsGEP(tipo_array_llvm, ptr_base, indices, "");
 
-        return llvmBuilder->CreateInBoundsGEP(tipo_array_llvm, ptr_base, indices, "");
-
-      } else {
-        llvm::Type* tipo_base_llvm = obtenerTipoLLVM(array_type->getUnderlyingType());
-
-        return llvmBuilder->CreateInBoundsGEP(tipo_base_llvm, ptr_base, index_val, "");
-
-      }
     }
 
     if (tipo_contenedor->kind == TypeKind::STRING) {
@@ -408,9 +428,12 @@ void Emitter::visitar(ExprVariable* nodo) {
   std::cout << "[360, emitter.cpp] ExprVariable\n";
   //std::cout << nodo->nombre << '\n';
 
+  llvmPunteroBase = nullptr;
   InfoVariable* info = tablas.buscarVariable(nodo->nombre);
 
   if (info && info->alloca) {
+    llvmPunteroBase = info->alloca;
+
     if (info->tipo.valor->kind == TypeKind::ARRAY) {
       llvmValor = info->alloca;
 
@@ -436,6 +459,8 @@ void Emitter::visitar(ExprVariable* nodo) {
       if (it != info_struct->orden_props.end()) {
         int i = std::distance(info_struct->orden_props.begin(), it);
         llvm::Value* ptr_campo = llvmBuilder->CreateStructGEP(llvmStructActual, llvmThis, i, "");
+
+        llvmPunteroBase = ptr_campo;
 
         auto tipo_campo_s = info_struct->propiedades[nodo->nombre].tipo.valor;
 
@@ -486,6 +511,8 @@ void Emitter::visitar(ExprArray* nodo) {
 void Emitter::visitar(ExprUnaria* nodo) {
   std::cout << "[439, emitter.cpp] ExprUnaria\n";
 
+  llvmPunteroBase = nullptr;
+
   if (nodo->operador == TipoOperador::PTR_REF) {
     llvm::Value* ptr = obtenerPuntero(nodo->operando.get());
 
@@ -500,6 +527,7 @@ void Emitter::visitar(ExprUnaria* nodo) {
       llvmValor = tmp_alloca;
 
     }
+
     return ;
 
   }
@@ -508,6 +536,8 @@ void Emitter::visitar(ExprUnaria* nodo) {
   llvm::Value* val = llvmValor;
 
   if (!val) { return ; }
+
+  llvmPunteroBase = nullptr;
 
   switch (nodo->operador) { //...
 
@@ -530,6 +560,8 @@ void Emitter::visitar(ExprUnaria* nodo) {
       auto tipo_base = nodo->operando->tipo_resuelto.valor->getUnderlyingType();
       llvm::Type* tipo_llvm = obtenerTipoLLVM(tipo_base);
 
+      llvmPunteroBase = ptr_val;
+
       llvmValor = llvmBuilder->CreateLoad(tipo_llvm, ptr_val, "");
       break;
 
@@ -545,8 +577,8 @@ void Emitter::visitar(ExprUnaria* nodo) {
 }
 
 void Emitter::visitar(ExprBinaria* nodo) {
-  std::cout << "[500, emitter.cpp] ExprBinaria\n";
-  std::cout << "[501, emitter.cpp] nodo->overload: '" << nodo->overload << "'\n";
+  std::cout << "[548, emitter.cpp] ExprBinaria\n";
+  std::cout << "[549, emitter.cpp] nodo->overload: '" << nodo->overload << "'\n";
 
   if (!nodo->overload.empty()) {
     llvm::Function* func = llvmModulo->getFunction(nodo->overload);
@@ -591,10 +623,10 @@ void Emitter::visitar(ExprBinaria* nodo) {
 
   switch (nodo->operador) { //...
     case TipoOperador::SUMA: {
-      std::cout << "[604, emitter.cpp]\n";
+      std::cout << "[594, emitter.cpp]\n";
 
       if (nodo->tipo_resuelto.valor->kind == TypeKind::STRING) {
-        std::cout << "[607, emitter.cpp] String\n";
+        std::cout << "[597, emitter.cpp] String\n";
         llvm::Type* str_ty = obtenerTipoLLVM(nodo->tipo_resuelto.valor);
 
         llvm::AllocaInst* ptr_out = llvmBuilder->CreateAlloca(str_ty, nullptr, "");
@@ -632,7 +664,7 @@ void Emitter::visitar(ExprBinaria* nodo) {
     }
 
     case TipoOperador::RESTA: {
-      std::cout << "[486, emitter.cpp]\n";
+      std::cout << "[635, emitter.cpp]\n";
 
       if (left->getType()->isPointerTy() && !right->getType()->isPointerTy()) {
         llvm::Value* val = llvmBuilder->CreateNeg(right, "");
@@ -650,7 +682,7 @@ void Emitter::visitar(ExprBinaria* nodo) {
     }
 
     case TipoOperador::MULT: {
-      std::cout << "[462, emitter.cpp]\n";
+      std::cout << "[653, emitter.cpp]\n";
 
       if (nodo->izquierda->tipo_resuelto.valor->kind == TypeKind::STRING  &&
           nodo->derecha  ->tipo_resuelto.valor->kind == TypeKind::INTEGER ||
@@ -693,52 +725,39 @@ void Emitter::visitar(ExprBinaria* nodo) {
     case TipoOperador::CMP_DISTINTO:
     case TipoOperador::CMP_MENOR_IGUAL:
     case TipoOperador::CMP_MENOR: {
-      std::cout << "[474, emitter.cpp]\n";
+      std::cout << "[696, emitter.cpp]\n";
       llvm::CmpInst::Predicate pred = obtenerPredicadoCmp(nodo->operador, es_float, nodo->derecha->tipo_resuelto.valor->isSigned());
       llvmValor = llvmBuilder->CreateCmp(pred, left, right);
       break;
     }
 
     case TipoOperador::SWAP: {
-      std::cout << "[481, emitter.cpp]\n";
+      llvm::Value* ptr_l = obtenerPuntero(nodo->izquierda.get());
+      llvm::Value* ptr_r = obtenerPuntero(nodo->derecha  .get());
 
-      llvm::Value* ptr_l = nullptr;
-      llvm::Value* ptr_r = nullptr;
-
-      if (auto* var_izq = dynamic_cast<ExprVariable*>(nodo->izquierda.get())) {
-        InfoVariable* info = tablas.buscarVariable(var_izq->nombre);
-        if (info) { ptr_l = info->alloca; }
-
-      } else if (auto* unaria = dynamic_cast<ExprUnaria*>(nodo->izquierda.get())) {
-        if (unaria->operador == TipoOperador::PTR_DEREF) {
-          unaria->operando->accept(this);
-          ptr_l = llvmValor;
-        }
+      if (!ptr_l || !ptr_r) {
+        std::cerr << "Error en swap\n";
+        return ;
       }
 
-      if (auto* var_der = dynamic_cast<ExprVariable*>(nodo->derecha.get())) {
-        InfoVariable* info = tablas.buscarVariable(var_der->nombre);
-        if (info) { ptr_r = info->alloca; }
+      auto tipo = nodo->tipo_resuelto.valor;
+      llvm::Type* tipo_llvm = obtenerTipoLLVM(tipo);
 
-      } else if (auto* unaria = dynamic_cast<ExprUnaria*>(nodo->derecha.get())) {
-        if (unaria->operador == TipoOperador::PTR_DEREF) {
-          unaria->operando->accept(this);
-          ptr_r = llvmValor;
-        }
-      }
+      llvm::Value* val_l = llvmBuilder->CreateLoad(tipo_llvm, ptr_l, "");
+      llvm::Value* val_r = llvmBuilder->CreateLoad(tipo_llvm, ptr_r, "");
 
-      if (ptr_l && ptr_r) {
-        llvmBuilder->CreateStore(right, ptr_l);
-        llvmBuilder->CreateStore(left, ptr_r);
-        llvmValor = right;
+      llvmBuilder->CreateStore(val_r, ptr_l);
+      llvmBuilder->CreateStore(val_l, ptr_r);
 
-      }
+      llvmValor = val_r;
+      llvmPunteroBase = nullptr;
 
       break;
+
     }
 
     default: {
-      std::cout << "[519, emitter.cpp]\n";
+      std::cout << "[741, emitter.cpp]\n";
       break;
     }
   }
@@ -791,10 +810,15 @@ void Emitter::visitar(ExprCasteo* nodo) {
   llvm::Value* val = llvmValor;
 
   std::shared_ptr<ArcanaType> t_origen  = nodo->expresion->tipo_resuelto.valor;
-  std::shared_ptr<ArcanaType> t_destino = nodo->tipo_resuelto.valor;
+  std::shared_ptr<ArcanaType> t_destino = nodo->           tipo_resuelto.valor;
+
+  if (t_origen->kind == TypeKind::STRING && t_destino->kind == TypeKind::POINTER) {
+    llvmValor = llvmBuilder->CreateExtractValue(val, {0}, "");
+    return ;
+  }
 
   if (t_destino->kind == TypeKind::BOOLEAN) {
-    switch (t_origen->kind) {
+    switch (t_origen->kind) { //... Todo: pointer -> bool
 
       case TypeKind::CHAR   :
       case TypeKind::INTEGER: {
@@ -818,6 +842,7 @@ void Emitter::visitar(ExprCasteo* nodo) {
     }
 
     return ;
+
   }
 
   llvm::Type* tipo_destino_llvm = obtenerTipoLLVM(t_destino);
@@ -852,9 +877,10 @@ void Emitter::visitar(ExprAcceso* nodo) {
 
   if (!ptr_elemento) { return ; }
 
+  llvmPunteroBase = ptr_elemento;
+
   llvm::Type* tipo_elemento_llvm = obtenerTipoLLVM(nodo->tipo_resuelto.valor);
   llvmValor = llvmBuilder->CreateLoad(tipo_elemento_llvm, ptr_elemento, "");
-
 
 }
 
@@ -889,56 +915,39 @@ void Emitter::visitar(ExprAccesoPunto* nodo) {
 }
 
 void Emitter::visitar(ExprFuncCall* nodo) {
-  std::cout << "[793, emitter.cpp] ExprFuncCall\n";
-  auto* var_callee = dynamic_cast<ExprVariable*>(nodo->callee.get());
+  InfoFuncion* info = nodo->info;
 
-  if (!var_callee) {
-    //...
-    return ;
+  if (!info) {
+    std::cerr << "Error !info\n";
+    exit(1);
   }
 
-  llvm::Function* callee_f = llvmModulo->getFunction(var_callee->nombre);
-  InfoFuncion* info = tablas.buscarFunction(var_callee->nombre);
+  std::cout << "[1011, emitter.cpp] info->firma: '" << info->firma << "'\n";
 
-  if (!info) { // Trust me, there is no way the code ends up here
-    std::cerr << "Error: Función '" << var_callee->nombre << "' no encontrada.\n"; // It ended up here. Twice
-    return ;
-  }
-
-  bool is_external = info->is_external;
+  std::string llvm_name = info->is_external ? info->nombre : info->firma;
+  llvm::Function* callee_f = llvmModulo->getFunction(llvm_name);
 
   if (!callee_f) {
-    std::vector<llvm::Type*> args_types;
-
+    std::vector<llvm::Type*> args_type;
     for (const auto& param : info->tipos_parametros) {
-      args_types.push_back(obtenerTipoLLVM(param.second.tipo.valor));
+      args_type.push_back((obtenerTipoLLVM(param.second.tipo.valor)));
     }
 
     llvm::Type* ret_type = obtenerTipoLLVM(info->tipo_retorno.valor);
-
-    llvm::FunctionType* ft = llvm::FunctionType::get(ret_type, args_types, false);
+    llvm::FunctionType* ft = llvm::FunctionType::get(ret_type, args_type, info->is_variadic);
 
     callee_f = llvm::Function::Create(
       ft,
       llvm::Function::ExternalLinkage,
-      var_callee->nombre,
+      llvm_name,
       llvmModulo.get()
     );
-
   }
 
   std::vector<llvm::Value*> args_v;
-  for (auto& arg : nodo->argumentos) {
+  for (auto& arg: nodo->argumentos) {
     arg.second->accept(this);
-
-    llvm::Value* val = llvmValor;
-
-    if (is_external && arg.second->tipo_resuelto.valor->kind == TypeKind::STRING) {
-      val = llvmBuilder->CreateExtractValue(val, {0}, "");
-    }
-
-    args_v.push_back(val);
-
+    args_v.push_back(llvmValor);
   }
 
   llvmValor = llvmBuilder->CreateCall(callee_f, args_v, "");
@@ -999,49 +1008,6 @@ void Emitter::visitar(Bloque* nodo) {
   tablas.salirScope();
 
 }
-
-//void Emitter::visitar(SentenciaAsignarVar* nodo) {
-//  std::cout << "[770, emitter.cpp] SentenciaAsignarVar\n";
-//
-//  llvm::AllocaInst* alloca = nullptr;
-//
-//  InfoVariable* info = tablas.buscarVariable(nodo->nombre);
-//
-//  if (nodo->size) {
-//    nodo->size->accept(this);
-//    llvm::Value* size_val = llvmValor;
-//
-//    auto array_type = std::static_pointer_cast<ArrayType>(nodo->tipo_explicito.tipo.valor);
-//    llvm::Type* base_llvm = obtenerTipoLLVM(array_type->getUnderlyingType());
-//
-//    alloca = llvmBuilder->CreateAlloca(base_llvm, size_val, "");
-//
-//  } else {
-//    llvm::Type* tipo_llvm = obtenerTipoLLVM(nodo->tipo_explicito.tipo.valor);
-//    alloca = llvmBuilder->CreateAlloca(tipo_llvm, nullptr, "");
-//
-//  }
-//
-//  if (nodo->valor_inicial) {
-//    nodo->valor_inicial->accept(this);
-//    llvmBuilder->CreateStore(llvmValor, alloca);
-//
-//  } else if (nodo->tipo_explicito.tipo.valor->kind == TypeKind::STRUCT) {
-//    std::string struct_name = nodo->tipo_explicito.tipo.valor->toString();
-//    llvm::Function* init_f = llvmModulo->getFunction(struct_name + "_init");
-//
-//    if (init_f) {
-//      llvmBuilder->CreateCall(init_f, {alloca}, "");
-//    }
-//
-//  }
-//
-//  if (info) {
-//    info->alloca = alloca;
-//  }
-//
-//
-//}
 
 void Emitter::visitar(SentenciaAsignarVar* nodo) {
   std::cout << "[918, emitter.cpp] SentenciaAsignarVar\n";
@@ -1158,17 +1124,6 @@ void Emitter::visitar(SentenciaExpr* nodo) {
 
 }
 
-//void Emitter::visitar(SentenciaReasignacionVar* nodo) {
-//  std::cout << "[760, emitter.cpp] SentenciaReasignacionVar\n";
-//  llvm::Value* destino_ptr = obtenerPuntero(nodo->izquierda.get());
-//
-//  nodo->derecha->accept(this);
-//  llvm::Value* valor_asignar = llvmValor;
-//
-//  llvmBuilder->CreateStore(valor_asignar, destino_ptr);
-//
-//}
-
 void Emitter::visitar(SentenciaReasignacionVar* nodo) {
   std::cout << "[1018, emitter.cpp] SentenciaReasignacionVar\n";
 
@@ -1202,7 +1157,6 @@ void Emitter::visitar(SentenciaReasignacionVar* nodo) {
     }
 
     auto array_type = std::static_pointer_cast<ArrayType>(tipo_resuelto);
-    //llvm::Type* tipo_array_llvm = obtenerTipoLLVM(array_type->getUnderlyingType());
     llvm::Type* tipo_array_llvm = obtenerTipoLLVM(array_type);
 
     const llvm::DataLayout& dl = llvmModulo->getDataLayout();
@@ -1433,8 +1387,6 @@ void Emitter::visitar(SentenciaFuncDecl* nodo) {
   llvm::BasicBlock* bb = llvm::BasicBlock::Create(llvmCtx, "entry", f);
   llvmBuilder->SetInsertPoint(bb);
 
-  //llvm_scopes.push_back(std::map<std::string, llvm::AllocaInst*>());
-
   tablas.entrarScope();
 
   auto arg_it = f->arg_begin();
@@ -1477,8 +1429,6 @@ void Emitter::visitar(SentenciaFuncDecl* nodo) {
       }
     }
   }
-
-  //llvm_scopes.pop_back();
 
   llvm::verifyFunction(*f);
 

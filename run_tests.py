@@ -113,7 +113,7 @@ def runTests():
 
     end_time = time.perf_counter() - start_time
 
-    if (failed_tests):
+    if (failed_tests and "--details" in sys.argv):
         print(f"\n{Color.BOLD}{Color.RED}--- FAILED TEST DETAILS ---{Color.END}")
         for f, err_type, out, err in failed_tests:
             print(f"\n{Color.RED}>> {f} ({err_type}){Color.END}")

@@ -106,7 +106,9 @@ struct InfoFuncion {
   std::string nombre;
   Dt tipo_retorno;
   std::vector<std::pair<std::string, InfoVariable>> tipos_parametros;
+  std::string firma;
   bool is_external = true;
+  bool is_variadic = false;
 
 };
 
@@ -139,7 +141,7 @@ struct InfoTemplate {
 
 struct Scope {
   std::unordered_map<std::string, InfoVariable> variables;
-  std::unordered_map<std::string, InfoFuncion > funciones;
+  std::unordered_map<std::string, std::vector<InfoFuncion>> funciones;
   std::unordered_map<std::string, InfoStruct  > structs  ;
   std::unordered_map<std::string, InfoTemplate> templates;
 
@@ -189,8 +191,9 @@ public:
   InfoVariable* buscarVariable(const std::string& name);
 
   // --- Functions ---
-  bool añadirFunction(const std::string& name, InfoFuncion info);
-  InfoFuncion* buscarFunction(const std::string& name);
+  bool añadirFuncion(const std::string& name, InfoFuncion info);
+  std::vector<InfoFuncion>* buscarFuncionName(const std::string& name);
+  InfoFuncion* buscarFuncionFirma(const std::string& name, const std::string& firma);
   InfoFuncion* getCurrentFunction();
 
   void pushFunction(InfoFuncion* function);

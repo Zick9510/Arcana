@@ -5,7 +5,6 @@
 #include "Includes.hpp"
 
 /* --- Dt --- */
-
 bool Dt::operator==(const Dt& otro) const {
   // Si ambos son nulos, son iguales
   if (!this->valor && !otro.valor) { return true ; }
@@ -135,21 +134,24 @@ bool GestorTablas::añadirVariable(const std::string& name, InfoVariable info) {
 
 }
 
-bool GestorTablas::añadirFunction(const std::string& name, InfoFuncion info) {
+bool GestorTablas::añadirFuncion(const std::string& name, InfoFuncion info) {
   std::cout << "[116, symbol.cpp] Añadiendo: '" << name << "' en: " << scopeActual << '\n';
-  if (scopeActual->funciones.count(name)) {
-    std::cout << "[140, symbol.cpp] false\n";
-    return false;
 
+  auto& overloads = scopeActual->funciones[name];
+
+  for (const auto& func : overloads) {
+    if (func.firma == info.firma) {
+      return false;
+    }
   }
 
-  scopeActual->funciones[name] = std::move(info);
-  std::cout << "[146, symbol.cpp] true\n";
+  overloads.push_back(std::move(info));
+
   return true;
 
 }
 
-InfoFuncion* GestorTablas::buscarFunction(const std::string& name) {
+std::vector<InfoFuncion>* GestorTablas::buscarFuncionName(const std::string& name) {
   std::cout << "[152, symbol.cpp] Buscando: '" << name << "' en: " << scopeActual << '\n';
   Scope* cursor = scopeActual;
 
@@ -167,6 +169,21 @@ InfoFuncion* GestorTablas::buscarFunction(const std::string& name) {
   }
 
   std::cout << '\'' << name << "' no encontrada\n";
+  return nullptr;
+
+}
+
+InfoFuncion* GestorTablas::buscarFuncionFirma(const std::string& name, const std::string& firma) {
+  std::vector<InfoFuncion>* candidatas = buscarFuncionName(name);
+
+  if (candidatas) {
+    for (auto& func : *candidatas) {
+      if (func.firma == firma) {
+        return &func;
+      }
+    }
+  }
+
   return nullptr;
 
 }

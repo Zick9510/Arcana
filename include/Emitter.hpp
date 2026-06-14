@@ -22,11 +22,12 @@ public:
 
 class Emitter : public ASTVisitor {
 private:
-  llvm::LLVMContext                        llvmCtx            ;
-  std ::unique_ptr<llvm::Module>           llvmModulo         ;
-  std ::unique_ptr<llvm::IRBuilder<>>      llvmBuilder        ;
-  llvm::Value*                             llvmValor = nullptr;
-  std::map<std::string, llvm::StructType*> llvmStructs        ;
+  llvm::LLVMContext                        llvmCtx                  ;
+  std ::unique_ptr<llvm::Module>           llvmModulo               ;
+  std ::unique_ptr<llvm::IRBuilder<>>      llvmBuilder              ;
+  llvm::Value*                             llvmValor       = nullptr;
+  llvm::Value*                             llvmPunteroBase = nullptr;
+  std::map<std::string, llvm::StructType*> llvmStructs              ;
 
   std::string structActual = "";
   llvm::StructType* llvmStructActual = nullptr;

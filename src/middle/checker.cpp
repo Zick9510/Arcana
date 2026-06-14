@@ -265,7 +265,7 @@ std::shared_ptr<ArcanaType> Checker::verificarSwap(const Dt& izq, const Dt& der)
     TypeKind p_izq = izq.valor->kind;
     TypeKind p_der = der.valor->kind;
 
-    // Regla 1: Suma de números
+    // Regla 1: Números
     if (esNum(p_izq) && esNum(p_der)) {
       return promoverTipos(izq.valor, der.valor);
     }
@@ -401,25 +401,26 @@ Dt Checker::verificarOperandos(const Dt& izq, const Dt& der, const TipoOperador 
     }
 
 
-    default: {
+    default: { //...
       std::cout << "[264 checker.cpp] Operador desconocido: " << operadorString(op) << '\n';
-      //... Retornar algo
+
     }
   }
 }
 
 bool Checker::esCasteoValido(const Dt& origen, const Dt& destino) {
 
+  TypeKind pO = origen.valor->kind;
+  TypeKind pD = destino.valor->kind;
+
   // Regla 1: Identidad
   if (origen == destino) {
-    //... Reportar Warning por casteo innecesario
     return true;
+
   }
 
   // Regla 2: Numérico
   if (origen.esPrimitivo() && destino.esPrimitivo()) {
-    TypeKind pO = origen.valor->kind;
-    TypeKind pD = destino.valor->kind;
 
     if (esNum(pO) && esNum(pD)) {
       //... Comprobar pérdida de precisión
@@ -438,13 +439,39 @@ bool Checker::esCasteoValido(const Dt& origen, const Dt& destino) {
       return true;
     }
 
-    //... Char -> int
- 
   }
 
-  //... Relga 3: Punteros
+  // Regla 3: Punteros
+  if (pO == TypeKind::POINTER && pD == TypeKind::POINTER) {
 
-  // No se puede
+    if (origen.valor->getUnderlyingType() == destino.valor->getUnderlyingType()) {
+      return true;
+    }
+
+    return false;
+
+  }
+
+  // Regla 4: Array decay
+  if (pO == TypeKind::ARRAY && pD == TypeKind::POINTER) {
+
+    if (origen.valor->getUnderlyingType() == destino.valor->getUnderlyingType()) {
+      return true;
+    }
+
+    return false;
+
+  }
+
+  // Regla 5: string -> char*
+  if (pO == TypeKind::STRING &&
+      pD == TypeKind::POINTER &&
+      destino.valor->getUnderlyingType()->kind == TypeKind::CHAR) {
+    return true;
+
+  }
+
+  // No can't do
   return false;
 
 }

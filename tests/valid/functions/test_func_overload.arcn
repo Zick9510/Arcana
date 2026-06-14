@@ -1,0 +1,24 @@
+func A(int a) -> int {
+  return a * 2;
+
+}
+
+func A(float a) -> float {
+  return a * 3;
+
+}
+
+func A(char a) -> char {
+  return a + 3;
+
+}
+
+func main() -> int {
+
+  int i = A(1);
+  float j = A(2.3);
+  char k = A('b');
+
+  return i + j + k - 'a';
+
+}

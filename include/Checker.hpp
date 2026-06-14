@@ -461,7 +461,22 @@ public:
 
       }
 
-      checker->tablas.añadirFunction(nombre_func, info_func);
+      std::vector<Dt> clang_args;
+
+      for (auto& param : info_func.tipos_parametros) {
+        clang_args.push_back(param.second.tipo);
+      }
+
+      info_func.firma = generarFirma(nombre_func, clang_args);
+      info_func.is_external = true;
+      info_func.is_variadic = clang_Cursor_isVariadic(cursor);
+
+      std::cout << "[474, Checker.hpp] info_func.firma: '" << info_func.firma << "'\n";
+      std::cout << "is_variadic: '" << info_func.is_variadic << "'\n";
+
+      checker->tablas.añadirFuncion(nombre_func, info_func);
+
+      std::cout << '\n';
 
     }
 
@@ -959,7 +974,9 @@ public:
     auto tipo_contenedor = nodo->contenedor->tipo_resuelto.valor;
     auto tipo_rango = nodo->rango->tipo_resuelto.valor;
 
-    if (tipo_contenedor->kind != TypeKind::ARRAY && tipo_contenedor->kind != TypeKind::STRING) {
+    if (tipo_contenedor->kind != TypeKind::ARRAY   &&
+        tipo_contenedor->kind != TypeKind::STRING  &&
+        tipo_contenedor->kind != TypeKind::POINTER ) {
       std::cerr << "Error: El objeto no es indexable\n";
       return ;
     }
@@ -985,6 +1002,15 @@ public:
 
       }
 
+    } else if (tipo_contenedor->kind == TypeKind::POINTER) {
+
+      if (tipo_rango->kind == TypeKind::INTEGER) {
+        nodo->tipo_resuelto.valor = tipo_contenedor->getUnderlyingType();
+
+      } else if (tipo_rango->kind == TypeKind::RANGE) {
+        nodo->tipo_resuelto.valor = typeFactory.getArray(tipo_contenedor->getUnderlyingType(), -1);
+
+      }
     }
 
   }
@@ -1154,31 +1180,138 @@ public:
   }
 
   void visitar(ExprFuncCall* nodo) override { //..
-    std::cout << "[1139, Checker.hpp] ExprFuncCall\n";
+    std::cout << "[1157, Checker.hpp] ExprFuncCall\n";
 
     bool func_resuleta = false;
 
+    for (const auto& a : nodo->argumentos) {
+      a.second->accept(this);
+    }
+
     if (auto* var_callee = dynamic_cast<ExprVariable*>(nodo->callee.get())) {
-      std::cout << "[1144, Checker.hpp]\n";
-      if (InfoFuncion* info = tablas.buscarFunction(var_callee->nombre)) {
-      std::cout << "[1146, Checker.hpp]\n";
+
+      std::vector<Dt> args_type;
+      for (auto& a : nodo->argumentos) {
+        args_type.push_back(a.second->tipo_resuelto.valor);
+      }
+
+      std::string firma = generarFirma(var_callee->nombre, args_type);
+      std::cout << "[1184, Checker.hpp] firma: '" << firma << "'\n";
+
+      if (InfoFuncion* info = tablas.buscarFuncionFirma(var_callee->nombre, firma)) {
+        std::cout << "[1187, Checker.hpp]\n";
         var_callee->tipo_resuelto.valor = typeFactory.getUnknown();
         nodo->tipo_resuelto = info->tipo_retorno;
+        nodo->info = info;
         func_resuleta = true;
 
       } else {
-        nodo->callee->accept(this);
+        std::cout << "[1194, Checker.hpp] var_callee->nombre: '" << var_callee->nombre << "'\n";
+        std::vector<InfoFuncion>* candidatas = tablas.buscarFuncionName(var_callee->nombre);
+
+        if (!candidatas) {
+          std::cout << "[1198, Checker.hpp] !candidatas\n";
+          nodo->callee->accept(this);
+          return ;
+        }
+
+        std::cout << "[1203, Checker.hpp] candidatas:\n";
+        for (auto& i : *candidatas) {
+          std::cout << "[1205, Checker.hpp] i.nombre: '" << i.nombre << "'\n";
+          std::cout << "[1206, Checker.hpp] i.firma: '" <<  i.firma << "'\n";
+        }
+
+        InfoFuncion* info_mejor = nullptr;
+        int best_fit = -1;
+        bool ambiguedad = false;
+
+        for (auto& cand : *candidatas) {
+
+          size_t min_args = cand.tipos_parametros.size();
+
+          if (cand.is_variadic) {
+            if (args_type.size() < min_args) { continue; }
+
+          } else {
+            if (args_type.size() != min_args) { continue; }
+
+          }
+
+          //if (cand.tipos_parametros.size() != args_type.size()) { continue; }
+
+          int current_fit = 0;
+          bool viable = true;
+
+          for (size_t i = 0; i < min_args; ++i) {
+
+            Dt param = cand.tipos_parametros[i].second.tipo;
+            Dt arg   = args_type[i];
+
+            if (arg == param) { // This should be empty
+
+            } else if (esCasteoValido(arg, param)) {
+              current_fit++;
+
+            } else {
+              viable = false;
+              break;
+
+            }
+
+            if (best_fit != -1 && current_fit > best_fit) {
+              viable = false;
+              break;
+
+            }
+
+          }
+
+          if (!viable) { continue; }
+
+          if (best_fit == -1 || current_fit < best_fit) {
+            best_fit = current_fit;
+            info_mejor = &cand;
+            ambiguedad = false;
+
+          } else if (current_fit == best_fit) {
+            ambiguedad = true;
+
+          }
+
+        }
+
+        if (ambiguedad) {
+          std::cerr << "Error: LLamada ambigua a '" << var_callee->nombre << '\n';
+          exit(1);
+
+        } else if (!info_mejor) {
+          std::cerr << "Error: Ninguna sobrecarga de '" << var_callee->nombre << "' coincide con los tipos proporcionados\n";
+          exit(1);
+
+        }
+
+        for (size_t i = 0; i < nodo->argumentos.size(); ++i) {
+          if (i < info_mejor->tipos_parametros.size()) {
+            Dt param_type = info_mejor->tipos_parametros[i].second.tipo;
+            nodo->argumentos[i].second = forzarTipo(std::move(nodo->argumentos[i].second), param_type);
+          }
+        }
+
+        var_callee->accept(this);
+        nodo->tipo_resuelto = info_mejor->tipo_retorno;
+        nodo->info = info_mejor;
+        func_resuleta = true;
 
       }
 
     } else if (auto* acceso = dynamic_cast<ExprAccesoPunto*>(nodo->callee.get())) {
-      std::cout << "[1155, Checker.hpp] Es ExprAccesoPunto\n";
+      std::cout << "[1184, Checker.hpp] Es ExprAccesoPunto\n";
 
       acceso->izquierda->accept(this);
       auto tipo_izq = acceso->izquierda->tipo_resuelto.valor;
 
       if (tipo_izq->kind == TypeKind::STRUCT) {
-        std::cout << "[924, Checker.hpp] y es Struct\n";
+        std::cout << "[1190, Checker.hpp] y es Struct\n";
         auto struct_type = std::static_pointer_cast<StructType>(tipo_izq);
 
         std::vector<Dt> tipos_args;
@@ -1192,12 +1325,12 @@ public:
         auto it_metodo = struct_type->info->metodos.find(firma);
         if (it_metodo != struct_type->info->metodos.end()) {
           nodo->tipo_resuelto = it_metodo->second.tipo_retorno;
+          nodo->info = &it_metodo->second;
 
           auto instancia = std::move(acceso->izquierda);
           auto func_var = std::make_unique<ExprVariable>(firma);
           nodo->callee = std::move(func_var);
 
-          //nodo->argumentos.insert(nodo->argumentos.begin(), {"", std::move(instancia)});
           auto ref_instancia = std::make_unique<ExprUnaria>(TipoOperador::PTR_REF, std::move(instancia), true);
           ref_instancia->accept(this);
           nodo->argumentos.insert(nodo->argumentos.begin(), {"", std::move(ref_instancia)});
@@ -1217,10 +1350,6 @@ public:
     } else {
       nodo->callee->accept(this);
 
-    }
-
-    for (const auto& n : nodo->argumentos) {
-      n.second->accept(this);
     }
 
     if (!func_resuleta) {
@@ -1427,8 +1556,10 @@ public:
       info_func.nombre = nodo->nombre_func;
       info_func.tipo_retorno = nodo->ret_type;
       info_func.tipos_parametros = nodo->args_type;
+      info_func.firma = firma;
+      info_func.is_external = false;
 
-      if (!tablas.añadirFunction(firma, info_func)) {
+      if (!tablas.añadirFuncion(nodo->nombre_func, info_func)) {
         std::cout << "[1056, Checker.hpp] Error: Función redefinida\n";
         exit(1);
 
@@ -1438,7 +1569,7 @@ public:
 
     }
 
-    InfoFuncion* ptr_func = tablas.buscarFunction(firma);
+    InfoFuncion* ptr_func = tablas.buscarFuncionFirma(nodo->nombre_func, firma);
     tablas.pushFunction(ptr_func);
 
     tablas.switchMode();
@@ -1546,7 +1677,7 @@ public:
           m->accept(this);
 
           if (auto* func_decl = dynamic_cast<SentenciaFuncDecl*>(m.get())) {
-            InfoFuncion* func_reg = tablas.buscarFunction(func_decl->firma_mangled);
+            InfoFuncion* func_reg = tablas.buscarFuncionFirma(func_decl->nombre_func, func_decl->firma_mangled);
             if (func_reg) {
               info_ptr->metodos[func_decl->firma_mangled] = *func_reg;
             }

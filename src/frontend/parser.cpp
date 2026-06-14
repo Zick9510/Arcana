@@ -274,7 +274,7 @@ InfoVariable Parser::parsearTipo() {
 
     case Tt::STRING_TYPE: {
       get();
-      tipo_actual = typeFactory.getString(); //...
+      tipo_actual = typeFactory.getString();
       break;
     }
 

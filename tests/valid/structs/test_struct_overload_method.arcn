@@ -1,0 +1,29 @@
+struct Vec3 {
+  float x;
+  float y;
+  float z;
+
+  func __add__(Vec3 other) -> Vec3 {
+    return Vec3 { x + other.x, y + other.y, z + other.z };
+  }
+
+  func __add__(int a) -> Vec3 {
+    return Vec3 { x + a, y + a, z + a};
+  }
+
+  func getTotal() -> float {
+    return x + y + z;
+  }
+
+};
+
+func main() -> int {
+
+  Vec3 v1 = Vec3 { 1.5, 2    , z: 3.0 };
+  Vec3 v2 = Vec3 { 30 , z: 20, y: 10 };
+
+  v1 = v1 + v2 + 5;
+
+  return (v1 + 3).z;
+
+}

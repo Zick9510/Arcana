@@ -296,6 +296,7 @@ enum class TipoOperador {
 
 inline std::string operadorString(TipoOperador op) { //... Agregar los demás casos
   switch (op) {
+
     case TipoOperador::SUMA   : { return "+"      ; }
     case TipoOperador::RESTA  : { return "-"      ; }
     case TipoOperador::MULT   : { return "*"      ; }
@@ -305,7 +306,15 @@ inline std::string operadorString(TipoOperador op) { //... Agregar los demás ca
     case TipoOperador::SWAP   : { return "><"     ; }
     case TipoOperador::TERNARY: { return "?:"     ; }
 
-    default                   : { return "unknown"; }
+    case TipoOperador::CMP_MAYOR      : { return ">" ; }
+    case TipoOperador::CMP_MAYOR_IGUAL: { return ">="; }
+    case TipoOperador::CMP_IGUAL      : { return "=="; }
+    case TipoOperador::CMP_DISTINTO   : { return "!="; }
+    case TipoOperador::CMP_MENOR_IGUAL: { return "<="; }
+    case TipoOperador::CMP_MENOR      : { return "<" ; }
+
+    default: { return "unknown"; }
+
   }
 }
 
@@ -1173,13 +1182,14 @@ class ExprFuncCall : public NodoBase<Expresion, ExprFuncCall> {
 public:
   std::unique_ptr<Expresion> callee;
   std::vector<std::pair<std::string, std::unique_ptr<Expresion>>> argumentos;
+  InfoFuncion* info;
 
   ExprFuncCall(std::unique_ptr<Expresion> c,
                std::vector<std::pair<std::string, std::unique_ptr<Expresion>>> a)
   : callee(std::move(c)), argumentos(std::move(a)) {}
 
   ExprFuncCall(const ExprFuncCall& otra)
-    : callee(otra.callee->clonar()) {
+    : callee(otra.callee->clonar()), info(otra.info) {
 
     for (const auto& par : otra.argumentos) {
       argumentos.push_back({par.first, par.second->clonar()});
