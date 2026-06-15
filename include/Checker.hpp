@@ -472,11 +472,42 @@ public:
       info_func.is_variadic = clang_Cursor_isVariadic(cursor);
 
       std::cout << "[474, Checker.hpp] info_func.firma: '" << info_func.firma << "'\n";
-      std::cout << "is_variadic: '" << info_func.is_variadic << "'\n";
 
       checker->tablas.añadirFuncion(nombre_func, info_func);
 
       std::cout << '\n';
+
+    } else if (tipo_nodo == CXCursor_StructDecl) {
+      CXString cx_name = clang_getCursorSpelling(cursor);
+      std::string nombre_struct = clang_getCString(cx_name);
+      clang_disposeString(cx_name);
+
+      if (nombre_struct.empty()) { return CXChildVisit_Continue; }
+
+      std::cout << "[488, Checker.hpp] nombre_struct: '" << nombre_struct << "'\n";
+      InfoStruct info_struct;
+      info_struct.nombre = nombre_struct;
+
+      checker->tablas.añadirStruct(nombre_struct, info_struct);
+
+    } else if (tipo_nodo == CXCursor_TypedefDecl) {
+      CXString cx_name = clang_getCursorSpelling(cursor);
+      std::string nombre_typedef = clang_getCString(cx_name);
+      clang_disposeString(cx_name);
+
+      if (nombre_typedef.empty()) { return CXChildVisit_Continue; }
+
+      CXType under_type = clang_getTypedefDeclUnderlyingType(cursor);
+      CXString cx_under_name = clang_getTypeSpelling(under_type);
+      std::string nombre_real = clang_getCString(cx_under_name);
+      clang_disposeString(cx_under_name);
+
+      const std::string prefix = "struct ";
+      if (nombre_real.find(prefix) == 0) {
+        nombre_real = nombre_real.substr(prefix.length());
+      }
+
+      checker->tablas.añadirTypedef(nombre_typedef, nombre_real);
 
     }
 
@@ -599,6 +630,33 @@ public:
     }
 
     throw std::runtime_error("Error: No se pudo registrar la instancia de la plantilla '" + firma + "'");
+
+  }
+
+  std::shared_ptr<ArcanaType> aplicarTypedefs(std::shared_ptr<ArcanaType> tipo) {
+    if (!tipo) { return nullptr; }
+
+    switch (tipo->kind) {
+      case TypeKind::UNRESOLVED: {
+        auto unres = std::static_pointer_cast<UnresolvedType>(tipo);
+        return typeFactory.getUnresolved(tablas.resolverTypedef(unres->pending_type));
+      }
+
+      case TypeKind::POINTER: {
+        auto ptr = std::static_pointer_cast<PointerType>(tipo);
+        return typeFactory.getPointer(aplicarTypedefs(ptr->tipo_apuntado));
+      }
+
+      case TypeKind::ARRAY: {
+        auto arr = std::static_pointer_cast<ArrayType>(tipo);
+        return typeFactory.getArray(aplicarTypedefs(arr->base), arr->size);
+      }
+
+      default: {
+        return tipo;
+      }
+
+    }
 
   }
 
@@ -1096,10 +1154,10 @@ public:
   }
 
   void visitar(SentenciaAsignarVar* nodo) override {
-    std::cout << "[829, Checker.hp] SentenciaAsignarVar\n";
+    std::cout << "[1130, Checker.hp] SentenciaAsignarVar\n";
 
     if (auto* tipo_instancia = dynamic_cast<TemplateInstanceStructType*>(nodo->tipo_explicito.tipo.valor.get())) {
-      std::cout << "[832, Checker.hpp]\n";
+      std::cout << "[1133, Checker.hpp]\n";
       auto ptr_instancia = std::static_pointer_cast<TemplateInstanceStructType>(nodo->tipo_explicito.tipo.valor);
       nodo->tipo_explicito.tipo = instanciarTemplate(ptr_instancia);
 
@@ -1108,7 +1166,7 @@ public:
     if (auto* tipo_pendiente = dynamic_cast<UnresolvedType*>(nodo->tipo_explicito.tipo.valor.get())) {
       std::string nombre_tipo = tipo_pendiente->pending_type;
 
-      std::cout << "[842, Checker.hpp] nombre_tipo: '" << nombre_tipo << "'\n";
+      std::cout << "[1142, Checker.hpp] nombre_tipo: '" << nombre_tipo << "'\n";
       InfoStruct* info_struct = tablas.buscarStruct(nombre_tipo);
 
       if (info_struct != nullptr) {
@@ -1186,6 +1244,8 @@ public:
 
     for (const auto& a : nodo->argumentos) {
       a.second->accept(this);
+      a.second->tipo_resuelto.valor = aplicarTypedefs(a.second->tipo_resuelto.valor);
+
     }
 
     if (auto* var_callee = dynamic_cast<ExprVariable*>(nodo->callee.get())) {
@@ -1196,29 +1256,29 @@ public:
       }
 
       std::string firma = generarFirma(var_callee->nombre, args_type);
-      std::cout << "[1184, Checker.hpp] firma: '" << firma << "'\n";
+      std::cout << "[1230, Checker.hpp] firma: '" << firma << "'\n";
 
       if (InfoFuncion* info = tablas.buscarFuncionFirma(var_callee->nombre, firma)) {
-        std::cout << "[1187, Checker.hpp]\n";
+        std::cout << "[1233, Checker.hpp]\n";
         var_callee->tipo_resuelto.valor = typeFactory.getUnknown();
         nodo->tipo_resuelto = info->tipo_retorno;
         nodo->info = info;
         func_resuleta = true;
 
       } else {
-        std::cout << "[1194, Checker.hpp] var_callee->nombre: '" << var_callee->nombre << "'\n";
+        std::cout << "[1240, Checker.hpp] var_callee->nombre: '" << var_callee->nombre << "'\n";
         std::vector<InfoFuncion>* candidatas = tablas.buscarFuncionName(var_callee->nombre);
 
         if (!candidatas) {
-          std::cout << "[1198, Checker.hpp] !candidatas\n";
+          std::cout << "[1244, Checker.hpp] !candidatas\n";
           nodo->callee->accept(this);
           return ;
         }
 
-        std::cout << "[1203, Checker.hpp] candidatas:\n";
+        std::cout << "[1249, Checker.hpp] candidatas:\n";
         for (auto& i : *candidatas) {
-          std::cout << "[1205, Checker.hpp] i.nombre: '" << i.nombre << "'\n";
-          std::cout << "[1206, Checker.hpp] i.firma: '" <<  i.firma << "'\n";
+          std::cout << "[1251, Checker.hpp] i.nombre: '" << i.nombre << "'\n";
+          std::cout << "[1252, Checker.hpp] i.firma: '" <<  i.firma << "'\n";
         }
 
         InfoFuncion* info_mejor = nullptr;
@@ -1236,8 +1296,6 @@ public:
             if (args_type.size() != min_args) { continue; }
 
           }
-
-          //if (cand.tipos_parametros.size() != args_type.size()) { continue; }
 
           int current_fit = 0;
           bool viable = true;

@@ -30,6 +30,7 @@ public:
   Parser(std::vector<Token> tok, GestorTablas& t,  ErrorHandler& e, ContextoArcanos& ca, TypeFactory& tf);
 
   bool isStatement(Token t);
+  bool isVarDecl();
 
   InfoVariable parsearTipo();
 

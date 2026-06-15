@@ -135,7 +135,7 @@ bool GestorTablas::añadirVariable(const std::string& name, InfoVariable info) {
 }
 
 bool GestorTablas::añadirFuncion(const std::string& name, InfoFuncion info) {
-  std::cout << "[116, symbol.cpp] Añadiendo: '" << name << "' en: " << scopeActual << '\n';
+  std::cout << "[116, symbol.cpp] añadirFuncion: '" << name << "' en: " << scopeActual << '\n';
 
   auto& overloads = scopeActual->funciones[name];
 
@@ -211,6 +211,8 @@ void GestorTablas::popFunction() {
 }
 
 bool GestorTablas::añadirStruct(const std::string& name, InfoStruct info) {
+  std::cout << "[214, symbol.cpp] añadirStruct: '" << name << "'\n";
+
   if (root->structs.count(name)) { return false; }
 
   root->structs[name] = std::move(info);
@@ -232,8 +234,31 @@ bool GestorTablas::actualizarStruct(const std::string& name, InfoStruct infoActu
 
 InfoStruct* GestorTablas::buscarStruct(const std::string& name) {
 
-  auto it = root->structs.find(name);
-  if (it != root->structs.end()) { return &(it->second); }
+  std::string nombre_actual = name;
+  std::unordered_set<std::string> visitados;
+
+  while (true) {
+    std::cout << "[241, symbol.cpp] nombre_actual: '" << nombre_actual << "'\n";
+    auto it = root->structs.find(nombre_actual);
+    if (it != root->structs.end()) { return &(it->second); }
+
+    visitados.insert(nombre_actual);
+
+    auto it_typedef = root->typedefs.find(nombre_actual);
+    if (it_typedef != root->typedefs.end()) {
+      nombre_actual = it_typedef->second;
+
+      if (visitados.count(nombre_actual)) {
+        std::cerr << "Error: Ciclo de typedefs detectado en '" << name << "'\n";
+        break;
+      }
+
+    } else {
+      break;
+
+    }
+
+  }
 
   return nullptr;
 
@@ -306,5 +331,37 @@ InfoTemplateParam* GestorTablas::buscarTemplateParam(const std::string& name) {
   }
 
   return nullptr;
+
+}
+
+bool GestorTablas::añadirTypedef(const std::string& alias, const std::string& name) {
+  std::cout << "[337, symbol.cpp] añadirTypedef: '" << alias << "', '" << name << "'\n";
+  if (root->typedefs.count(alias)) { return false; }
+
+  root->typedefs[alias] = name;
+  return true;
+
+}
+
+std::string GestorTablas::resolverTypedef(const std::string& name) {
+  std::string nombre_actual = name;
+  std::unordered_set<std::string> visitados;
+
+  while (true) {
+    auto it_typedef = root->typedefs.find(nombre_actual);
+    if (it_typedef != root->typedefs.end()) {
+      nombre_actual = it_typedef->second;
+
+      if (!visitados.insert(nombre_actual).second) {
+        std::cerr << "Error: Ciclo de typedefs detectado en '" << name << "'\n";
+        break;
+      }
+    } else {
+      break;
+
+    }
+  }
+
+  return nombre_actual;
 
 }

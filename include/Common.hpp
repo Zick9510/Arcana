@@ -203,7 +203,6 @@ enum class Pm {
 };
 
 /* --- Tipos --- */
-
 inline std::string generarFirma(const std::string& nombre, const std::vector<Dt>& tiposArgs) {
   std::string firma = nombre;
   for (const auto& tipo : tiposArgs) {

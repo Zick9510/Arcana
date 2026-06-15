@@ -144,6 +144,7 @@ struct Scope {
   std::unordered_map<std::string, std::vector<InfoFuncion>> funciones;
   std::unordered_map<std::string, InfoStruct  > structs  ;
   std::unordered_map<std::string, InfoTemplate> templates;
+  std::unordered_map<std::string, std::string > typedefs ;
 
   Scope* padre = nullptr;
   std::vector<std::unique_ptr<Scope>> hijos;
@@ -214,5 +215,9 @@ public:
 
   bool añadirTemplateParam(const std::string& name, InfoTemplateParam);
   InfoTemplateParam* buscarTemplateParam(const std::string& name);
+
+  // --- Typedefs ---
+  bool añadirTypedef(const std::string& alias, const std::string& name);
+  std::string resolverTypedef(const std::string& name);
 
 };

@@ -17,6 +17,7 @@
 #include <stacktrace>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <variant>
 #include <vector>
 

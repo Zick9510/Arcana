@@ -27,7 +27,7 @@ bool UnknownType::isNumeric() const { return false; }
 UnresolvedType::UnresolvedType(std::string s)
   : ArcanaType(TypeKind::UNRESOLVED), pending_type(s) {}
 
-std::string UnresolvedType::toString() const { return "unresolved"; }
+std::string UnresolvedType::toString() const { return pending_type; }
 
 int UnresolvedType::getBitSize() const { return -1; }
 

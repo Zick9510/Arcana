@@ -1,0 +1,13 @@
+include <stdio.h>
+include <stdlib.h>
+
+func main() -> int {
+
+  FILE* fptr;
+
+  fptr = fopen("open.txt", "w+");
+  fprintf(fptr, "Howdy");
+
+  return 0;
+
+}

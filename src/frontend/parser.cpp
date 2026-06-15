@@ -243,11 +243,19 @@ InfoVariable Parser::parsearTipo() {
 
       } else {
         std::cout << "[245, parser.cpp] else\n";
-        InfoVariable tipo_pendiente;
-        tipo_pendiente.tipo = Dt(typeFactory.getUnresolved(t_base.lexema));
-        return tipo_pendiente;
-
+        tipo_actual = typeFactory.getUnresolved(name);
       }
+
+
+      //else {
+      //  InfoVariable tipo_pendiente;
+      //  tipo_pendiente.tipo = Dt(typeFactory.getUnresolved(t_base.lexema));
+      //  while (peek().tipo == Tt::ASTERISCO || peek().tipo == Tt::POTENCIA) {
+      //    get();
+      //    if (peek().tipo == Tt::ASTERISCO) { get(); }
+      //  }
+      //  return tipo_pendiente;
+      //}
 
       std::cout << "[252, parser.cpp] <>\n";
 
@@ -478,6 +486,8 @@ std::unique_ptr<Sentencia> Parser::parsearDeclaracionVar() {
 
   InfoVariable tipo = parsearTipo();
 
+  std::cout << "[488, parser.cpp] tipo.tipo.tipoString(): '" << tipo.tipo.tipoString() << "'\n";
+
   Token nombre = check(Tt::IDENTIFICADOR); // Type Var
   std::unique_ptr<Expresion> size = nullptr;
 
@@ -577,6 +587,18 @@ std::unique_ptr<Sentencia> Parser::parsearBloque() {
 
 }
 
+bool Parser::isVarDecl() {
+  size_t offset = 1;
+
+  while (true) {
+    if      (peek(offset).tipo == Tt::IDENTIFICADOR)                                      { return true ; }
+    else if (peek(offset).tipo == Tt::ASTERISCO    || peek(offset).tipo == Tt::AMPERSAND) { offset++    ; }
+    else if (peek(offset).tipo == Tt::POTENCIA     || peek(offset).tipo == Tt::Y_LOGICO ) { offset += 2 ; }
+    else                                                                                  { return false; }
+  }
+
+}
+
 std::unique_ptr<Sentencia> Parser::parsearSentencia() {
   std::cout << "[574, parser.cpp] parsearSentencia\n";
 
@@ -631,10 +653,16 @@ std::unique_ptr<Sentencia> Parser::parsearSentencia() {
     }
 
     // Tipos
-    if (peek(1).tipo == Tt::IDENTIFICADOR) {
-      std::cout << "[626, parser.cpp]\n";
+    if (isVarDecl()) {
+      std::cout << "[640, parser.cpp]\n";
       return parsearDeclaracionVar();
     }
+
+    //if (peek(1).tipo == Tt::IDENTIFICADOR) {
+    //  std::cout << "[626, parser.cpp]\n";
+    //  return parsearDeclaracionVar();
+    //}
+
   }
  
   std::cout << "[631, parser.cpp]\n";
