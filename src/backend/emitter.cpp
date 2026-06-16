@@ -567,8 +567,40 @@ void Emitter::visitar(ExprUnaria* nodo) {
 
     }
 
+    case TipoOperador::INC_SUFX:
+    case TipoOperador::INC_PREF:
+    case TipoOperador::DEC_SUFX:
+    case TipoOperador::DEC_PREF: {
+      llvm::Value* ptr = obtenerPuntero(nodo->operando.get());
+
+      bool es_float = (nodo->tipo_resuelto.valor->kind == TypeKind::FLOAT);
+      llvm::Value* uno = es_float ? llvm::ConstantFP::get(val->getType() , 1.0)
+                                  : llvm::ConstantInt::get(val->getType(), 1  );
+
+      llvm::Value* nuevo_val = nullptr;
+      bool es_inc = (nodo->operador == TipoOperador::INC_SUFX ||
+                     nodo->operador == TipoOperador::INC_PREF );
+
+      if (es_inc) {
+        nuevo_val = es_float ? llvmBuilder->CreateFAdd(val, uno, "")
+                             : llvmBuilder->CreateAdd (val, uno, "");
+      } else {
+        nuevo_val = es_float ? llvmBuilder->CreateFSub(val, uno, "")
+                             : llvmBuilder->CreateSub(val, uno, "");
+      }
+
+      llvmBuilder->CreateStore(nuevo_val, ptr);
+
+      bool es_sufx = (nodo->operador == TipoOperador::INC_SUFX ||
+                      nodo->operador == TipoOperador::DEC_SUFX );
+
+      llvmValor = es_sufx ? val : nuevo_val;
+      break;
+
+    }
+
     default: {
-      std::cout << "[392, emitter.cpp] Error: Operador unario no implementado.";
+      std::cout << "[571, emitter.cpp] Error: Operador unario no implementado.";
       exit(1);
     }
 

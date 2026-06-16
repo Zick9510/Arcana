@@ -13,6 +13,7 @@ std::string_view ErrorHandler::getTemplate(CE ce) {
     case CE::E_EXPECTED_TOKEN  : { return "expected '{}' but '{}' token was found"; }
     case CE::E_UNEXPECTED_TOKEN: { return "unexpected '{}' token"                 ; }
     case CE::E_EXPECTED_EXPRESSION: { return "expected expression but '{}' token was found"; }
+    case CE::E_STRUCT_POS_AFTER_NAMED: { return "'{}' should be a named argument"; }
 
     default: { return "unkown error"; }
   }

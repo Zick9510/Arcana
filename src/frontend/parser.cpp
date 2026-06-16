@@ -760,7 +760,7 @@ std::unique_ptr<Sentencia> Parser::parsearReturn() {
 std::vector<std::pair<std::string, InfoVariable>> Parser::parsearFuncArgs(Tt tEnd) {
 
   std::vector<std::pair<std::string, InfoVariable>> args;
-  std::set<std::string> nombre_args;
+  std::unordered_set<std::string> nombre_args;
 
   while (peek().tipo != tEnd && peek().tipo != Tt::EOF_TT) {
 
@@ -1459,7 +1459,7 @@ std::unique_ptr<Expresion> Parser::parsearInitList() {
       get(); // :
 
     } else if (seen_named) {
-      errHandler.report(CE::E_STRUCT_POS_AFTER_NAMED, peek().pos);
+      errHandler.report(CE::E_STRUCT_POS_AFTER_NAMED, peek().pos, peek().lexema);
       return std::make_unique<ErrorNode>();
 
     }
@@ -1790,7 +1790,7 @@ std::unique_ptr<Expresion> Parser::parsearExpresion(Pr precedenciaMinima) {
 
     // Casos de Sufijos
     if (op.tipo == Tt::INCREMENTAR || op.tipo == Tt::DECREMENTAR) {
-      TipoOperador operador = (op.tipo == Tt::INCREMENTAR) ? TipoOperador::INC_SUF: TipoOperador::DEC_SUF;
+      TipoOperador operador = (op.tipo == Tt::INCREMENTAR) ? TipoOperador::INC_SUFX: TipoOperador::DEC_SUFX;
       izquierda = std::make_unique<ExprUnaria>(
           operador, std::move(izquierda), false);
       continue;

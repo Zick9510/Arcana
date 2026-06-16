@@ -434,7 +434,7 @@ std::vector<Token> Lexer::tokenize() {
       }
 
       case '%': {
-        if   (match('=')) { tokens.push_back( {Tt::MOD_IGUAL, "%=", {inicio, 2} } ); }
+        if   (match('=')) { tokens.push_back( {Tt::MODULO_IGUAL, "%=", {inicio, 2} } ); }
         else                   { tokens.push_back( {Tt::MODULO   , "%" , {inicio, 1} } ); }
         break;
       }
@@ -560,7 +560,6 @@ std::vector<Token> Lexer::tokenize() {
         tokens.push_back( {Tt::TATETI, "#", {inicio, 1} } );
         break;
       }
-
     }
   }
 

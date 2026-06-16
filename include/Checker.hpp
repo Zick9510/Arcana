@@ -992,6 +992,28 @@ public:
 
       }
 
+      case TipoOperador::INC_PREF:
+      case TipoOperador::DEC_PREF:
+      case TipoOperador::INC_SUFX:
+      case TipoOperador::DEC_SUFX: {
+
+        if (!nodo->operando->isLValue()) {
+          std::cout << "[998, Checker.hpp] Error: La expresión no es asignable\n";
+          nodo->tipo_resuelto = Dt(typeFactory.getUnknown());
+          break;
+        }
+
+        if (!tipo_op.valor->isNumeric()) {
+          std::cout << "[1004, Checker.hpp] Error: El tipo no es numérico\n";
+          nodo->tipo_resuelto = Dt(typeFactory.getUnknown());
+          break;
+        }
+
+        nodo->tipo_resuelto = tipo_op;
+        break;
+
+      }
+
       default: {
         std::cerr << "Error: Operador unario no implementado\n";
         exit(1);
